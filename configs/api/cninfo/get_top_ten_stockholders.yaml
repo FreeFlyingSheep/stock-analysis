@@ -1,0 +1,85 @@
+api:
+  id: top_ten_stockholders
+  name: 十大股东
+  request:
+    method: GET
+    url: http://www.cninfo.com.cn/data20/stockholderCapital/getTopTenStockholders
+    params:
+      stock_code:
+        label: scode
+        type: string
+        name: 证券代码
+response:
+  label: response
+  type: object
+  path:
+    label: path
+    type: string
+    value: /stockholderCapital/getTopTenStockholders
+  code:
+    label: code
+    type: integer
+    value: 200
+  data:
+    label: data
+    type: object
+    total:
+      label: total
+      type: integer
+    count:
+      label: count
+      type: integer
+    result_msg:
+      label: resultMsg
+      type: string
+      value: success
+    result_code:
+      label: resultCode
+      type: string
+      value: '200'
+    records:
+      label: records
+      type: array
+      items:
+        label: items
+        type: object
+        share_ratio:
+          label: F004N
+          type: number
+          name: 持股比例
+        report_date:
+          label: F001D
+          type: string
+          name: 报告期
+        share_amount:
+          label: F003N
+          type: number
+          name: 持股数量
+        share_type:
+          label: F006V
+          type: string
+          name: 股份性质
+        holder_rank:
+          label: F005N
+          type: integer
+          name: 股东名次
+        holder_name:
+          label: F002V
+          type: string
+          name: 股东名称
+        change_status:
+          label: F007V
+          type: string
+          name: 变动情况
+    index_records:
+      label: indexRecords
+      type: 'null'
+  params:
+    label: params
+    type: object
+    stock_code_request:
+      label: stockCodeRequest
+      type: object
+      stock_code:
+        label: scode
+        type: string

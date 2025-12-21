@@ -1,0 +1,27 @@
+{
+    "path": "/stockholderCapital/getLiftBan",
+    "code": 200,
+    "data": {
+        "total": 1,
+        "count": 1,
+        "resultMsg": "success",
+        "resultCode": "200",
+        "records": [
+            {
+                "SECCODE": "300461",
+                "SECNAME": "田中精机",
+                "DECLAREDATE": "2025-12-18",
+                "F003D": "2025-12-19",
+                "F004N": 29694492,
+                "F005N": 18.91,
+                "F008N": 29694492
+            }
+        ],
+        "indexRecords": null
+    },
+    "params": {
+        "stockCodeRequest": {
+            "scode": "300461"
+        }
+    }
+}

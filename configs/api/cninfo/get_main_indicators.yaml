@@ -1,0 +1,443 @@
+api:
+  id: main_indicators
+  name: 主要财务指标
+  request:
+    method: GET
+    url: http://www.cninfo.com.cn/data20/financialData/getMainIndicators
+    params:
+      stock_code:
+        label: scode
+        type: string
+        name: 证券代码
+      sign_flag:
+        label: sign
+        type: integer
+        value: 1
+response:
+  label: response
+  type: object
+  path:
+    label: path
+    type: string
+    value: /financialData/getMainIndicators
+  code:
+    label: code
+    type: integer
+    value: 200
+  data:
+    label: data
+    type: object
+    total:
+      label: total
+      type: integer
+    count:
+      label: count
+      type: integer
+    result_msg:
+      label: resultMsg
+      type: string
+      value: success
+    result_code:
+      label: resultCode
+      type: string
+      value: '200'
+    records:
+      label: records
+      type: array
+      items:
+        label: items
+        type: object
+        year:
+          label: year
+          type: array
+          items:
+            label: items
+            type: object
+            bvps:
+              label: F008N
+              type: number
+              name: 每股净资产
+            current_assets_turnover:
+              label: F029N
+              type: number
+              name: 流动资产周转率
+            net_margin:
+              label: F017N
+              type: number
+              name: 净利润率
+            period_end_date:
+              label: ENDDATE
+              type: string
+              name: 报告期截止日
+            roa:
+              label: F016N
+              type: number
+              name: 总资产报酬率
+            basic_eps:
+              label: F004N
+              type: number
+              name: 基本每股收益
+            total_assets_turnover:
+              label: F025N
+              type: number
+              name: 总资产周转率
+            operating_profit_growth:
+              label: F058N
+              type: number
+              name: 营业利润增长率
+            fixed_assets_turnover:
+              label: F026N
+              type: number
+              name: 固定资产周转率
+            roe_wa:
+              label: F067N
+              type: number
+              name: 加权净资产收益率
+            inventory_turnover:
+              label: F023N
+              type: number
+              name: 存货周转率
+            gross_margin:
+              label: F078N
+              type: number
+              name: 毛利率
+            total_assets_growth:
+              label: F056N
+              type: number
+              name: 总资产增长率
+            quick_ratio:
+              label: F043N
+              type: number
+              name: 速动比率
+            operating_margin:
+              label: F011N
+              type: number
+              name: 营业利润率
+            net_assets_growth:
+              label: F054N
+              type: number
+              name: 净资产增长率
+            capital_reserve_per_share:
+              label: F010N
+              type: number
+              name: 每股资本公积金
+            ar_turnover:
+              label: F022N
+              type: number
+              name: 应收账款周转率
+            revenue_growth:
+              label: F052N
+              type: number
+              name: 营业收入增长率
+            debt_ratio:
+              label: F041N
+              type: number
+              name: 资产负债率
+            net_profit_growth:
+              label: F053N
+              type: number
+              name: 净利润增长率
+            current_ratio:
+              label: F042N
+              type: number
+              name: 流动比率
+        middle:
+          label: middle
+          type: array
+          items:
+            label: items
+            type: object
+            bvps:
+              label: F008N
+              type: number
+              name: 每股净资产
+            current_assets_turnover:
+              label: F029N
+              type: number
+              name: 流动资产周转率
+            net_margin:
+              label: F017N
+              type: number
+              name: 净利润率
+            period_end_date:
+              label: ENDDATE
+              type: string
+              name: 报告期截止日
+            roa:
+              label: F016N
+              type: number
+              name: 总资产报酬率
+            basic_eps:
+              label: F004N
+              type: number
+              name: 基本每股收益
+            total_assets_turnover:
+              label: F025N
+              type: number
+              name: 总资产周转率
+            operating_profit_growth:
+              label: F058N
+              type: number
+              name: 营业利润增长率
+            fixed_assets_turnover:
+              label: F026N
+              type: number
+              name: 固定资产周转率
+            roe_wa:
+              label: F067N
+              type: number
+              name: 加权净资产收益率
+            inventory_turnover:
+              label: F023N
+              type: number
+              name: 存货周转率
+            gross_margin:
+              label: F078N
+              type: number
+              name: 毛利率
+            total_assets_growth:
+              label: F056N
+              type: number
+              name: 总资产增长率
+            quick_ratio:
+              label: F043N
+              type: number
+              name: 速动比率
+            operating_margin:
+              label: F011N
+              type: number
+              name: 营业利润率
+            net_assets_growth:
+              label: F054N
+              type: number
+              name: 净资产增长率
+            capital_reserve_per_share:
+              label: F010N
+              type: number
+              name: 每股资本公积金
+            ar_turnover:
+              label: F022N
+              type: number
+              name: 应收账款周转率
+            revenue_growth:
+              label: F052N
+              type: number
+              name: 营业收入增长率
+            debt_ratio:
+              label: F041N
+              type: number
+              name: 资产负债率
+            net_profit_growth:
+              label: F053N
+              type: number
+              name: 净利润增长率
+            current_ratio:
+              label: F042N
+              type: number
+              name: 流动比率
+        one:
+          label: one
+          type: array
+          items:
+            label: items
+            type: object
+            bvps:
+              label: F008N
+              type: number
+              name: 每股净资产
+            current_assets_turnover:
+              label: F029N
+              type: number
+              name: 流动资产周转率
+            net_margin:
+              label: F017N
+              type: number
+              name: 净利润率
+            period_end_date:
+              label: ENDDATE
+              type: string
+              name: 报告期截止日
+            roa:
+              label: F016N
+              type: number
+              name: 总资产报酬率
+            basic_eps:
+              label: F004N
+              type: number
+              name: 基本每股收益
+            total_assets_turnover:
+              label: F025N
+              type: number
+              name: 总资产周转率
+            operating_profit_growth:
+              label: F058N
+              type: number
+              name: 营业利润增长率
+            fixed_assets_turnover:
+              label: F026N
+              type: number
+              name: 固定资产周转率
+            roe_wa:
+              label: F067N
+              type: number
+              name: 加权净资产收益率
+            inventory_turnover:
+              label: F023N
+              type: number
+              name: 存货周转率
+            gross_margin:
+              label: F078N
+              type: number
+              name: 毛利率
+            total_assets_growth:
+              label: F056N
+              type: number
+              name: 总资产增长率
+            quick_ratio:
+              label: F043N
+              type: number
+              name: 速动比率
+            operating_margin:
+              label: F011N
+              type: number
+              name: 营业利润率
+            net_assets_growth:
+              label: F054N
+              type: number
+              name: 净资产增长率
+            capital_reserve_per_share:
+              label: F010N
+              type: number
+              name: 每股资本公积金
+            ar_turnover:
+              label: F022N
+              type: number
+              name: 应收账款周转率
+            revenue_growth:
+              label: F052N
+              type: number
+              name: 营业收入增长率
+            debt_ratio:
+              label: F041N
+              type: number
+              name: 资产负债率
+            net_profit_growth:
+              label: F053N
+              type: number
+              name: 净利润增长率
+            current_ratio:
+              label: F042N
+              type: number
+              name: 流动比率
+        three:
+          label: three
+          type: array
+          items:
+            label: items
+            type: object
+            bvps:
+              label: F008N
+              type: number
+              name: 每股净资产
+            current_assets_turnover:
+              label: F029N
+              type: number
+              name: 流动资产周转率
+            net_margin:
+              label: F017N
+              type: number
+              name: 净利润率
+            period_end_date:
+              label: ENDDATE
+              type: string
+              name: 报告期截止日
+            roa:
+              label: F016N
+              type: number
+              name: 总资产报酬率
+            basic_eps:
+              label: F004N
+              type: number
+              name: 基本每股收益
+            total_assets_turnover:
+              label: F025N
+              type: number
+              name: 总资产周转率
+            operating_profit_growth:
+              label: F058N
+              type: number
+              name: 营业利润增长率
+            fixed_assets_turnover:
+              label: F026N
+              type: number
+              name: 固定资产周转率
+            roe_wa:
+              label: F067N
+              type: number
+              name: 加权净资产收益率
+            inventory_turnover:
+              label: F023N
+              type: number
+              name: 存货周转率
+            gross_margin:
+              label: F078N
+              type: number
+              name: 毛利率
+            total_assets_growth:
+              label: F056N
+              type: number
+              name: 总资产增长率
+            quick_ratio:
+              label: F043N
+              type: number
+              name: 速动比率
+            operating_margin:
+              label: F011N
+              type: number
+              name: 营业利润率
+            net_assets_growth:
+              label: F054N
+              type: number
+              name: 净资产增长率
+            capital_reserve_per_share:
+              label: F010N
+              type: number
+              name: 每股资本公积金
+            ar_turnover:
+              label: F022N
+              type: number
+              name: 应收账款周转率
+            revenue_growth:
+              label: F052N
+              type: number
+              name: 营业收入增长率
+            debt_ratio:
+              label: F041N
+              type: number
+              name: 资产负债率
+            net_profit_growth:
+              label: F053N
+              type: number
+              name: 净利润增长率
+            current_ratio:
+              label: F042N
+              type: number
+              name: 流动比率
+    index_records:
+      label: indexRecords
+      type: 'null'
+  params:
+    label: params
+    type: object
+    financial_data_request:
+      label: financialDataRequest
+      type: object
+      stock_code:
+        label: scode
+        type: string
+      sign_flag:
+        label: sign
+        type: integer
+      record_type:
+        label: rtype
+        type: string

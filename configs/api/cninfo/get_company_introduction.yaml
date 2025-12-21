@@ -1,0 +1,209 @@
+api:
+  id: company_introduction
+  name: 公司介绍
+  request:
+    method: GET
+    url: http://www.cninfo.com.cn/data20/companyOverview/getCompanyIntroduction
+    params:
+      stock_code:
+        label: scode
+        type: string
+        name: 证券代码
+response:
+  label: response
+  type: object
+  path:
+    label: path
+    type: string
+    value: /companyOverview/getCompanyIntroduction
+  code:
+    label: code
+    type: integer
+    value: 200
+  data:
+    label: data
+    type: object
+    total:
+      label: total
+      type: integer
+    count:
+      label: count
+      type: integer
+    result_msg:
+      label: resultMsg
+      type: string
+      value: success
+    result_code:
+      label: resultCode
+      type: string
+      value: '200'
+    records:
+      label: records
+      type: array
+      items:
+        label: items
+        type: object
+        basic_information:
+          label: basicInformation
+          type: array
+          items:
+            label: items
+            type: object
+            industry:
+              label: F032V
+              type: string
+              name: 所属行业
+            market:
+              label: MARKET
+              type: string
+              name: 所属市场
+            setup_date:
+              label: F010D
+              type: string
+              name: 成立日期
+            zipcode:
+              label: F006V
+              type: string
+              name: 邮政编码
+            index_constituents:
+              label: F044V
+              type: string
+              name: 入选指数
+            main_business:
+              label: F015V
+              type: string
+              name: 主营业务
+            phone:
+              label: F013V
+              type: string
+              name: 联系电话
+            par_value_per_share:
+              label: F007N
+              type: number
+              name: 每股面值
+            legal_representative:
+              label: F003V
+              type: string
+              name: 法人代表
+            company_name_en:
+              label: F001V
+              type: string
+              name: 英文名称
+            website:
+              label: F011V
+              type: string
+              name: 官方网址
+            organization_intro:
+              label: F017V
+              type: string
+              name: 机构简介
+            office_address:
+              label: F005V
+              type: string
+              name: 办公地址
+            fax:
+              label: F014V
+              type: string
+              name: 传真
+            registered_address:
+              label: F004V
+              type: string
+              name: 注册地址
+            email:
+              label: F012V
+              type: string
+              name: 电子邮箱
+            listing_date:
+              label: F006D
+              type: string
+              name: 上市日期
+            former_short_names:
+              label: F002V
+              type: string
+              name: 曾用简称
+            company_name:
+              label: ORGNAME
+              type: string
+              name: 公司名称
+            business_scope:
+              label: F016V
+              type: string
+              name: 经营范围
+            board_secretary:
+              label: F018V
+              type: string
+              name: 公司董秘
+            general_manager:
+              label: F042V
+              type: string
+              name: 总经理
+            company_short_name:
+              label: ASECNAME
+              type: string
+              name: 公司简称
+            company_code:
+              label: ASECCODE
+              type: string
+              name: 公司代码
+            related_b_name:
+              label: BSECNAME
+              type: string
+              name: 关联证券B股简称
+            related_b_code:
+              label: BSECCODE
+              type: string
+              name: 关联证券B股代码
+            related_h_name:
+              label: HSECNAME
+              type: string
+              name: 关联证券H股简称
+            related_h_code:
+              label: HSECCODE
+              type: string
+              name: 关联证券H股代码
+            unknown_field:
+              label: F052V
+              type: string
+              name: 未知字段
+            unknown_field_2:
+              label: F053V
+              type: string
+              name: 未知字段2
+        listing_information:
+          label: listingInformation
+          type: array
+          items:
+            label: items
+            type: object
+            seccode:
+              label: SECCODE
+              type: string
+              name: 证券代码
+            par_value_per_share:
+              label: F007N
+              type: number
+              name: 每股面值
+            ipo_net_proceeds:
+              label: F028N
+              type: number
+              name: 首发募资净额
+            ipo_price:
+              label: F008N
+              type: number
+              name: 首次价格
+            lead_underwriter:
+              label: F047V
+              type: string
+              name: 首发主承销商
+    index_records:
+      label: indexRecords
+      type: 'null'
+  params:
+    label: params
+    type: object
+    stock_code_request:
+      label: stockCodeRequest
+      type: object
+      stock_code:
+        label: scode
+        type: string

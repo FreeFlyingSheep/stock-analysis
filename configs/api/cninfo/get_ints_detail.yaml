@@ -1,0 +1,89 @@
+api:
+  id: ints_detail
+  name: 大宗交易
+  request:
+    method: GET
+    url: http://www.cninfo.com.cn/data20/tradeInformation/getIntsDetail
+    params:
+      stock_code:
+        label: scode
+        type: string
+        name: 证券代码
+response:
+  label: response
+  type: object
+  path:
+    label: path
+    type: string
+    value: /tradeInformation/getIntsDetail
+  code:
+    label: code
+    type: integer
+    value: 200
+  data:
+    label: data
+    type: object
+    total:
+      label: total
+      type: integer
+    count:
+      label: count
+      type: integer
+    result_msg:
+      label: resultMsg
+      type: string
+      value: success
+    result_code:
+      label: resultCode
+      type: string
+      value: '200'
+    records:
+      label: records
+      type: array
+      items:
+        label: items
+        type: object
+        stock_code:
+          label: SECCODE
+          type: string
+          name: 证券代码
+        stock_name:
+          label: SECNAME
+          type: string
+          name: 证券简称
+        deal_price:
+          label: F004N
+          type: number
+          name: 成交价格
+        deal_amount:
+          label: F006N
+          type: number
+          name: 成交金额
+        seller:
+          label: F003V
+          type: string
+          name: 卖方
+        deal_volume:
+          label: F005N
+          type: number
+          name: 成交数量
+        buyer:
+          label: F002V
+          type: string
+          name: 买方
+        trade_date:
+          label: TRADEDATE
+          type: string
+          name: 交易日期
+    index_records:
+      label: indexRecords
+      type: 'null'
+  params:
+    label: params
+    type: object
+    stock_code_request:
+      label: stockCodeRequest
+      type: object
+      stock_code:
+        label: scode
+        type: string

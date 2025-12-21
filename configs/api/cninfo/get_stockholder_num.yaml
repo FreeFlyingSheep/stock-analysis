@@ -1,0 +1,69 @@
+api:
+  id: stockholder_num
+  name: 股东人数
+  request:
+    method: GET
+    url: http://www.cninfo.com.cn/data20/stockholderCapital/getStockholderNum
+    params:
+      stock_code:
+        label: scode
+        type: string
+        name: 证券代码
+response:
+  label: response
+  type: object
+  path:
+    label: path
+    type: string
+    value: /stockholderCapital/getStockholderNum
+  code:
+    label: code
+    type: integer
+    value: 200
+  data:
+    label: data
+    type: object
+    total:
+      label: total
+      type: integer
+    count:
+      label: count
+      type: integer
+    result_msg:
+      label: resultMsg
+      type: string
+      value: success
+    result_code:
+      label: resultCode
+      type: string
+      value: '200'
+    records:
+      label: records
+      type: array
+      items:
+        label: items
+        type: object
+        end_date:
+          label: ENDDATE
+          type: string
+          name: 截止日期
+        holder_count:
+          label: F001N
+          type: integer
+          name: 股东人数
+        holder_count_change_ratio:
+          label: F009N
+          type: number
+          name: 股东人数变动幅度
+    index_records:
+      label: indexRecords
+      type: 'null'
+  params:
+    label: params
+    type: object
+    stock_code_request:
+      label: stockCodeRequest
+      type: object
+      stock_code:
+        label: scode
+        type: string

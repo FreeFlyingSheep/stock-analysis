@@ -1,0 +1,105 @@
+api:
+  id: executives_inc_dec_detail
+  name: 高管增减持
+  request:
+    method: GET
+    url: http://www.cninfo.com.cn/data20/tradeInformation/getExecutivesIncDecDetail
+    params:
+      stock_code:
+        label: scode
+        type: string
+        name: 证券代码
+response:
+  label: response
+  type: object
+  path:
+    label: path
+    type: string
+    value: /tradeInformation/getExecutivesIncDecDetail
+  code:
+    label: code
+    type: integer
+    value: 200
+  data:
+    label: data
+    type: object
+    total:
+      label: total
+      type: integer
+    count:
+      label: count
+      type: integer
+    result_msg:
+      label: resultMsg
+      type: string
+      value: success
+    result_code:
+      label: resultCode
+      type: string
+      value: '200'
+    records:
+      label: records
+      type: array
+      items:
+        label: items
+        type: object
+        stock_code:
+          label: SECCODE
+          type: string
+          name: 证券代码
+        stock_name:
+          label: SECNAME
+          type: string
+          name: 证券简称
+        actor_name:
+          label: HUMANNAME
+          type: string
+          name: 股份变动人
+        average_price:
+          label: F008N
+          type: number
+          name: 成交均价
+        declare_date:
+          label: DECLAREDATE
+          type: string
+          name: 公告日期
+        quantity_change:
+          label: F006N
+          type: integer
+          name: 增减持数量
+        reason:
+          label: F010V
+          type: string
+          name: 变动原因
+        relation:
+          label: F003V
+          type: string
+          name: 变动人与董监高关系
+        executive_name:
+          label: F001V
+          type: string
+          name: 董监高姓名
+        executive_title:
+          label: F002V
+          type: string
+          name: 董监高职务
+        change_date:
+          label: ENDDATE
+          type: string
+          name: 变动日期
+        info_source:
+          label: F011V
+          type: string
+          name: 信息来源
+    index_records:
+      label: indexRecords
+      type: 'null'
+  params:
+    label: params
+    type: object
+    stock_code_request:
+      label: stockCodeRequest
+      type: object
+      stock_code:
+        label: scode
+        type: string

@@ -1,0 +1,77 @@
+api:
+  id: company_his_dividend
+  name: 历史分红
+  request:
+    method: GET
+    url: http://www.cninfo.com.cn/data20/companyOverview/getCompanyHisDividend
+    params:
+      stock_code:
+        label: scode
+        type: string
+        name: 证券代码
+response:
+  label: response
+  type: object
+  path:
+    label: path
+    type: string
+    value: /companyOverview/getCompanyHisDividend
+  code:
+    label: code
+    type: integer
+    value: 200
+  data:
+    label: data
+    type: object
+    total:
+      label: total
+      type: integer
+    count:
+      label: count
+      type: integer
+    result_msg:
+      label: resultMsg
+      type: string
+      value: success
+    result_code:
+      label: resultCode
+      type: string
+      value: '200'
+    records:
+      label: records
+      type: array
+      items:
+        label: items
+        type: object
+        period:
+          label: F001V
+          type: string
+          name: 报告期
+        plan_desc:
+          label: F007V
+          type: string
+          name: 分红方案
+        record_date:
+          label: F018D
+          type: string
+          name: 股权登记日
+        ex_date:
+          label: F020D
+          type: string
+          name: 除权日
+        pay_date:
+          label: F023D
+          type: string
+          name: 派息日
+    index_records:
+      label: indexRecords
+      type: 'null'
+  params:
+    label: params
+    type: object
+    stock_code_request:
+      label: stockCodeRequest
+      type: object
+      stock_code:
+        label: scode
+        type: string

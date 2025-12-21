@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
+from stock_analysis.models.api import CNInfoAPIResponse  # noqa: F401
 from stock_analysis.models.base import Base
 from stock_analysis.models.stock import Stock  # noqa: F401
 from stock_analysis.settings import get_settings
@@ -22,7 +23,7 @@ config: Config = context.config
 settings: Settings = get_settings()
 
 if config.config_file_name is not None:
-    root: Path = Path(__file__).parent.parent.parent.parent
+    root: Path = Path(__file__).parents[3]
     fileConfig(root / "configs" / Path(config.config_file_name))
 else:
     logging.basicConfig(level=settings.log_level)

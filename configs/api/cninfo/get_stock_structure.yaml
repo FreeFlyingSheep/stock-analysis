@@ -1,0 +1,89 @@
+api:
+  id: stock_structure
+  name: 股本结构
+  request:
+    method: GET
+    url: http://www.cninfo.com.cn/data20/stockholderCapital/getStockStructure
+    params:
+      stock_code:
+        label: scode
+        type: string
+        name: 证券代码
+response:
+  label: response
+  type: object
+  path:
+    label: path
+    type: string
+    value: /stockholderCapital/getStockStructure
+  code:
+    label: code
+    type: integer
+    value: 200
+  data:
+    label: data
+    type: object
+    total:
+      label: total
+      type: integer
+    count:
+      label: count
+      type: integer
+    result_msg:
+      label: resultMsg
+      type: string
+      value: success
+    result_code:
+      label: resultCode
+      type: string
+      value: '200'
+    records:
+      label: records
+      type: array
+      items:
+        label: items
+        type: object
+        vary_date:
+          label: VARYDATE
+          type: string
+          name: 变动日期
+        vary_reason:
+          label: F002V
+          type: string
+          name: 变动原因
+        circulating_shares:
+          label: F021N
+          type: number
+          name: 已流通股份
+        cny_common_shares:
+          label: F022N
+          type: number
+          name: 人民币普通股/CDR
+        domestic_listed_foreign_shares:
+          label: F023N
+          type: string
+          name: 境内上市外资股(B股)
+        overseas_listed_foreign_shares:
+          label: F024N
+          type: number
+          name: 境外上市外资股(H股)
+        restricted_circulating_shares:
+          label: F028N
+          type: number
+          name: 流通受限股份
+        total_shares:
+          label: F003N
+          type: number
+          name: 总股本
+    index_records:
+      label: indexRecords
+      type: 'null'
+  params:
+    label: params
+    type: object
+    stock_code_request:
+      label: stockCodeRequest
+      type: object
+      stock_code:
+        label: scode
+        type: string

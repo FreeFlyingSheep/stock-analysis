@@ -1,0 +1,93 @@
+api:
+  id: company_executives
+  name: 公司高管
+  request:
+    method: GET
+    url: http://www.cninfo.com.cn/data20/companyOverview/getCompanyExecutives
+    params:
+      stock_code:
+        label: scode
+        type: string
+        name: 证券代码
+response:
+  label: response
+  type: object
+  path:
+    label: path
+    type: string
+    value: /companyOverview/getCompanyExecutives
+  code:
+    label: code
+    type: integer
+    value: 200
+  data:
+    label: data
+    type: object
+    total:
+      label: total
+      type: integer
+    count:
+      label: count
+      type: integer
+    result_msg:
+      label: resultMsg
+      type: string
+      value: success
+    result_code:
+      label: resultCode
+      type: string
+      value: '200'
+    records:
+      label: records
+      type: array
+      items:
+        label: items
+        type: object
+        name:
+          label: F002V
+          type: string
+          name: 姓名
+        gender:
+          label: F010V
+          type: string
+          name: 性别
+        birth_year:
+          label: F012V
+          type: string
+          name: 出生年份
+        education:
+          label: F017V
+          type: string
+          name: 学历
+        title:
+          label: F009V
+          type: string
+          name: 职务
+        annual_salary:
+          label: F005N
+          type: number
+          name: 年薪
+        share_count:
+          label: F012N
+          type: integer
+          name: 持股数
+        sequence_id:
+          label: SEQID
+          type: integer
+          name: 未知序号
+        record_id:
+          label: F001V
+          type: string
+          name: 未知标识
+    index_records:
+      label: indexRecords
+      type: 'null'
+  params:
+    label: params
+    type: object
+    stock_code_request:
+      label: stockCodeRequest
+      type: object
+      stock_code:
+        label: scode
+        type: string

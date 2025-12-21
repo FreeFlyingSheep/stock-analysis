@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 
 import pandas as pd
 from pydantic import ValidationError
-from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
@@ -125,7 +124,6 @@ async def import_stocks_from_csv(db: AsyncSession, csv_path: str | os.PathLike) 
             "company_name": stmt.excluded.company_name,
             "classification": stmt.excluded.classification,
             "industry": stmt.excluded.industry,
-            "updated_at": func.now(),
         },
     )
 
@@ -152,7 +150,7 @@ async def main() -> None:
         expire_on_commit=False,
     )
     async with async_session() as session:
-        csv_file: Path = Path(__file__).parent.parent / "data" / "stocks.csv"
+        csv_file: Path = Path(__file__).parents[1] / "data" / "stocks.csv"
         count: int = await import_stocks_from_csv(session, csv_file)
         logger.info("Imported %d stocks from CSV.", count)
 

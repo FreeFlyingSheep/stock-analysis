@@ -1,0 +1,127 @@
+api:
+  id: cash_flow_statement
+  name: 现金流量表
+  request:
+    method: GET
+    url: http://www.cninfo.com.cn/data20/financialData/getCashFlowStatement
+    params:
+      stock_code:
+        label: scode
+        type: string
+        name: 证券代码
+      sign_flag:
+        label: sign
+        type: integer
+        value: 1
+response:
+  label: response
+  type: object
+  path:
+    label: path
+    type: string
+    value: /financialData/getCashFlowStatement
+  code:
+    label: code
+    type: integer
+    value: 200
+  data:
+    label: data
+    type: object
+    total:
+      label: total
+      type: integer
+    count:
+      label: count
+      type: integer
+    result_msg:
+      label: resultMsg
+      type: string
+      value: success
+    result_code:
+      label: resultCode
+      type: string
+      value: '200'
+    records:
+      label: records
+      type: array
+      items:
+        label: items
+        type: object
+        annual_report:
+          label: year
+          type: array
+          items:
+            label: items
+            type: object
+            year_value:
+              label: <YYYY>
+              dynamic: true
+              count: 5
+              type: number
+            subject_name:
+              label: index
+              type: string
+              name: 科目名称
+        semi_annual_report:
+          label: middle
+          type: array
+          items:
+            label: items
+            type: object
+            year_value:
+              label: <YYYY>
+              dynamic: true
+              count: 5
+              type: number
+            subject_name:
+              label: index
+              type: string
+              name: 科目名称
+        first_quarter_report:
+          label: one
+          type: array
+          items:
+            label: items
+            type: object
+            year_value:
+              label: <YYYY>
+              dynamic: true
+              count: 5
+              type: number
+            subject_name:
+              label: index
+              type: string
+              name: 科目名称
+        third_quarter_report:
+          label: three
+          type: array
+          items:
+            label: items
+            type: object
+            year_value:
+              label: <YYYY>
+              dynamic: true
+              count: 5
+              type: number
+            subject_name:
+              label: index
+              type: string
+              name: 科目名称
+    index_records:
+      label: indexRecords
+      type: 'null'
+  params:
+    label: params
+    type: object
+    financial_data_request:
+      label: financialDataRequest
+      type: object
+      stock_code:
+        label: scode
+        type: string
+      sign_flag:
+        label: sign
+        type: integer
+      record_type:
+        label: rtype
+        type: string

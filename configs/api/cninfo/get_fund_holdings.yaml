@@ -1,0 +1,69 @@
+api:
+  id: fund_holdings
+  name: 基金持股
+  request:
+    method: GET
+    url: http://www.cninfo.com.cn/data20/stockholderCapital/getFundHoldings
+    params:
+      stock_code:
+        label: scode
+        type: string
+        name: 证券代码
+response:
+  label: response
+  type: object
+  path:
+    label: path
+    type: string
+    value: /stockholderCapital/getFundHoldings
+  code:
+    label: code
+    type: integer
+    value: 200
+  data:
+    label: data
+    type: object
+    total:
+      label: total
+      type: integer
+    count:
+      label: count
+      type: integer
+    result_msg:
+      label: resultMsg
+      type: string
+      value: success
+    result_code:
+      label: resultCode
+      type: string
+      value: '200'
+    records:
+      label: records
+      type: array
+      items:
+        label: items
+        type: object
+        fund_coverage_count:
+          label: F001N
+          type: integer
+          name: 基金覆盖家数
+        total_shares_held:
+          label: F002N
+          type: integer
+          name: 持股总数
+        report_date:
+          label: ENDDATE
+          type: string
+          name: 报告期
+    index_records:
+      label: indexRecords
+      type: 'null'
+  params:
+    label: params
+    type: object
+    stock_code_request:
+      label: stockCodeRequest
+      type: object
+      stock_code:
+        label: scode
+        type: string
