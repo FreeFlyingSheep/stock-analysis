@@ -52,7 +52,7 @@ async def favicon() -> FileResponse:
     Returns:
         FileResponse: HTTP response containing the favicon.ico file.
     """
-    root: Path = Path(__file__).parent.parent.parent.parent
+    root: Path = Path(__file__).parents[3]
     return FileResponse(root / "static" / "favicon.ico")
 
 

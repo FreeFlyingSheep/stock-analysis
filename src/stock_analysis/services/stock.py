@@ -1,4 +1,4 @@
-"""Stock service for managing stock operations."""
+"""Stock managing service."""
 
 from typing import TYPE_CHECKING
 

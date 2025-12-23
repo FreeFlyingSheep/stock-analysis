@@ -49,20 +49,16 @@ class StockIn(BaseStock):
     industry: str
 
 
-class StockOut(BaseStock):
+class StockOut(StockIn):
     """Stock output schema.
 
     Schema for returning stock data from the API, including timestamps.
 
     Attributes:
-        classification: Stock classification category.
-        industry: Industry sector of the stock.
         created_at: Timestamp when the record was created.
         updated_at: Timestamp when the record was last updated.
     """
 
-    classification: str
-    industry: str
     created_at: datetime
     updated_at: datetime
 

@@ -38,6 +38,14 @@ async def get_db() -> AsyncGenerator[AsyncSession]:
 
     Yields:
         AsyncSession: Async database session instance.
+
+    Raises:
+        Exception: Propagates any exception that occurs during session usage.
     """
     async with async_session() as session:
-        yield session
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise

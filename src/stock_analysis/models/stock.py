@@ -1,11 +1,15 @@
 """Stock model definition."""
 
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, String, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from stock_analysis.models.base import Base
+
+if TYPE_CHECKING:
+    from stock_analysis.models.api import CNInfoAPIResponse
 
 
 class Stock(Base):
@@ -25,7 +29,8 @@ class Stock(Base):
 
     __tablename__: str = "stocks"
 
-    stock_code: Mapped[str] = mapped_column(String(10), primary_key=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    stock_code: Mapped[str] = mapped_column(String(10), nullable=False, unique=True)
     company_name: Mapped[str] = mapped_column(String(200), nullable=False)
     classification: Mapped[str] = mapped_column(String(100), nullable=False)
     industry: Mapped[str] = mapped_column(String(100), nullable=False)
@@ -41,6 +46,12 @@ class Stock(Base):
         nullable=False,
     )
 
+    cninfo_api_responses: Mapped[list["CNInfoAPIResponse"]] = relationship(
+        back_populates="stock",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
     def __repr__(self) -> str:
         """Get a string representation of the Stock object.
 
@@ -48,7 +59,8 @@ class Stock(Base):
             str: String representation of the Stock instance.
         """
         return (
-            f"Stock(stock_code={self.stock_code!r},"
+            f"Stock(id={self.id!r}, "
+            f"stock_code={self.stock_code!r},"
             f"company_name={self.company_name!r}, "
             f"classification={self.classification!r},"
             f"industry={self.industry!r}, "
