@@ -108,6 +108,7 @@ fixable = ["ALL"]
 [tool.ruff.lint.flake8-type-checking]
 runtime-evaluated-base-classes = [
     "pydantic.BaseModel",
+    "stock_analysis.schemas.base.BaseSchema",
     "sqlalchemy.orm.DeclarativeBase",
     "stock_analysis.models.base.Base",
 ]

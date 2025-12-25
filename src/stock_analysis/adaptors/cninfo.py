@@ -154,9 +154,9 @@ class CNInfoAdaptor:
 
     async def __aenter__(self) -> Self:
         """Initialize the HTTP client on enter."""
+        self._private_client = self.client is None
         if self.client is None:
             self.client = AsyncClient(timeout=self.timeout)
-            self._private_client = True
         return self
 
     async def __aexit__(

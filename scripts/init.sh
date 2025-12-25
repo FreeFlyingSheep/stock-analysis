@@ -8,13 +8,14 @@
 # 2. Creates a fresh database
 # 3. Runs Alembic migrations to create tables
 # 4. Imports initial stock data from CSV file
+# 5. Initializes the PgQueuer database
 #
 # Usage:
 #   ./scripts/init.sh
 #
 # Exit codes:
 #   0: Database initialized successfully
-#   1: Initialization failed at any step
+#   others: Initialization failed at any step
 #
 # Requirements:
 #   - uv package manager installed
@@ -23,7 +24,17 @@
 #   - CSV file at data/stocks.csv
 set -euo pipefail
 
+source .env
+
 uv run scripts/drop_db.py
 uv run scripts/create_db.py
 uv run alembic upgrade head
 uv run scripts/import_csv.py
+
+pgq \
+    --pg-host ${DATABASE_HOST} \
+    --pg-port ${DATABASE_PORT} \
+    --pg-user ${DATABASE_USER} \
+    --pg-password ${DATABASE_PASSWORD} \
+    --pg-database ${DATABASE_DB} \
+    install

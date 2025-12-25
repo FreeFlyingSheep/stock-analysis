@@ -35,6 +35,8 @@ class Settings(BaseSettings):
     """Enable or disable debug mode."""
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
     """Logging level for the application."""
+    log_file: str
+    """File path for the log file."""
     host: str
     """Host address to run the application on."""
     port: int

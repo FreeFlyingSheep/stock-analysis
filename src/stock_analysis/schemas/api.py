@@ -4,10 +4,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Literal
 
-from pydantic import BaseModel
+from stock_analysis.schemas.base import BaseSchema
 
 
-class RequestParam(BaseModel):
+class RequestParam(BaseSchema):
     """API request parameter specification from YAML.
 
     Attributes:
@@ -25,7 +25,7 @@ class RequestParam(BaseModel):
     value: int | float | str | None = None
 
 
-class RequestSpec(BaseModel):
+class RequestSpec(BaseSchema):
     """HTTP request spec for an endpoint.
 
     Attributes:
@@ -49,7 +49,7 @@ class RequestSpec(BaseModel):
         return frozenset(p.label for p in self.params if p.value is None)
 
 
-class ApiSpec(BaseModel):
+class ApiSpec(BaseSchema):
     """Complete endpoint specification parsed from YAML."""
 
     id: str
@@ -58,7 +58,7 @@ class ApiSpec(BaseModel):
     file_path: Path
 
 
-class CNInfoFetchResult(BaseModel):
+class CNInfoFetchResult(BaseSchema):
     """Result of a CNInfo API fetch operation.
 
     Attributes:
@@ -72,7 +72,17 @@ class CNInfoFetchResult(BaseModel):
     raw_json: dict[str, Any]
 
 
-class CNInfoAPIResponseIn(BaseModel):
+class CNInfoJobPayload(BaseSchema):
+    """Payload for CNInfo data fetching jobs.
+
+    Attributes:
+        stock_code: The stock code to fetch data for.
+    """
+
+    stock_code: str
+
+
+class CNInfoAPIResponseIn(BaseSchema):
     """Schema for creating CNInfo API response records.
 
     Attributes:

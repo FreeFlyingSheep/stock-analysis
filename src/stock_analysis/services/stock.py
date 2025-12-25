@@ -3,7 +3,9 @@
 from typing import TYPE_CHECKING
 
 from sqlalchemy import func, select
+from sqlalchemy.engine.result import Result
 
+from stock_analysis.models.api import CNInfoAPIResponse
 from stock_analysis.models.stock import Stock
 
 if TYPE_CHECKING:
@@ -126,3 +128,20 @@ class StockService:
 
         result: Result[tuple[int]] = await self.db.execute(query)
         return result.scalar() or 0
+
+    async def get_cninfo_api_responses_by_stock_id(
+        self, stock_id: int
+    ) -> list[CNInfoAPIResponse]:
+        """Get CNInfo API responses for a given stock ID.
+
+        Args:
+            stock_id: The ID of the stock to retrieve API responses for.
+
+        Returns:
+            list[CNInfoAPIResponse]: List of CNInfoAPIResponse objects
+            associated with the stock.
+        """
+        result: Result[tuple[CNInfoAPIResponse]] = await self.db.execute(
+            select(CNInfoAPIResponse).where(CNInfoAPIResponse.stock_id == stock_id)
+        )
+        return list(result.scalars().all())

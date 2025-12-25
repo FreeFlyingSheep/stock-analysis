@@ -2,23 +2,8 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
-from pydantic.alias_generators import to_camel
-
-
-class BaseSchema(BaseModel):
-    """Base schema with common configuration.
-
-    Provides common Pydantic configuration for all schema classes including
-    camelCase alias generation and attribute validation.
-    """
-
-    model_config = ConfigDict(
-        alias_generator=to_camel,
-        validate_by_name=True,
-        validate_by_alias=True,
-        from_attributes=True,
-    )
+from stock_analysis.schemas.api import CNInfoAPIResponseOut
+from stock_analysis.schemas.base import BaseSchema
 
 
 class BaseStock(BaseSchema):
@@ -107,3 +92,15 @@ class StockApiResponse(BaseSchema):
     """
 
     data: StockListData
+
+
+class StockDetailApiResponse(BaseSchema):
+    """Stock detail API response schema.
+
+    Top-level API response wrapper for stock detail endpoints.
+
+    Attributes:
+        data: Detailed stock information.
+    """
+
+    data: list[CNInfoAPIResponseOut]
