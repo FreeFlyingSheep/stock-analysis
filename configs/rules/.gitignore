@@ -1,0 +1,3 @@
+# Ignore all rules configuration files except sample templates
+*.yaml
+!scoring_rules_sample.yaml

@@ -112,3 +112,59 @@ class CNInfoAPIResponseOut(CNInfoAPIResponseIn):
     id: int
     created_at: datetime
     updated_at: datetime
+
+
+class YahooFinanceAPI(BaseSchema):
+    """Schema for creating Yahoo Finance API response records.
+
+    Attributes:
+        symbol: Stock ticker symbol.
+        period: Data fetch period.
+        interval: Data fetch interval.
+    """
+
+    symbol: str
+    period: Literal[
+        "1d", "5d", "1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "ytd", "max"
+    ]
+    interval: Literal[
+        "1m",
+        "2m",
+        "5m",
+        "15m",
+        "30m",
+        "60m",
+        "90m",
+        "1h",
+        "1d",
+        "5d",
+        "1wk",
+        "1mo",
+        "3mo",
+    ]
+
+
+class YahooFinanceAPIResponseIn(BaseSchema):
+    """Schema for creating Yahoo Finance API response records.
+
+    Attributes:
+        params: Parameters used in the API request.
+        raw_json: Raw JSON response from the API call.
+    """
+
+    params: YahooFinanceAPI
+    raw_json: str
+
+
+class YahooFinanceAPIResponseOut(YahooFinanceAPIResponseIn):
+    """Schema for returning Yahoo Finance API response records.
+
+    Attributes:
+        id: The id of the record.
+        created_at: Timestamp when the record was created.
+        updated_at: Timestamp when the data was fetched.
+    """
+
+    id: int
+    created_at: datetime
+    updated_at: datetime

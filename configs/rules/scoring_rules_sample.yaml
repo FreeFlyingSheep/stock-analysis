@@ -1,0 +1,211 @@
+ruleset:
+  id: scoring-rules-sample
+  version: "0.1.0"
+  name: "Sample Scoring Rules"
+  total_score_scale: 100
+
+  dimensions:
+    - id: objective_metrics
+      name: "Objective Fundamentals"
+      weight: 50
+      enabled: true
+
+    - id: subjective_analysis
+      name: "Subjective Analysis"
+      weight: 50
+      enabled: true
+
+  metrics:
+    - id: obj_roe_stability
+      name: "Return on Equity (ROE)"
+      dimension: objective_metrics
+      metric: roe_weighted_average
+      description: "Core Buffett Metric: Full score for >20% over 3 years, passing score for >15%"
+      weight: 0.20
+      params:
+        lookback_years: 3
+        tiers:
+          - threshold: 0.20
+            score: 100
+          - threshold: 0.15
+            score: 60
+      max_score: 100
+      enabled: true
+
+    - id: obj_gross_margin
+      name: "Gross Margin"
+      dimension: objective_metrics
+      metric: gross_margin
+      description: "Reflects product moat: >40% very strong, 30-40% excellent"
+      weight: 0.16
+      params:
+        tiers:
+          - threshold: 0.40
+            score: 100
+          - threshold: 0.30
+            score: 62.5
+      max_score: 100
+      enabled: true
+
+    - id: obj_profit_growth
+      name: "Net Profit Growth"
+      dimension: objective_metrics
+      metric: net_profit_growth
+      description: "Verify growth: 3-year >20% for full score"
+      weight: 0.16
+      params:
+        lookback_years: 3
+        tiers:
+          - threshold: 0.20
+            score: 100
+      max_score: 100
+      enabled: true
+
+    - id: obj_operating_cash_flow
+      name: "Operating Cash Flow Quality"
+      dimension: objective_metrics
+      metric: ocf_to_net_income_ratio
+      description: "Quality check: Operating cash flow net amount positive and matches net income (>0.8)"
+      weight: 0.12
+      params:
+        threshold: 0.8
+        score_pass: 100
+      max_score: 100
+      enabled: true
+
+    - id: obj_debt_ratio
+      name: "Debt to Asset Ratio"
+      dimension: objective_metrics
+      metric: debt_to_asset
+      description: "Safety margin: Non-financial stocks <50% get full score"
+      weight: 0.12
+      params:
+        threshold_max: 0.50
+        score_pass: 100
+      max_score: 100
+      enabled: true
+
+    - id: obj_valuation_percentile
+      name: "PE/PB Historical Percentile"
+      dimension: objective_metrics
+      metric: pe_ttm_percentile
+      description: "Timing indicator: Historical percentile <20% undervalued, 20-50% reasonable"
+      weight: 0.16
+      params:
+        tiers:
+          - threshold_max: 20
+            score: 100
+          - threshold_max: 50
+            score: 50
+      max_score: 100
+      enabled: true
+
+    - id: obj_dividend_yield
+      name: "Dividend Yield"
+      dimension: objective_metrics
+      metric: dividend_yield_ttm
+      description: "Shareholder return: stable dividends and yield higher than fixed deposits"
+      weight: 0.08
+      params:
+        threshold: 0.025
+        score_pass: 100
+      max_score: 100
+      enabled: true
+
+    - id: subj_industry_quality
+      name: "Industry Quality (Track)"
+      dimension: subjective_analysis
+      metric: manual_score_industry
+      description: "Industry assessment"
+      weight: 0.20
+      params:
+        enable_llm_scoring: true
+        llm_prompt_context: "Analyze the industry's technology iteration speed and capital expenditure needs. If it is an industry with extremely slow technology iteration and does not require frequent production line updates (e.g., high-end consumer goods, pharmaceuticals), give a high score; if it is an industry with fast technology iteration and requires continuous heavy asset investment (e.g., panels, low-end manufacturing), give a low score."
+      max_score: 100
+      enabled: true
+
+    - id: subj_moat_strength
+      name: "Moat Strength"
+      dimension: subjective_analysis
+      metric: manual_score_moat
+      description: "Competitive Moat"
+      weight: 0.16
+      params:
+        enable_llm_scoring: true
+        llm_prompt_context: "Assess the company's brand strength, patent barriers, network effects, and user switching costs. Give a high score if it is a monopoly or a company that is extremely difficult for competitors to imitate; give a low score if the products are highly homogeneous or easily imitated."
+      max_score: 100
+      enabled: true
+
+    - id: subj_pricing_power
+      name: "Pricing Power"
+      dimension: subjective_analysis
+      metric: manual_score_pricing
+      description: "Pricing Power"
+      weight: 0.16
+      params:
+        enable_llm_scoring: true
+        llm_prompt_context: "Check if the company has recently successfully raised prices without significantly affecting sales, or if it has the ability to pass on raw material cost increases to downstream. Give a high score for strong pricing power, and a low score if it is forced to accept market pricing."
+      max_score: 100
+      enabled: true
+
+    - id: subj_drawdown_nature
+      name: "Nature of Drawdown"
+      dimension: subjective_analysis
+      metric: manual_score_sentiment
+      description: "Contrarian Thinking"
+      weight: 0.16
+      params:
+        enable_llm_scoring: true
+        llm_prompt_context: "Analyze recent negative news or reasons for the company's stock price decline. Give a high score if it is a misjudgment caused by macro policies or market panic (golden pit); give a low score if it is due to financial fraud, deterioration of business logic, or fundamental crises."
+      max_score: 100
+      enabled: true
+
+    - id: subj_competence
+      name: "Circle of Competence"
+      dimension: subjective_analysis
+      metric: manual_score_understanding
+      description: "Whether truly understand the company's profit model"
+      weight: 0.16
+      params:
+        manual_input_required: true
+      max_score: 100
+      enabled: true
+
+    - id: subj_psychology
+      name: "Investment Psychology"
+      dimension: subjective_analysis
+      metric: manual_score_psychology
+      description: "Investment Psychology"
+      weight: 0.16
+      params:
+        manual_input_required: true
+      max_score: 100
+      enabled: true
+
+  filters:
+    - id: veto_low_roe
+      name: "Veto: Low ROE Efficiency"
+      metric: obj_roe_stability
+      filter: less_than_threshold
+      description: "Low profitability companies are avoided"
+      params:
+        threshold: 0.10
+      enabled: true
+
+    - id: veto_negative_cashflow
+      name: "Veto: Poor Cashflow Quality"
+      metric: obj_operating_cash_flow
+      filter: less_than_threshold
+      description: "Poor cashflow quality companies are avoided"
+      params:
+        threshold: 0
+      enabled: true
+
+    - id: veto_extreme_valuation
+      name: "Veto: Extreme Bubble"
+      metric: obj_valuation_percentile
+      filter: greater_than_threshold
+      description: "Extremely overvalued companies are avoided"
+      params:
+        threshold: 80
+      enabled: true

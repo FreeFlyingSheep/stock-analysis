@@ -22,6 +22,26 @@ I do **NOT** provide any financial, investment, or trading recommendations. User
 - **Code Quality**: Automated formatting and linting with ruff
 - **Testing**: Comprehensive test suite with pytest and testcontainers
 
+## TODO List
+
+High priority:
+
+- Implement stock scoring rules engine
+- Add LLM integration for advanced stock analysis
+- Add a chatbot interface for querying stock information
+
+Medium priority:
+
+- Create scheduled tasks for regular data updates
+- Crawl and integrate additional stock data sources
+
+Low priority:
+
+- Develop frontend interface for visualizing stock data and scores
+- Add observability and monitoring
+- Use k8s to deploy the application
+- Add data mapping for cninfo API responses
+
 ## Requirements
 
 - Python 3.14+

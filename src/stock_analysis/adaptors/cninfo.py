@@ -110,7 +110,7 @@ class CNInfoAdaptor:
     wait: wait_exponential
     _config_dir: Path
     _specs: dict[str, ApiSpec]
-    _private_client: bool = False
+    _use_private_client: bool = False
 
     def __init__(  # noqa: PLR0913
         self,
@@ -145,7 +145,7 @@ class CNInfoAdaptor:
         self.retry_attempts = retry_attempts
         self.wait: wait_exponential = wait or wait_exponential(min=5, max=10)
         if client is None:
-            self._private_client = True
+            self._use_private_client = True
 
     @property
     def available_endpoints(self) -> frozenset[str]:
@@ -154,7 +154,7 @@ class CNInfoAdaptor:
 
     async def __aenter__(self) -> Self:
         """Initialize the HTTP client on enter."""
-        self._private_client = self.client is None
+        self._use_private_client = self.client is None
         if self.client is None:
             self.client = AsyncClient(timeout=self.timeout)
         return self
@@ -172,7 +172,7 @@ class CNInfoAdaptor:
             _exc_val: Exception value if raised.
             _exc_tb: Exception traceback if raised.
         """
-        if self._private_client and self.client is not None:
+        if self._use_private_client and self.client is not None:
             await self.client.aclose()
             self.client = None
 
