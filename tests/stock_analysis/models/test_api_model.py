@@ -2,7 +2,7 @@ from datetime import UTC, datetime
 from http import HTTPStatus
 from typing import Any
 
-from stock_analysis.models.api import CNInfoAPIResponse
+from stock_analysis.models.cninfo import CNInfoAPIResponse
 
 
 def test_cninfo_api_response_attributes() -> None:

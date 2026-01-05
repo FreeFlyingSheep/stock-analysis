@@ -5,8 +5,9 @@ from typing import TYPE_CHECKING
 from sqlalchemy import func, select
 from sqlalchemy.engine.result import Result
 
-from stock_analysis.models.api import CNInfoAPIResponse
+from stock_analysis.models.cninfo import CNInfoAPIResponse
 from stock_analysis.models.stock import Stock
+from stock_analysis.models.yahoo import YahooFinanceAPIResponse
 
 if TYPE_CHECKING:
     from sqlalchemy import Result, Select
@@ -143,5 +144,24 @@ class StockService:
         """
         result: Result[tuple[CNInfoAPIResponse]] = await self.db.execute(
             select(CNInfoAPIResponse).where(CNInfoAPIResponse.stock_id == stock_id)
+        )
+        return list(result.scalars().all())
+
+    async def get_yahoo_finance_api_responses_by_stock_id(
+        self, stock_id: int
+    ) -> list[YahooFinanceAPIResponse]:
+        """Get Yahoo Finance API responses for a given stock ID.
+
+        Args:
+            stock_id: The ID of the stock to retrieve API responses for.
+
+        Returns:
+            list[YahooFinanceAPIResponse]: List of YahooFinanceAPIResponse objects
+            associated with the stock.
+        """
+        result: Result[tuple[YahooFinanceAPIResponse]] = await self.db.execute(
+            select(YahooFinanceAPIResponse).where(
+                YahooFinanceAPIResponse.stock_id == stock_id
+            )
         )
         return list(result.scalars().all())

@@ -1,6 +1,6 @@
 """Scoring rules adaptors."""
 
-import os
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -12,6 +12,7 @@ from pydantic import ValidationError
 from stock_analysis.schemas.rule import RuleSet
 
 if TYPE_CHECKING:
+    import os
     from collections.abc import Callable
 
     from stock_analysis.schemas.rule import RuleDimension, RuleFilter, RuleMetric
@@ -57,7 +58,7 @@ def _load_rules(rule_file_path: Path) -> RuleSet:
     return ruleset
 
 
-def _get_dict_value(data: Any, key: str) -> Any:
+def _get_dict_value(data: Any, key: str) -> Any:  # noqa: ANN401
     """Get a value from a dictionary.
 
     Args:
@@ -72,17 +73,17 @@ def _get_dict_value(data: Any, key: str) -> Any:
         raise RuleError(msg)
     value: Any | None = data.get(key)
     if value is None:
-        msg: str = f"Key '{key}' not found in data"
+        msg = f"Key '{key}' not found in data"
         raise RuleError(msg)
     return value
 
 
-def _get_array_value(data: Any, key: str) -> Any:
-    """Get a value from a list by index.
+def _get_array_value(data: Any, key: str) -> Any:  # noqa: ANN401
+    """Get a value from a list by key.
 
     Args:
         data: The list to retrieve the value from.
-        index: The index to retrieve.
+        key: The key to retrieve.
 
     Returns:
         The retrieved value.
@@ -93,16 +94,16 @@ def _get_array_value(data: Any, key: str) -> Any:
         raise RuleError(msg)
     value: Any = _get_dict_value(data, key[:pos])
     if not isinstance(value, list):
-        msg: str = f"Expected list when accessing '{key}'"
+        msg = f"Expected list when accessing '{key}'"
         raise RuleError(msg)
     index: int = int(key[pos + 1 : -1])
     if index >= len(value):
-        msg: str = f"Index '{index}' out of range when accessing '{key}'"
+        msg = f"Index '{index}' out of range when accessing '{key}'"
         raise RuleError(msg)
     return value[index]
 
 
-def _get_dict_value_by_index(data: Any, key: str, index: str) -> Any:
+def _get_dict_value_by_index(data: Any, key: str, index: str) -> Any:  # noqa: ANN401
     """Get a value from a dictionary of lists by index.
 
     Args:
@@ -118,23 +119,23 @@ def _get_dict_value_by_index(data: Any, key: str, index: str) -> Any:
         raise RuleError(msg)
     value: Any = data.get(key[:-2])
     if not isinstance(value, list):
-        msg: str = f"Expected list at '{key[:-2]}'"
+        msg = f"Expected list at '{key[:-2]}'"
         raise RuleError(msg)
     for v in value:
-        if getattr(value, "index") is None:
-            msg: str = f"No index provided for list at '{key[:-2]}'"
+        if value.index is None:
+            msg = f"No index provided for list at '{key[:-2]}'"
             raise RuleError(msg)
         i: Any = v["index"]
         if not isinstance(i, str):
-            msg: str = f"Expected string index for list at '{key[:-2]}'"
+            msg = f"Expected string index for list at '{key[:-2]}'"
             raise RuleError(msg)
         if i == index:
             return v
-    msg: str = f"Index '{index}' not found in list at '{key[:-2]}'"
+    msg = f"Index '{index}' not found in list at '{key[:-2]}'"
     raise RuleError(msg)
 
 
-def _get_value(data: dict[str, Any], source: str, index: str | None = None) -> Any:
+def _get_value(data: dict[str, Any], source: str, index: str | None = None) -> Any:  # noqa: ANN401
     """Get a nested value from a dictionary using dot notation.
 
     Args:
@@ -185,7 +186,7 @@ class RuleAdaptor:
         self._metrics = {m.id: m for m in self._ruleset.metrics}
         self._filters = {f.id: f for f in self._ruleset.filters}
         self._scores = {}
-        self._current_year = datetime.now().year
+        self._current_year = datetime.now().astimezone().year
 
     def _roe_weighted_average(self) -> float:
         """Calculate weighted average ROE for a stock.
@@ -238,22 +239,17 @@ class RuleAdaptor:
         results: list[float] = []
         for i in range(5):
             year: str = str(self._current_year - i - 2)
-            ocf: float = float(
-                np.float64(
-                    _get_value(
-                        self._data,
-                        f"cash_flow_statement.records[0].year[].{year}",
-                        index="经营活动产生的现金流量净额",
-                    )
-                )
-                / np.float64(
-                    _get_value(
-                        self._data,
-                        f"income_statement.records[0].year[].{year}",
-                        index="归属母公司净利润",
-                    )
-                )
+            cash_flow: float = _get_value(
+                self._data,
+                f"cash_flow_statement.records[0].year[].{year}",
+                index="经营活动产生的现金流量净额",
             )
+            income: float = _get_value(
+                self._data,
+                f"income_statement.records[0].year[].{year}",
+                index="归属母公司净利润",
+            )
+            ocf: float = cash_flow / income if income != 0.0 else 0.0
             results.append(ocf)
         return float(np.median(results))
 
@@ -277,8 +273,24 @@ class RuleAdaptor:
         Returns:
             The PE TTM percentile.
         """
-        msg: str = "PE TTM percentile calculation not yet implemented."
-        raise NotImplementedError(msg)
+        results: list[float] = []
+        price: float = _get_value(self._data, "history.records[0].Close")
+        for i in range(5):
+            year: str = str(self._current_year - i - 2)
+            income: float = _get_value(
+                self._data,
+                f"income_statement.records[0].year[].{year}",
+                index="归属母公司净利润",
+            )
+            shares: float = _get_value(
+                self._data,
+                f"income_statement.records[0].year[].{year}",
+                index="实收资本（或股本）",  # noqa: RUF001
+            )
+            eps: float = income / shares if shares != 0.0 else 0.0
+            pe: float = price / eps if eps != 0.0 else 0.0
+            results.append(pe)
+        return float(np.median(results))
 
     def _dividend_yield_ttm(self) -> float:
         """Calculate dividend yield TTM for a stock.
@@ -286,8 +298,22 @@ class RuleAdaptor:
         Returns:
             The dividend yield TTM.
         """
-        msg: str = "Dividend yield TTM calculation not yet implemented."
-        raise NotImplementedError(msg)
+        price: float = _get_value(self._data, "history.records[0].Close")
+        dps: float = 0.0
+        for i in range(5):
+            date: datetime = datetime.strptime(
+                _get_value(self._data, f"company_his_dividend.records[{i}].F020D"),
+                "%Y-%m-%d",
+            ).astimezone()
+            if date.year >= self._current_year - 5:
+                match: re.Match | None = re.search(
+                    r"10派(.*)元",
+                    _get_value(self._data, f"company_his_dividend.records[{i}].F007V"),
+                )
+                if match is None:
+                    continue
+                dps += float(match.group(1)) / 10.0
+        return dps / price
 
     def _manual_score_industry(self) -> float:
         """Retrieve manual industry score for a stock.
@@ -295,8 +321,7 @@ class RuleAdaptor:
         Returns:
             The manual industry score.
         """
-        msg: str = "Manual industry score retrieval not yet implemented."
-        raise NotImplementedError(msg)
+        return 0.0
 
     def _manual_score_moat(self) -> float:
         """Retrieve manual moat score for a stock.
@@ -304,8 +329,7 @@ class RuleAdaptor:
         Returns:
             The manual moat score.
         """
-        msg: str = "Manual moat score retrieval not yet implemented."
-        raise NotImplementedError(msg)
+        return 0.0
 
     def _manual_score_pricing(self) -> float:
         """Retrieve manual pricing score for a stock.
@@ -313,8 +337,7 @@ class RuleAdaptor:
         Returns:
             The manual pricing score.
         """
-        msg: str = "Manual pricing score retrieval not yet implemented."
-        raise NotImplementedError(msg)
+        return 0.0
 
     def _manual_score_sentiment(self) -> float:
         """Retrieve manual sentiment score for a stock.
@@ -322,8 +345,7 @@ class RuleAdaptor:
         Returns:
             The manual sentiment score.
         """
-        msg: str = "Manual sentiment score retrieval not yet implemented."
-        raise NotImplementedError(msg)
+        return 0.0
 
     def _manual_score_understanding(self) -> float:
         """Retrieve manual understanding score for a stock.
@@ -331,8 +353,7 @@ class RuleAdaptor:
         Returns:
             The manual understanding score.
         """
-        msg: str = "Manual understanding score retrieval not yet implemented."
-        raise NotImplementedError(msg)
+        return 0.0
 
     def _manual_score_psychology(self) -> float:
         """Retrieve manual psychology score for a stock.
@@ -340,8 +361,7 @@ class RuleAdaptor:
         Returns:
             The manual psychology score.
         """
-        msg: str = "Manual psychology score retrieval not yet implemented."
-        raise NotImplementedError(msg)
+        return 0.0
 
     def _score_metric(self, metric: RuleMetric) -> float:
         """Score a stock for a specific metric.

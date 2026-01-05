@@ -14,7 +14,11 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession  # noqa: TC002
 
-from stock_analysis.schemas.api import CNInfoAPIResponseOut, CNInfoJobPayload
+from stock_analysis.schemas.api import (
+    CNInfoAPIResponseOut,
+    JobPayload,
+    YahooFinanceAPIResponseOut,
+)
 from stock_analysis.schemas.stock import (
     StockApiResponse,
     StockDetailApiResponse,
@@ -29,8 +33,9 @@ if TYPE_CHECKING:
     from pgqueuer import PgQueuer
     from pgqueuer.queries import Queries
 
-    from stock_analysis.models.api import CNInfoAPIResponse
+    from stock_analysis.models.cninfo import CNInfoAPIResponse
     from stock_analysis.models.stock import Stock
+    from stock_analysis.models.yahoo import YahooFinanceAPIResponse
 
 router = APIRouter()
 
@@ -109,15 +114,24 @@ async def get_stock_details(
         msg: str = f"Stock with code {stock_code} not found."
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=msg)
 
-    responses: list[
+    cninfo_responses: list[
         CNInfoAPIResponse
     ] = await stock_service.get_cninfo_api_responses_by_stock_id(stock.id)
-    api_responses: list[CNInfoAPIResponseOut] = [
-        CNInfoAPIResponseOut.model_validate(response) for response in responses
+    cninfo_api_responses: list[CNInfoAPIResponseOut] = [
+        CNInfoAPIResponseOut.model_validate(response) for response in cninfo_responses
     ]
-    response_model = StockDetailApiResponse(data=api_responses)
+    yahoo_responses: list[
+        YahooFinanceAPIResponse
+    ] = await stock_service.get_yahoo_finance_api_responses_by_stock_id(stock.id)
+    yahoo_api_responses: list[YahooFinanceAPIResponseOut] = [
+        YahooFinanceAPIResponseOut.model_validate(response)
+        for response in yahoo_responses
+    ]
+    response_model = StockDetailApiResponse(
+        cninfo_data=cninfo_api_responses, yahoo_data=yahoo_api_responses
+    )
     data: dict[str, Any] = jsonable_encoder(response_model)
-    if responses:
+    if cninfo_responses and yahoo_responses:
         return JSONResponse(
             content=data,
             status_code=HTTPStatus.OK,
@@ -129,7 +143,7 @@ async def get_stock_details(
 
     pgq: PgQueuer = request.app.state.pgq
     queries: Queries = pgq.qm.queries
-    payload: CNInfoJobPayload = CNInfoJobPayload(stock_code=stock_code)
+    payload: JobPayload = JobPayload(stock_code=stock_code)
     await queries.enqueue(
         "crawl_stock_data",
         payload.model_dump_json().encode(),

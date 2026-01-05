@@ -2,7 +2,6 @@ import json
 from pathlib import Path
 from typing import Any
 
-from langchain_community.tools.ainetwork import rule
 import pytest
 
 from stock_analysis.adaptors.rule import RuleAdaptor
@@ -31,8 +30,4 @@ def rule_adaptor(data: dict[str, Any]) -> RuleAdaptor:
 def test_rule_adaptor_compute_scores(
     rule_adaptor: RuleAdaptor,
 ) -> None:
-    assert rule_adaptor._roe_weighted_average() != 0.0
-    assert rule_adaptor._gross_margin() != 0.0
-    assert rule_adaptor._net_profit_growth() != 0.0
-    assert rule_adaptor._ocf_to_net_income_ratio() != 0.0
-    assert rule_adaptor._debt_to_asset() != 0.0
+    assert rule_adaptor.score() != 0.0

@@ -5,9 +5,9 @@ from typing import TYPE_CHECKING
 import pytest
 
 from stock_analysis.jobs.crawler import CrawlerError, _crawl_cninfo_stock_data
-from stock_analysis.models.api import CNInfoAPIResponse
+from stock_analysis.models.cninfo import CNInfoAPIResponse
 from stock_analysis.models.stock import Stock
-from stock_analysis.schemas.api import CNInfoJobPayload
+from stock_analysis.schemas.api import JobPayload
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,7 +24,7 @@ def logger() -> logging.Logger:
 async def test_stock_not_found(
     async_session: AsyncSession, cninfo_adaptor: CNInfoAdaptor, logger: logging.Logger
 ) -> None:
-    payload: CNInfoJobPayload = CNInfoJobPayload(stock_code="999999")
+    payload: JobPayload = JobPayload(stock_code="999999")
     with pytest.raises(CrawlerError, match="not found"):
         await _crawl_cninfo_stock_data(async_session, payload, cninfo_adaptor, logger)
 
@@ -55,7 +55,7 @@ async def test_skip(
     async_session.add(response)
     await async_session.flush()
 
-    payload: CNInfoJobPayload = CNInfoJobPayload(stock_code="000001")
+    payload: JobPayload = JobPayload(stock_code="000001")
     with caplog.at_level("INFO"):
         await _crawl_cninfo_stock_data(async_session, payload, cninfo_adaptor, logger)
         assert "Skipping download." in caplog.text

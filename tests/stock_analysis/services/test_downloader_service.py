@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 import pytest
 import pytest_asyncio
 
-from stock_analysis.models.api import CNInfoAPIResponse
+from stock_analysis.models.cninfo import CNInfoAPIResponse
 from stock_analysis.services.downloader import CNInfoDownloader
 
 if TYPE_CHECKING:

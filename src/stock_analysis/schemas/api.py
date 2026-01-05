@@ -72,8 +72,8 @@ class CNInfoFetchResult(BaseSchema):
     raw_json: dict[str, Any]
 
 
-class CNInfoJobPayload(BaseSchema):
-    """Payload for CNInfo data fetching jobs.
+class JobPayload(BaseSchema):
+    """Payload for data fetching jobs.
 
     Attributes:
         stock_code: The stock code to fetch data for.
@@ -148,11 +148,13 @@ class YahooFinanceAPIResponseIn(BaseSchema):
     """Schema for creating Yahoo Finance API response records.
 
     Attributes:
+        stock_id: ID of the associated stock.
         params: Parameters used in the API request.
         raw_json: Raw JSON response from the API call.
     """
 
-    params: YahooFinanceAPI
+    stock_id: int
+    params: dict[str, int | float | str]
     raw_json: str
 
 

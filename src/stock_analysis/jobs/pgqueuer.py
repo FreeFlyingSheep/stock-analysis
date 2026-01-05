@@ -6,6 +6,7 @@ from pgqueuer import PgQueuer
 from psycopg import AsyncConnection
 
 from stock_analysis.adaptors.cninfo import CNInfoAdaptor
+from stock_analysis.adaptors.yahoo import YahooFinanceAdaptor
 from stock_analysis.jobs.crawler import crawl
 from stock_analysis.logger import get_logger
 from stock_analysis.settings import get_settings
@@ -46,7 +47,8 @@ async def create_pgqueuer_with_connection(connection: AsyncConnection) -> PgQueu
         PgQueuer: Configured PgQueuer instance.
     """
     resources: dict[str, Any] = {
-        "adaptor": CNInfoAdaptor(),
+        "cninfo_adaptor": CNInfoAdaptor(),
+        "yahoo_finance_adaptor": YahooFinanceAdaptor(),
         "logger": get_logger("pgqueuer"),
     }
     pgq: PgQueuer = PgQueuer.from_psycopg_connection(connection, resources=resources)
@@ -54,9 +56,12 @@ async def create_pgqueuer_with_connection(connection: AsyncConnection) -> PgQueu
     @pgq.entrypoint("crawl_stock_data")
     async def crawl_stock_data(job: Job) -> None:
         ctx: Context = pgq.qm.get_context(job.id)
-        adaptor: CNInfoAdaptor = ctx.resources["adaptor"]
+        cninfo_adaptor: CNInfoAdaptor = ctx.resources["cninfo_adaptor"]
+        yahoo_finance_adaptor: YahooFinanceAdaptor = ctx.resources[
+            "yahoo_finance_adaptor"
+        ]
         logger: logging.Logger = ctx.resources["logger"]
-        await crawl(job, adaptor, logger)
+        await crawl(job, cninfo_adaptor, yahoo_finance_adaptor, logger)
 
     return pgq
 

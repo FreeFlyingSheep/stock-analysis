@@ -9,7 +9,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from stock_analysis.models.base import Base
 
 if TYPE_CHECKING:
-    from stock_analysis.models.api import CNInfoAPIResponse
+    from stock_analysis.models.cninfo import CNInfoAPIResponse
+    from stock_analysis.models.yahoo import YahooFinanceAPIResponse
 
 
 class Stock(Base):
@@ -47,6 +48,12 @@ class Stock(Base):
     )
 
     cninfo_api_responses: Mapped[list["CNInfoAPIResponse"]] = relationship(
+        back_populates="stock",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+    yahoo_finance_api_responses: Mapped[list["YahooFinanceAPIResponse"]] = relationship(
         back_populates="stock",
         cascade="all, delete-orphan",
         passive_deletes=True,

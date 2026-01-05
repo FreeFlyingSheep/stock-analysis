@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from stock_analysis.schemas.api import CNInfoAPIResponseOut
+from stock_analysis.schemas.api import CNInfoAPIResponseOut, YahooFinanceAPIResponseOut
 from stock_analysis.schemas.base import BaseSchema
 
 
@@ -100,7 +100,9 @@ class StockDetailApiResponse(BaseSchema):
     Top-level API response wrapper for stock detail endpoints.
 
     Attributes:
-        data: Detailed stock information.
+        cninfo_data: Detailed CNInfo API response data.
+        yahoo_data: Detailed Yahoo Finance API response data.
     """
 
-    data: list[CNInfoAPIResponseOut]
+    cninfo_data: list[CNInfoAPIResponseOut]
+    yahoo_data: list[YahooFinanceAPIResponseOut]
