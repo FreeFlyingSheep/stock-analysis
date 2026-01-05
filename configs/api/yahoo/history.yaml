@@ -1,0 +1,35 @@
+api:
+  id: history
+  name: 历史行情
+response:
+  records:
+    type: array
+    items:
+      open:
+        label: Open
+        type: number
+        name: 开盘价
+      high:
+        label: High
+        type: number
+        name: 最高价
+      low:
+        label: Low
+        type: number
+        name: 最低价
+      close:
+        label: Close
+        type: number
+        name: 收盘价
+      volume:
+        label: Volume
+        type: integer
+        name: 成交量
+      dividends:
+        label: Dividends
+        type: number
+        name: 分红
+      stock_splits:
+        label: Stock Splits
+        type: number
+        name: 股票拆分

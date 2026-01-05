@@ -97,7 +97,7 @@ def _get_array_value(data: Any, key: str) -> Any:  # noqa: ANN401
         msg = f"Expected list when accessing '{key}'"
         raise RuleError(msg)
     index: int = int(key[pos + 1 : -1])
-    if index >= len(value):
+    if index >= len(value) or index < -len(value):
         msg = f"Index '{index}' out of range when accessing '{key}'"
         raise RuleError(msg)
     return value[index]
@@ -274,7 +274,7 @@ class RuleAdaptor:
             The PE TTM percentile.
         """
         results: list[float] = []
-        price: float = _get_value(self._data, "history.records[0].Close")
+        price: float = _get_value(self._data, "history.records[-1].Close")
         for i in range(5):
             year: str = str(self._current_year - i - 2)
             income: float = _get_value(
@@ -284,7 +284,7 @@ class RuleAdaptor:
             )
             shares: float = _get_value(
                 self._data,
-                f"income_statement.records[0].year[].{year}",
+                f"balance_sheets.records[0].year[].{year}",
                 index="实收资本（或股本）",  # noqa: RUF001
             )
             eps: float = income / shares if shares != 0.0 else 0.0
@@ -298,7 +298,7 @@ class RuleAdaptor:
         Returns:
             The dividend yield TTM.
         """
-        price: float = _get_value(self._data, "history.records[0].Close")
+        price: float = _get_value(self._data, "history.records[-1].Close")
         dps: float = 0.0
         for i in range(5):
             date: datetime = datetime.strptime(

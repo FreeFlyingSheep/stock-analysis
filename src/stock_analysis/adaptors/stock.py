@@ -61,5 +61,6 @@ def convert_stock_data(
     Returns:
         Merged stock data as a dictionary.
     """
+    yfinance_data = {"history": {"records": yfinance_data}}
     merged_data: dict[str, Any] = {**cninfo_data, **yfinance_data}
     return merged_data
