@@ -7,9 +7,7 @@ from stock_analysis.schemas.base import BaseSchema
 
 
 class BaseStock(BaseSchema):
-    """Base stock schema.
-
-    Contains the minimal required fields for stock identification.
+    """Base schema with required stock identification fields.
 
     Attributes:
         stock_code: Unique stock identifier code.
@@ -21,9 +19,7 @@ class BaseStock(BaseSchema):
 
 
 class StockIn(BaseStock):
-    """Stock information input schema.
-
-    Schema for creating or updating stock records.
+    """Input schema for creating or updating stock records.
 
     Attributes:
         classification: Stock classification category.
@@ -35,13 +31,13 @@ class StockIn(BaseStock):
 
 
 class StockOut(StockIn):
-    """Stock output schema.
+    """Output schema for returning stock data from the API.
 
-    Schema for returning stock data from the API, including timestamps.
+    Extends StockIn with timestamp fields.
 
     Attributes:
-        created_at: Timestamp when the record was created.
-        updated_at: Timestamp when the record was last updated.
+        created_at: Timestamp when record was created.
+        updated_at: Timestamp when record was last updated.
     """
 
     created_at: datetime
@@ -67,9 +63,9 @@ class StockPage(BaseSchema):
 
 
 class StockListData(BaseSchema):
-    """Stock list data schema.
+    """Container for stock list response data.
 
-    Container for stock list response including available filters and paginated data.
+    Includes available filters and paginated stock data.
 
     Attributes:
         industries: List of all available industry names.
@@ -83,9 +79,7 @@ class StockListData(BaseSchema):
 
 
 class StockApiResponse(BaseSchema):
-    """Stock API response schema.
-
-    Top-level API response wrapper for stock list endpoints.
+    """Top-level API response wrapper for stock list endpoints.
 
     Attributes:
         data: Stock list data including filters and pagination.
@@ -95,9 +89,7 @@ class StockApiResponse(BaseSchema):
 
 
 class StockDetailApiResponse(BaseSchema):
-    """Stock detail API response schema.
-
-    Top-level API response wrapper for stock detail endpoints.
+    """Top-level API response wrapper for stock detail endpoints.
 
     Attributes:
         cninfo_data: Detailed CNInfo API response data.

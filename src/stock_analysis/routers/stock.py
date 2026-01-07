@@ -48,17 +48,20 @@ async def get_stocks(
     page: Annotated[int, Query(ge=1)] = 1,
     size: Annotated[int, Query(ge=1, le=200)] = 50,
 ) -> StockApiResponse:
-    """Display stock list with filtering and pagination.
+    """Display paginated stock list with filtering options.
+
+    Retrieves stocks with optional filtering by classification or industry,
+    along with available filter values for the frontend.
 
     Args:
-        db: Database session dependency injection.
+        db: Database session for data queries.
         classification: Optional filter by classification category.
         industry: Optional filter by industry sector.
-        page: Page number for pagination, must be >= 1. Defaults to 1.
-        size: Number of items per page, must be between 1 and 200. Defaults to 50.
+        page: Page number (1-indexed, defaults to 1, minimum 1).
+        size: Items per page (defaults to 50, range 1-200).
 
     Returns:
-        StockApiResponse: Paginated stock list with available filters and data.
+        StockApiResponse with paginated stocks and available filter options.
     """
     stock_service = StockService(db)
 
@@ -98,15 +101,22 @@ async def get_stock_details(
     stock_code: str,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> JSONResponse:
-    """Get detailed information about a specific stock.
+    """Get detailed information and API data for a specific stock.
+
+    Retrieves stock information along with CNInfo and Yahoo Finance API
+    responses. If data is not cached, queues crawl jobs and returns empty data.
 
     Args:
-        request: The FastAPI request object.
-        stock_code: The unique code identifying the stock.
-        db: Database session dependency injection.
+        request: FastAPI request object for accessing app state.
+        stock_code: The stock code to retrieve details for.
+        db: Database session for data queries.
 
     Returns:
-        StockOut: Detailed information about the specified stock.
+        JSONResponse with stock details and API response data.
+
+    Raises:
+        HTTPException: 404 if stock with given code not found.
+        HTTPException: 500 if job queue is not initialized.
     """
     stock_service = StockService(db)
 

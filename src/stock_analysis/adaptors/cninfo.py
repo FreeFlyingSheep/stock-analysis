@@ -28,11 +28,20 @@ if TYPE_CHECKING:
 
 
 class CNInfoError(RuntimeError):
-    """Raised when an HTTP or validation error occurs in the CNInfo adaptor."""
+    """Error raised when HTTP or validation issues occur in CNInfo adaptor."""
 
 
 def _parse_request_params(params: dict[str, Any]) -> tuple[RequestParam, ...]:
+    """Parse request parameters from configuration dictionary.
+
+    Args:
+        params: Dictionary of parameter configurations from YAML spec.
+
+    Returns:
+        Tuple of validated RequestParam objects.
+    """
     parsed: list[RequestParam] = []
+
     for key, param in params.items():
         label: str | None = param.get("label")
         param_type: str | None = param.get("type")
@@ -55,8 +64,22 @@ def _parse_request_params(params: dict[str, Any]) -> tuple[RequestParam, ...]:
 
 
 def _load_specs(config_dir: Path) -> dict[str, ApiSpec]:
-    """Load and parse all CNInfo YAML specs. Indexed by `api.id`."""
+    """Load and parse all CNInfo API endpoint specifications from YAML files.
+
+    Reads all YAML files in the config directory and parses them into
+    ApiSpec objects, indexed by endpoint id.
+
+    Args:
+        config_dir: Path to directory containing endpoint YAML specifications.
+
+    Returns:
+        Dictionary mapping endpoint IDs to their ApiSpec objects.
+
+    Raises:
+        CNInfoError: If no valid specifications are found in the directory.
+    """
     specs: dict[str, ApiSpec] = {}
+
     for path in sorted(config_dir.glob("*.yaml")):
         raw: dict[str, Any] | None = yaml.safe_load(path.read_text())
         if not raw:
@@ -148,11 +171,21 @@ class CNInfoAdaptor:
 
     @property
     def available_endpoints(self) -> frozenset[str]:
-        """Set of endpoint IDs (e.g., 'balance_sheets')."""
+        """Get set of available endpoint IDs.
+
+        Returns:
+            Frozenset of endpoint IDs (e.g., 'balance_sheets', 'income_statement').
+        """
         return frozenset(self._specs.keys())
 
     async def __aenter__(self) -> Self:
-        """Initialize the HTTP client on enter."""
+        """Enter async context manager and initialize HTTP client.
+
+        Creates a new AsyncClient if one was not provided during initialization.
+
+        Returns:
+            Self: The CNInfoAdaptor instance for use in async with block.
+        """
         self._use_private_client = self.client is None
         if self.client is None:
             self.client = AsyncClient(timeout=self.timeout)
@@ -164,12 +197,15 @@ class CNInfoAdaptor:
         _exc_val: BaseException | None,
         _exc_tb: TracebackType | None,
     ) -> None:
-        """Cleanup the HTTP client on exit.
+        """Exit async context manager and cleanup HTTP client.
+
+        Closes the AsyncClient if it was created internally. Leaves external
+        clients open for caller to manage.
 
         Args:
-            _exc_type: Exception type if raised.
-            _exc_val: Exception value if raised.
-            _exc_tb: Exception traceback if raised.
+            _exc_type: Exception type if one was raised, None otherwise.
+            _exc_val: Exception instance if one was raised, None otherwise.
+            _exc_tb: Exception traceback if one was raised, None otherwise.
         """
         if self._use_private_client and self.client is not None:
             await self.client.aclose()
@@ -225,10 +261,16 @@ class CNInfoAdaptor:
         return tuple(spec.request.params)
 
     def get_spec(self, endpoint: str) -> ApiSpec:
-        """Get the ApiSpec for a given endpoint ID.
+        """Get the API specification for a given endpoint ID.
 
         Args:
-            endpoint: CNInfo endpoint ID.
+            endpoint: CNInfo endpoint ID to retrieve spec for.
+
+        Returns:
+            ApiSpec object containing endpoint configuration.
+
+        Raises:
+            CNInfoError: If endpoint ID is not found in loaded specifications.
         """
         if endpoint not in self._specs:
             msg: str = f"Unknown CNInfo endpoint id: {endpoint}"
@@ -237,16 +279,16 @@ class CNInfoAdaptor:
         return self._specs[endpoint]
 
     def _load_json(self, response: Response) -> dict[str, Any]:
-        """Load raw JSON from HTTPX response.
+        """Load and parse JSON from HTTPX response object.
 
         Args:
-            response: HTTPX Response object.
+            response: HTTPX Response object from an API request.
 
         Returns:
-            Parsed JSON object.
+            Dictionary containing parsed JSON data from response.
 
         Raises:
-            CNInfoError: If JSON parsing fails.
+            CNInfoError: If response body is not valid JSON.
         """
         try:
             return response.json()
@@ -255,17 +297,21 @@ class CNInfoAdaptor:
             raise CNInfoError(msg) from e
 
     async def fetch(self, endpoint: str, **kwargs: str) -> CNInfoFetchResult:
-        """Call CNInfo endpoint by id with validated and merged parameters.
+        """Fetch data from a CNInfo endpoint with validated parameters.
+
+        Makes an HTTP request to the specified endpoint with validated and merged
+        parameters (both fixed from spec and runtime values).
 
         Args:
-            endpoint: CNInfo endpoint ID.
-            **kwargs: Parameter key-value pairs to set.
+            endpoint: CNInfo endpoint ID to fetch from.
+            **kwargs: Runtime parameter key-value pairs to set for the request.
 
         Returns:
-            Tuple of parameters used and JSON response.
+            CNInfoFetchResult containing merged params, response code, and raw JSON.
 
         Raises:
-            CNInfoError: If the request fails or required params are missing.
+            CNInfoError: If client not initialized, required params missing, or
+                request fails after all retries.
         """
         spec: ApiSpec = self.get_spec(endpoint)
         if not self.client:

@@ -48,16 +48,19 @@ class CNInfoDownloader:
     ) -> int:
         """Download data from a CNInfo endpoint and store raw response.
 
+        Fetches data from the specified CNInfo endpoint with given parameters
+        and stores the raw response along with metadata in the database.
+
         Args:
-            endpoint: CNInfo endpoint name (e.g., 'balance_sheets').
+            endpoint: CNInfo endpoint name (e.g., 'balance_sheets', 'income_statement').
             stock_id: ID of the stock for which data is being downloaded.
-            **kwargs: Additional parameters for the request.
+            **kwargs: Additional query parameters for the API request.
 
         Returns:
-            The ID of the created record.
+            The ID of the created CNInfoAPIResponse record.
 
         Raises:
-            DownloaderError: If the download or storage fails.
+            DownloaderError: If the download or storage validation fails.
         """
         try:
             async with self._adaptor:
@@ -110,19 +113,20 @@ class YahooFinanceDownloader:
         stock_id: int,
         symbol: str,
     ) -> int:
-        """Download data from Yahoo Finance and store raw response.
+        """Download historical stock data from Yahoo Finance and store response.
+
+        Fetches historical price and volume data for the given stock symbol
+        and stores the raw JSON response along with metadata in the database.
 
         Args:
             stock_id: ID of the stock for which data is being downloaded.
-            symbol: Stock ticker symbol.
-            period: Data period (e.g., '1mo', '1y').
-            interval: Data interval (e.g., '1d', '1wk').
+            symbol: Stock ticker symbol (e.g., '600000.SH').
 
         Returns:
-            The ID of the created record.
+            The ID of the created YahooFinanceAPIResponse record.
 
         Raises:
-            DownloaderError: If the download or storage fails.
+            DownloaderError: If the download or storage validation fails.
         """
         raw_json: str = await self._adaptor.get_stock_history(symbol)
         try:

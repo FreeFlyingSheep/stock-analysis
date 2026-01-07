@@ -6,13 +6,13 @@ from stock_analysis.schemas.base import BaseSchema
 
 
 class RuleDimension(BaseSchema):
-    """Scoring rule dimension schema.
+    """Scoring rule dimension configuration schema.
 
     Attributes:
-        id: Dimension ID.
-        name: Dimension name.
-        weight: Weight of the dimension in overall score calculation.
-        enabled: Whether the dimension is enabled.
+        id: Unique dimension identifier.
+        name: Human-readable dimension name.
+        weight: Weight of dimension in overall score calculation.
+        enabled: Whether dimension is active in scoring.
     """
 
     id: str
@@ -22,16 +22,16 @@ class RuleDimension(BaseSchema):
 
 
 class RuleFilter(BaseSchema):
-    """Scoring rule filter schema.
+    """Scoring rule filter configuration schema.
 
     Attributes:
-        id: Filter ID.
-        name: Filter name.
-        metric: Associated metric.
-        filter: Filter type (e.g., "threshold").
-        description: Description of the filter.
-        params: Parameters for the filter.
-        enabled: Whether the filter is enabled.
+        id: Unique filter identifier.
+        name: Human-readable filter name.
+        metric: ID of the associated metric.
+        filter: Filter type/operator (e.g., 'threshold').
+        description: Detailed filter description.
+        params: Optional configuration parameters for the filter.
+        enabled: Whether filter is active in scoring.
     """
 
     id: str
@@ -44,18 +44,18 @@ class RuleFilter(BaseSchema):
 
 
 class RuleMetric(BaseSchema):
-    """Scoring rule metric schema.
+    """Scoring rule metric configuration schema.
 
     Attributes:
-        id: Metric ID.
-        name: Metric name.
-        dimension: Associated dimension.
-        metric: Metric identifier.
-        description: Description of the metric.
-        params: Parameters for the metric.
-        max_score: Maximum score achievable for the metric.
-        weight: Weight of the metric in dimension score calculation.
-        enabled: Whether the metric is enabled.
+        id: Unique metric identifier.
+        name: Human-readable metric name.
+        dimension: ID of the associated dimension.
+        metric: Metric computation identifier.
+        description: Detailed metric description.
+        params: Optional configuration parameters for computing the metric.
+        max_score: Maximum score achievable for this metric.
+        weight: Weight of metric in dimension score calculation.
+        enabled: Whether metric is active in scoring.
     """
 
     id: str
@@ -70,16 +70,19 @@ class RuleMetric(BaseSchema):
 
 
 class RuleSet(BaseSchema):
-    """Scoring rule set schema.
+    """Complete scoring rule configuration set schema.
+
+    Represents a complete set of dimensions, metrics, and filters for
+    computing stock analysis scores.
 
     Attributes:
-        id: Rule set ID.
-        version: Rule set version.
-        name: Rule set name.
-        total_score_scale: The scale of the total score (e.g., 100.0).
-        dimensions: List of rule dimensions.
-        metrics: List of rule metrics.
-        filters: List of rule filters.
+        id: Unique rule set identifier.
+        version: Version string of the rule set.
+        name: Human-readable rule set name.
+        total_score_scale: Maximum score scale (e.g., 100.0).
+        dimensions: List of scoring dimensions.
+        metrics: List of scoring metrics.
+        filters: List of filtering rules.
     """
 
     id: str

@@ -41,15 +41,17 @@ async def get_scores(
     page: Annotated[int, Query(ge=1)] = 1,
     size: Annotated[int, Query(ge=1, le=200)] = 50,
 ) -> AnalysisApiResponse:
-    """Display stock analysis results with pagination.
+    """Display paginated stock analysis results.
+
+    Retrieves computed analysis scores and metrics for stocks with pagination.
 
     Args:
-        db: Database session dependency injection.
-        page: Page number for pagination, must be >= 1. Defaults to 1.
-        size: Number of items per page, must be between 1 and 200. Defaults to 50.
+        db: Database session for data queries.
+        page: Page number (1-indexed, defaults to 1, minimum 1).
+        size: Items per page (defaults to 50, range 1-200).
 
     Returns:
-        Paginated analysis results.
+        AnalysisApiResponse with paginated analysis results.
     """
     stock_service = StockService(db)
 

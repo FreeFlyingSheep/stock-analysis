@@ -47,10 +47,10 @@ class Settings(BaseSettings):
 
     @cached_property
     def database_url(self) -> str:
-        """Construct the database URL.
+        """Construct the PostgreSQL database connection URL.
 
         Returns:
-            str: PostgreSQL database connection URL.
+            PostgreSQL connection string in psycopg format.
         """
         return (
             f"postgresql+psycopg://{self.database_user}:"
@@ -61,13 +61,13 @@ class Settings(BaseSettings):
 
 @lru_cache(maxsize=1)
 def get_settings(env_file: DotenvType | None = None) -> Settings:
-    """Get application settings.
+    """Get or create the application settings instance.
 
     Args:
         env_file: Optional environment file path. If None, uses default .env file.
 
     Returns:
-        Settings: Application settings instance.
+        Settings instance with configuration from environment.
     """
     if env_file is not None:
         return Settings(_env_file=env_file)  # type: ignore[call-arg]

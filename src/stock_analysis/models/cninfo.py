@@ -1,4 +1,4 @@
-"""CNInfo API data models for raw data."""
+"""CNInfo API data models for storing raw endpoint responses."""
 
 from datetime import datetime
 from typing import TYPE_CHECKING
@@ -14,7 +14,22 @@ if TYPE_CHECKING:
 
 
 class CNInfoAPIResponse(Base):
-    """Raw API responses from CNInfo endpoints."""
+    """Raw API response data from CNInfo endpoints.
+
+    Stores raw JSON responses and metadata from CNInfo API calls including
+    request parameters, response codes, and timestamps.
+
+    Attributes:
+        id: Primary key identifier.
+        stock_id: Foreign key reference to the stock.
+        endpoint: CNInfo endpoint name (e.g., 'balance_sheets', 'income_statement').
+        params: Request parameters used for the API call (JSONB format).
+        response_code: HTTP response code from the endpoint.
+        raw_json: Raw JSON response from the endpoint (JSONB format).
+        created_at: Timestamp when record was created (timezone-aware UTC).
+        updated_at: Timestamp when record was last updated (timezone-aware UTC).
+        stock: Relationship to the associated Stock model.
+    """
 
     __tablename__: str = "cninfo_api_responses"
 
@@ -41,7 +56,12 @@ class CNInfoAPIResponse(Base):
     )
 
     def __repr__(self) -> str:
-        """Get a string representation of the CNInfoAPIResponse object."""
+        """Return a string representation of the CNInfoAPIResponse instance.
+
+        Returns:
+            String representation containing endpoint, params, response_code,
+            raw_json, and timestamp information.
+        """
         return (
             f"CNInfoAPIResponse(endpoint={self.endpoint!r}, "
             f"params={self.params!r}, response_code={self.response_code!r}, "

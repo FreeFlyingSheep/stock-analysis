@@ -6,12 +6,12 @@ from stock_analysis.schemas.base import BaseSchema
 
 
 class BaseAnalysis(BaseSchema):
-    """Base schema for stock analysis.
+    """Base schema for stock analysis data.
 
     Attributes:
-        stock_id: The ID of the stock analyzed.
-        metrics: A dictionary of computed metrics.
-        score: Overall score from the analysis.
+        stock_id: The ID of the analyzed stock.
+        metrics: Dictionary mapping metric names to computed values.
+        score: Overall score from analysis rules.
     """
 
     stock_id: int
@@ -30,11 +30,13 @@ class AnalysisIn(BaseAnalysis):
 
 
 class AnalysisOut(BaseAnalysis):
-    """Output schema for stock analysis.
+    """Output schema for stock analysis results.
+
+    Extends BaseAnalysis with timestamp fields.
 
     Attributes:
-        created_at: Timestamp when the analysis record was created.
-        updated_at: Timestamp when the analysis record was last updated.
+        created_at: Timestamp when analysis record was created.
+        updated_at: Timestamp when analysis record was last updated.
     """
 
     created_at: datetime
@@ -68,11 +70,10 @@ class AnalysisApiResponse(BaseSchema):
 
 
 class AnalysisDetailApiResponse(BaseSchema):
-    """API response schema for detailed analysis of a specific stock.
+    """API response schema for analysis of a specific stock.
 
     Attributes:
-        stock_code: The stock code for which the analysis is provided.
-        analysis: List of analysis records for the stock.
+        data: List of analysis records for the stock.
     """
 
     data: list[AnalysisOut]

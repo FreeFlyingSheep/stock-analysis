@@ -5,10 +5,10 @@ from pydantic.alias_generators import to_camel
 
 
 class BaseSchema(BaseModel):
-    """Base schema with common configuration.
+    """Base schema with common Pydantic configuration.
 
-    Provides common Pydantic configuration for all schema classes including
-    camelCase alias generation and attribute validation.
+    Provides common configuration for all schema classes including camelCase
+    alias generation, validation settings, and attribute handling.
     """
 
     model_config = ConfigDict(

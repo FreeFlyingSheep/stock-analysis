@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 
 
 class CrawlerError(RuntimeError):
-    """Custom error for crawler issues."""
+    """Error raised during stock data crawling operations."""
 
 
 async def _crawl_cninfo_stock_data(
@@ -34,16 +34,19 @@ async def _crawl_cninfo_stock_data(
     adaptor: CNInfoAdaptor,
     logger: logging.Logger,
 ) -> None:
-    """Crawl stock data from CNInfo.
+    """Crawl and store stock data from all CNInfo API endpoints.
+
+    Downloads data from all available CNInfo endpoints for the specified stock
+    and stores raw responses in the database.
 
     Args:
-        db: The database session.
-        payload: The job payload containing stock code.
-        adaptor: The CNInfo adaptor for API interactions.
-        logger: Logger for logging messages.
+        db: Database session for storing responses.
+        payload: Job payload containing stock code.
+        adaptor: CNInfo adaptor for fetching endpoint data.
+        logger: Logger for recording operations.
 
     Raises:
-        CrawlerError: If the stock is not found or download fails.
+        CrawlerError: If stock not found or download fails.
     """
     stock_service = StockService(db)
     stock: Stock | None = await stock_service.get_stock_by_code(payload.stock_code)
@@ -88,19 +91,19 @@ async def crawl_yahoo_finance_stock_data(
     adaptor: YahooFinanceAdaptor,
     logger: logging.Logger,
 ) -> None:
-    """Crawl stock data from Yahoo Finance.
+    """Crawl and store stock data from Yahoo Finance API.
+
+    Downloads historical stock price and volume data from Yahoo Finance
+    and stores the raw JSON response in the database.
 
     Args:
-        db: The database session.
-        payload: The job payload containing stock code.
-        adaptor: The Yahoo Finance adaptor for API interactions.
-        logger: Logger for logging messages.
-
-    Returns:
-        The ID of the created record.
+        db: Database session for storing responses.
+        payload: Job payload containing stock code.
+        adaptor: Yahoo Finance adaptor for fetching historical data.
+        logger: Logger for recording operations.
 
     Raises:
-        CrawlerError: If the download or storage fails.
+        CrawlerError: If stock not found or download fails.
     """
     stock_service = StockService(db)
     stock: Stock | None = await stock_service.get_stock_by_code(payload.stock_code)
@@ -145,16 +148,19 @@ async def crawl(
     yahoo_finance_adaptor: YahooFinanceAdaptor,
     logger: logging.Logger,
 ) -> None:
-    """Crawl stock data.
+    """Crawl stock data from both CNInfo and Yahoo Finance sources.
+
+    Main job entrypoint that orchestrates data crawling from both CNInfo
+    and Yahoo Finance endpoints for a single stock.
 
     Args:
-        job: The job instance containing payload and metadata.
-        cninfo_adaptor: The CNInfo adaptor for API interactions.
-        yahoo_finance_adaptor: The Yahoo Finance adaptor for API interactions.
-        logger: Logger for logging messages.
+        job: Job instance containing encoded payload.
+        cninfo_adaptor: CNInfo adaptor for endpoint data.
+        yahoo_finance_adaptor: Yahoo Finance adaptor for historical data.
+        logger: Logger for recording operations.
 
     Raises:
-        CrawlerError: If the job payload is missing or invalid.
+        CrawlerError: If job payload is missing or invalid JSON.
     """
     if not job.payload:
         msg: str = "Job payload is missing."

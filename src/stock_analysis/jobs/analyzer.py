@@ -1,4 +1,4 @@
-"""Job to crawl stock data from CNInfo."""
+"""Job to analyze stock data using scoring rules."""
 
 from typing import TYPE_CHECKING
 
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
 
 class AnalyzerError(Exception):
-    """Custom exception for analyzer errors."""
+    """Error raised during stock analysis job processing."""
 
 
 async def _analyze_stock_data(
@@ -30,16 +30,19 @@ async def _analyze_stock_data(
     adaptor: RuleAdaptor,
     logger: logging.Logger,
 ) -> None:
-    """Analyze stock data using the provided rule adaptor.
+    """Analyze stock data using scoring rules.
+
+    Applies scoring rules to compute metrics and scores for a single stock,
+    and stores the analysis results in the database.
 
     Args:
-        db: The database session.
-        payload: The job payload containing stock code.
-        adaptor: The Rule adaptor for scoring.
-        logger: Logger for logging messages.
+        db: Database session for reading/writing analysis.
+        payload: Job payload containing stock code.
+        adaptor: Rule adaptor for applying scoring rules.
+        logger: Logger for recording operations.
 
     Raises:
-        AnalyzerError: If analysis fails.
+        AnalyzerError: If stock not found or analysis fails.
     """
     stock_service = StockService(db)
     stock: Stock | None = await stock_service.get_stock_by_code(payload.stock_code)
@@ -78,15 +81,18 @@ async def analyze(
     rule_adaptor: RuleAdaptor,
     logger: logging.Logger,
 ) -> None:
-    """Analyze stock data.
+    """Analyze stock data from job payload.
+
+    Main job entrypoint that orchestrates stock analysis using configured
+    scoring rules.
 
     Args:
-        job: The job instance containing payload and metadata.
-        rule_adaptor: The Rule adaptor for scoring.
-        logger: Logger for logging messages.
+        job: Job instance containing encoded payload.
+        rule_adaptor: Rule adaptor for computing scores and metrics.
+        logger: Logger for recording operations.
 
     Raises:
-        AnalyzerError: If the job payload is missing or invalid.
+        AnalyzerError: If job payload is missing or invalid JSON.
     """
     if not job.payload:
         msg: str = "Job payload is missing."

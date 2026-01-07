@@ -1,4 +1,4 @@
-"""Yahoo Finance API data models for raw data."""
+"""Yahoo Finance API data models for storing raw endpoint responses."""
 
 from datetime import datetime
 from typing import TYPE_CHECKING
@@ -14,7 +14,20 @@ if TYPE_CHECKING:
 
 
 class YahooFinanceAPIResponse(Base):
-    """Raw API responses from Yahoo Finance endpoints."""
+    """Raw API response data from Yahoo Finance endpoints.
+
+    Stores raw JSON responses and metadata from Yahoo Finance API calls including
+    stock history data, request parameters, and timestamps.
+
+    Attributes:
+        id: Primary key identifier.
+        stock_id: Foreign key reference to the stock.
+        params: Request parameters used for the API call (JSONB format).
+        raw_json: Raw JSON response from Yahoo Finance (JSONB format).
+        created_at: Timestamp when record was created (timezone-aware UTC).
+        updated_at: Timestamp when record was last updated (timezone-aware UTC).
+        stock: Relationship to the associated Stock model.
+    """
 
     __tablename__: str = "yahoo_finance_api_responses"
 
@@ -39,7 +52,12 @@ class YahooFinanceAPIResponse(Base):
     )
 
     def __repr__(self) -> str:
-        """Get a string representation of the YahooFinanceAPIResponse object."""
+        """Return a string representation of the YahooFinanceAPIResponse instance.
+
+        Returns:
+            String representation containing params, raw_json,
+            and timestamp information.
+        """
         return (
             f"YahooFinanceAPIResponse(params={self.params!r}, "
             f"raw_json={self.raw_json!r}, created_at={self.created_at!r}, "

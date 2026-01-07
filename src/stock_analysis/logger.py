@@ -11,10 +11,10 @@ if TYPE_CHECKING:
 
 
 def _create_log_file_if_not_exists(log_file_path: Path) -> None:
-    """Create the log file and its parent directories if they do not exist.
+    """Create log file and parent directories if they don't exist.
 
     Args:
-        log_file_path (Path): The path to the log file.
+        log_file_path: Path to the log file to create.
     """
     if not log_file_path.exists():
         log_file_path.parent.mkdir(parents=True, exist_ok=True)
@@ -22,11 +22,11 @@ def _create_log_file_if_not_exists(log_file_path: Path) -> None:
 
 
 def _add_file_handler_if_missing(logger: logging.Logger, log_file_path: Path) -> None:
-    """Add a FileHandler to the logger if it does not already have one.
+    """Add FileHandler to logger if not already present.
 
     Args:
-        logger (logging.Logger): The logger to modify.
-        log_file_path (Path): The path to the log file.
+        logger: Logger instance to modify.
+        log_file_path: Path to the log file to handle.
     """
     if not any(isinstance(h, logging.FileHandler) for h in logger.handlers):
         file_handler = logging.FileHandler(log_file_path)
@@ -40,13 +40,13 @@ def _add_file_handler_if_missing(logger: logging.Logger, log_file_path: Path) ->
 
 
 def get_logger(name: str) -> logging.Logger:
-    """Get a configured logger for the given name.
+    """Get a configured logger instance.
 
     Args:
-        name (str): The name of the logger.
+        name: The name of the logger to retrieve.
 
     Returns:
-        logging.Logger: Configured logger instance.
+        Configured logger instance with file handler.
     """
     settings: Settings = get_settings()
     log_file_path = Path(settings.log_file)
@@ -60,13 +60,10 @@ def get_logger(name: str) -> logging.Logger:
 
 
 def setup_loggers(names: list[str]) -> None:
-    """Set up loggers for the application.
+    """Set up multiple loggers with file handlers.
 
     Args:
-        names (list[str]): The names of the loggers to set up.
-
-    Returns:
-        logging.Logger: Configured logger instance.
+        names: List of logger names to configure.
     """
     settings: Settings = get_settings()
     log_file_path = Path(settings.log_file)

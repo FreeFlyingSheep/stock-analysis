@@ -15,18 +15,22 @@ if TYPE_CHECKING:
 
 
 class Stock(Base):
-    """Stock information model.
+    """Stock information database model.
 
-    This model represents stock information including company details,
-    classification, industry, and timestamps.
+    Represents stock information including company details, classification,
+    industry, and timestamps. Maps to the 'stocks' database table.
 
     Attributes:
-        stock_code: Unique stock identifier code.
-        company_name: Name of the company.
-        classification: Stock classification category.
-        industry: Industry sector of the stock.
-        created_at: Timestamp when the record was created.
-        updated_at: Timestamp when the record was last updated.
+        id: Primary key identifier.
+        stock_code: Unique stock identifier code (max 10 chars).
+        company_name: Name of the company (max 200 chars).
+        classification: Stock classification category (max 100 chars).
+        industry: Industry sector of the stock (max 100 chars).
+        created_at: Timestamp when record was created (timezone-aware UTC).
+        updated_at: Timestamp when record was last updated (timezone-aware UTC).
+        cninfo_api_responses: Relationship to CNInfo API responses.
+        yahoo_finance_api_responses: Relationship to Yahoo Finance API responses.
+        analysis: Relationship to analysis records.
     """
 
     __tablename__: str = "stocks"
@@ -65,10 +69,10 @@ class Stock(Base):
     )
 
     def __repr__(self) -> str:
-        """Get a string representation of the Stock object.
+        """Return a string representation of the Stock instance.
 
         Returns:
-            str: String representation of the Stock instance.
+            String representation of the Stock instance.
         """
         return (
             f"Stock(id={self.id!r}, "

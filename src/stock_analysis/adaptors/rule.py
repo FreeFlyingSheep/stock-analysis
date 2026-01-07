@@ -19,14 +19,20 @@ if TYPE_CHECKING:
 
 
 class RuleError(Exception):
-    """Raised when there is an error with a rule adaptor."""
+    """Error raised during rule loading or evaluation operations."""
 
 
 def _load_rules(rule_file_path: Path) -> RuleSet:
-    """Load scoring rules from a YAML file.
+    """Load and parse scoring rules from a YAML configuration file.
+
+    Args:
+        rule_file_path: Path to the YAML rule configuration file.
 
     Returns:
-        RuleSet: The loaded scoring rules.
+        Parsed RuleSet object with dimensions, metrics, and filters.
+
+    Raises:
+        RuleError: If file is invalid, missing, or rule set is malformed.
     """
     raw: dict[str, Any] | None = yaml.safe_load(rule_file_path.read_text())
     if raw is None or "ruleset" not in raw:
@@ -59,14 +65,17 @@ def _load_rules(rule_file_path: Path) -> RuleSet:
 
 
 def _get_dict_value(data: Any, key: str) -> Any:  # noqa: ANN401
-    """Get a value from a dictionary.
+    """Get a value from a dictionary by key.
 
     Args:
-        data: The dictionary to retrieve the value from.
-        key: The key to retrieve.
+        data: Dictionary to retrieve value from.
+        key: Key to look up in the dictionary.
 
     Returns:
-        The retrieved value.
+        The value associated with the key.
+
+    Raises:
+        RuleError: If data is not a dict or key is not found.
     """
     if not isinstance(data, dict):
         msg: str = f"Expected dict when accessing '{key}'"
@@ -79,14 +88,19 @@ def _get_dict_value(data: Any, key: str) -> Any:  # noqa: ANN401
 
 
 def _get_array_value(data: Any, key: str) -> Any:  # noqa: ANN401
-    """Get a value from a list by key.
+    """Get a value from a list by index specified in key notation.
+
+    Key format: 'list_name[index]' where index can be negative.
 
     Args:
-        data: The list to retrieve the value from.
-        key: The key to retrieve.
+        data: List to retrieve value from.
+        key: Key with list access notation.
 
     Returns:
-        The retrieved value.
+        The value at the specified index.
+
+    Raises:
+        RuleError: If format invalid, data not a list, or index out of range.
     """
     pos: int = key.find("[")
     if pos == -1:
@@ -104,15 +118,20 @@ def _get_array_value(data: Any, key: str) -> Any:  # noqa: ANN401
 
 
 def _get_dict_value_by_index(data: Any, key: str, index: str) -> Any:  # noqa: ANN401
-    """Get a value from a dictionary of lists by index.
+    """Get a value from a dictionary of lists by index value.
+
+    Finds a list element where the 'index' field matches the provided index.
 
     Args:
-        data: The dictionary to retrieve the value from.
-        key: The key to retrieve.
-        index: The index to retrieve.
+        data: Dictionary containing list values.
+        key: Dictionary key (with '[]' suffix indicating list).
+        index: Index string value to match in list elements.
 
     Returns:
-        The retrieved value.
+        The matching list element.
+
+    Raises:
+        RuleError: If key invalid, not a list, or index not found.
     """
     if not isinstance(data, dict):
         msg: str = f"Expected dict when accessing '{key}'"
@@ -138,13 +157,19 @@ def _get_dict_value_by_index(data: Any, key: str, index: str) -> Any:  # noqa: A
 def _get_value(data: dict[str, Any], source: str, index: str | None = None) -> Any:  # noqa: ANN401
     """Get a nested value from a dictionary using dot notation.
 
+    Supports nested access via dots and array/list indexing.
+    Example: 'main_indicators.records[0].year[].F067N' with optional index.
+
     Args:
-        data: The dictionary to retrieve the value from.
-        source: The dot-notated path to the value.
-        index: Optional index for accessing list elements.
+        data: Root dictionary to retrieve value from.
+        source: Dot-notated path to the value.
+        index: Optional index for accessing array elements.
 
     Returns:
-        The retrieved value.
+        The value at the specified nested path.
+
+    Raises:
+        RuleError: If path is invalid or key not found.
     """
     keys: list[str] = source.split(".")
     value: Any = data
@@ -159,7 +184,21 @@ def _get_value(data: dict[str, Any], source: str, index: str | None = None) -> A
 
 
 class RuleAdaptor:
-    """Adaptor for scoring rules."""
+    """Adaptor for applying and evaluating stock scoring rules.
+
+    Loads scoring rules from YAML configuration and provides methods
+    to compute metrics and scores for stocks.
+
+    Attributes:
+        _rule_file_path: Path to the YAML rule file.
+        _data: Stock data being evaluated.
+        _ruleset: Loaded RuleSet configuration.
+        _dimensions: Mapping of dimension IDs to RuleDimension objects.
+        _metrics: Mapping of metric IDs to RuleMetric objects.
+        _filters: Mapping of filter IDs to RuleFilter objects.
+        _scores: Cache of computed metric scores.
+        _current_year: Current year for time-relative calculations.
+    """
 
     _rule_file_path: Path
     _data: dict[str, Any]
@@ -171,10 +210,10 @@ class RuleAdaptor:
     _current_year: int
 
     def __init__(self, rule_file_path: str | os.PathLike[str]) -> None:
-        """Initialize the RuleAdaptor.
+        """Initialize the RuleAdaptor with a rule configuration file.
 
         Args:
-            rule_file_path: Path to the rule YAML file.
+            rule_file_path: Path to the YAML file with rule definitions.
         """
         self._rule_file_path = Path(rule_file_path)
         self._data = {}
@@ -186,10 +225,12 @@ class RuleAdaptor:
         self._current_year = datetime.now().astimezone().year
 
     def _roe_weighted_average(self) -> float:
-        """Calculate weighted average ROE for a stock.
+        """Calculate weighted average ROE (Return on Equity).
+
+        Computes median ROE across 5 years of data.
 
         Returns:
-            The weighted average ROE.
+            Weighted average ROE value.
         """
         results: list[float] = []
         for i in range(5):
@@ -202,8 +243,10 @@ class RuleAdaptor:
     def _gross_margin(self) -> float:
         """Calculate gross margin for a stock.
 
+        Computes median gross margin across 5 years of historical data.
+
         Returns:
-            The gross margin.
+            Gross margin percentage value.
         """
         results: list[float] = []
         for i in range(5):
@@ -214,10 +257,12 @@ class RuleAdaptor:
         return float(np.median(results))
 
     def _net_profit_growth(self) -> float:
-        """Calculate net profit growth for a stock.
+        """Calculate net profit growth rate.
+
+        Computes median net profit growth across 5 years of data.
 
         Returns:
-            The net profit growth.
+            Net profit growth percentage value.
         """
         results: list[float] = []
         for i in range(5):
@@ -228,10 +273,12 @@ class RuleAdaptor:
         return float(np.median(results))
 
     def _ocf_to_net_income_ratio(self) -> float:
-        """Calculate OCF to net income ratio for a stock.
+        """Calculate the operating cash flow to net income ratio.
+
+        Computes median ratio across 5 years of historical data.
 
         Returns:
-            The OCF to net income ratio.
+            OCF to net income ratio value.
         """
         results: list[float] = []
         for i in range(5):

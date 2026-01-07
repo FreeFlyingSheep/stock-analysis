@@ -1,4 +1,4 @@
-"""Database service for async sessions and initialization."""
+"""Database service providing async session management and engine setup."""
 
 from collections.abc import AsyncGenerator  # noqa: TC003
 from typing import TYPE_CHECKING
@@ -31,13 +31,14 @@ async_session: async_sessionmaker[AsyncSession] = async_sessionmaker(
 
 
 async def get_db() -> AsyncGenerator[AsyncSession]:
-    """Get a database session.
+    """Get a database session from the session maker.
 
-    This function provides an async context manager for database sessions.
-    The session is automatically closed when the context exits.
+    Provides an async context manager for database sessions. The session is
+    automatically committed when exiting successfully and rolled back if an
+    exception occurs.
 
     Yields:
-        AsyncSession: Async database session instance.
+        AsyncSession instance for database operations.
 
     Raises:
         Exception: Propagates any exception that occurs during session usage.

@@ -53,7 +53,16 @@ message: str = "Welcome to the Stock Analysis API!"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
-    """Lifespan context manager to handle startup and shutdown events."""
+    """Manage application startup and shutdown lifecycle.
+
+    Initializes PgQueuer connection on startup and closes it on shutdown.
+
+    Args:
+        app: FastAPI application instance.
+
+    Yields:
+        None during application running phase.
+    """
     conn: AsyncConnection = await get_connection()
     app.state.pgq = await create_pgqueuer_with_connection(conn)
 
@@ -76,10 +85,10 @@ app.include_router(analysis_router, tags=["analysis"])
 
 @app.get("/favicon.ico", include_in_schema=False)
 async def favicon() -> FileResponse:
-    """Serve the favicon.ico file.
+    """Serve the application favicon file.
 
     Returns:
-        FileResponse: HTTP response containing the favicon.ico file.
+        FileResponse serving the favicon.ico file from static directory.
     """
     root: Path = Path(__file__).parents[3]
     return FileResponse(root / "static" / "favicon.ico")
@@ -90,6 +99,6 @@ async def root() -> JSONResponse:
     """Root endpoint returning a welcome message.
 
     Returns:
-        JSONResponse: JSON response containing a welcome message.
+        JSONResponse containing welcome message for the API.
     """
     return JSONResponse({"message": message})

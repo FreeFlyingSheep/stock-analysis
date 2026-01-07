@@ -1,4 +1,4 @@
-"""Yahoo Finance adaptor for fetching stock data."""
+"""Yahoo Finance adaptor for fetching historical stock price data."""
 
 from typing import TYPE_CHECKING
 
@@ -13,11 +13,21 @@ if TYPE_CHECKING:
 
 
 class YahooFinanceError(RuntimeError):
-    """Custom error for Yahoo Finance adaptor issues."""
+    """Error raised for Yahoo Finance adaptor issues."""
 
 
 class YahooFinanceAdaptor:
-    """Adaptor for fetching stock data from Yahoo Finance using yfinance library."""
+    """Adaptor for fetching stock data from Yahoo Finance.
+
+    Uses the yfinance library to retrieve historical stock price and volume data
+    for specified symbols and time periods.
+
+    Attributes:
+        limiter: AsyncLimiter for controlling request rate.
+        retry_attempts: Number of retry attempts for failed requests.
+        period: Historical data period (e.g., '5y', '1mo').
+        interval: Data point interval (e.g., '1d', '1mo').
+    """
 
     limiter: AsyncLimiter
     retry_attempts: int
@@ -45,13 +55,16 @@ class YahooFinanceAdaptor:
         self.interval = interval
 
     async def get_stock_history(self, symbol: str) -> str:
-        """Fetch historical stock data for a given stock symbol.
+        """Fetch historical stock price and volume data for a given stock symbol.
 
         Args:
-            symbol: The stock symbol to fetch data for.
+            symbol: The stock symbol to fetch data for (e.g., '600000.SH').
 
         Returns:
-            Historical stock data as a list of dictionaries.
+            JSON string containing historical stock data as list of records.
+
+        Raises:
+            YahooFinanceError: If data validation fails or fetch operation fails.
         """
         try:
             api: YahooFinanceAPI = YahooFinanceAPI.model_validate(

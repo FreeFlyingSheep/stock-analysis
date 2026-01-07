@@ -14,11 +14,19 @@ if TYPE_CHECKING:
 
 
 class AnalyzerError(RuntimeError):
-    """Raised when analyzing fails."""
+    """Error raised when stock analysis fails."""
 
 
 class Analyzer:
-    """Service for analyzing raw stock data into normalized tables."""
+    """Service for analyzing stock data using scoring rules.
+
+    Applies scoring rules and metrics to compute analysis scores and
+    determines if stocks meet filter criteria.
+
+    Attributes:
+        _session: AsyncSession for database operations.
+        _adaptor: RuleAdaptor for applying scoring rules.
+    """
 
     _session: AsyncSession
     _adaptor: RuleAdaptor
@@ -34,13 +42,19 @@ class Analyzer:
         self._adaptor = adaptor
 
     async def analyze(self, stock_id: int) -> list[int]:
-        """Analyze a stock.
+        """Analyze a stock and compute metrics and scores.
+
+        Applies scoring rules to compute financial metrics, generates an overall
+        score, and applies filter criteria.
 
         Args:
             stock_id: ID of the stock to analyze.
 
+        Returns:
+            List containing the ID of the created Analysis record.
+
         Raises:
-            AnalyzerError: If analyzing fails.
+            AnalyzerError: If analysis data validation fails.
         """
         metrics: dict[str, float] = self._adaptor.metrics()
         score: float = self._adaptor.score()

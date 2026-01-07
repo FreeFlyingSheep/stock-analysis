@@ -16,17 +16,17 @@ if TYPE_CHECKING:
 
 
 class StockService:
-    """Service for managing stock operations.
+    """Service for database operations on stock and related data.
 
-    This service provides methods for querying and managing stock data,
-    including filtering, pagination, and aggregation operations.
+    Provides methods for querying stocks with filtering and pagination,
+    retrieving API responses and analysis results.
 
     Attributes:
         db: AsyncSession instance for database operations.
     """
 
     db: AsyncSession
-    """Database session."""
+    """Database session for all operations."""
 
     def __init__(self, db_session: AsyncSession) -> None:
         """Initialize the StockService with a database session.

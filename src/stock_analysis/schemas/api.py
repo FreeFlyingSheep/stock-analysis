@@ -1,4 +1,4 @@
-"""API data schemas for raw data."""
+"""API data schemas for HTTP requests and responses."""
 
 from datetime import datetime
 from pathlib import Path
@@ -8,14 +8,14 @@ from stock_analysis.schemas.base import BaseSchema
 
 
 class RequestParam(BaseSchema):
-    """API request parameter specification from YAML.
+    """API request parameter specification from YAML configuration.
 
     Attributes:
-        key: The parameter key.
-        label: The parameter label.
-        param_type: The parameter type (e.g., 'string', 'integer').
+        key: The parameter key identifier.
+        label: The parameter label for API requests.
+        param_type: The parameter data type (e.g., 'string', 'integer').
         name: The parameter name (optional).
-        value: The fixed value of the parameter (if any).
+        value: The fixed parameter value (if any), overrides runtime values.
     """
 
     key: str
@@ -26,12 +26,12 @@ class RequestParam(BaseSchema):
 
 
 class RequestSpec(BaseSchema):
-    """HTTP request spec for an endpoint.
+    """HTTP request specification for an API endpoint.
 
     Attributes:
-        method: HTTP method (e.g., 'GET', 'POST').
+        method: HTTP method (GET or POST).
         url: The full URL for the endpoint.
-        params: Tuple of request parameters.
+        params: Tuple of request parameter specifications.
     """
 
     method: Literal["GET", "POST"]
@@ -40,17 +40,26 @@ class RequestSpec(BaseSchema):
 
     @property
     def fixed_params(self) -> dict[str, int | float | str]:
-        """Return a dict of fixed parameter labels and values."""
+        """Return dictionary mapping parameter labels to fixed values."""
         return {p.label: p.value for p in self.params if p.value is not None}
 
     @property
     def required_params(self) -> frozenset[str]:
-        """Return a set of labels for non-fixed parameters."""
+        """Return set of parameter labels that require runtime values."""
         return frozenset(p.label for p in self.params if p.value is None)
 
 
 class ApiSpec(BaseSchema):
-    """Complete endpoint specification parsed from YAML."""
+    """Complete API endpoint specification parsed from YAML.
+
+    Contains all configuration needed to make requests to an API endpoint.
+
+    Attributes:
+        id: Unique endpoint identifier.
+        name: Human-readable endpoint name.
+        request: RequestSpec with URL, method, and parameters.
+        file_path: Path to the source YAML configuration file.
+    """
 
     id: str
     name: str
@@ -101,12 +110,14 @@ class CNInfoAPIResponseIn(BaseSchema):
 
 
 class CNInfoAPIResponseOut(CNInfoAPIResponseIn):
-    """Schema for returning CNInfo API response records.
+    """Schema for returning CNInfo API responses.
+
+    Extends CNInfoAPIResponseIn with record ID and timestamps.
 
     Attributes:
-        id: The id of the record.
-        created_at: Timestamp when the record was created.
-        updated_at: Timestamp when the data was fetched.
+        id: The unique identifier of the record.
+        created_at: Timestamp when record was created.
+        updated_at: Timestamp when data was fetched/updated.
     """
 
     id: int
@@ -115,12 +126,12 @@ class CNInfoAPIResponseOut(CNInfoAPIResponseIn):
 
 
 class YahooFinanceAPI(BaseSchema):
-    """Schema for creating Yahoo Finance API response records.
+    """Yahoo Finance API request parameters schema.
 
     Attributes:
-        symbol: Stock ticker symbol.
-        period: Data fetch period.
-        interval: Data fetch interval.
+        symbol: Stock ticker symbol (e.g., '600000.SH').
+        period: Historical data retrieval period.
+        interval: Data point interval.
     """
 
     symbol: str
@@ -159,12 +170,14 @@ class YahooFinanceAPIResponseIn(BaseSchema):
 
 
 class YahooFinanceAPIResponseOut(YahooFinanceAPIResponseIn):
-    """Schema for returning Yahoo Finance API response records.
+    """Schema for returning Yahoo Finance API responses.
+
+    Extends YahooFinanceAPIResponseIn with record ID and timestamps.
 
     Attributes:
-        id: The id of the record.
-        created_at: Timestamp when the record was created.
-        updated_at: Timestamp when the data was fetched.
+        id: The unique identifier of the record.
+        created_at: Timestamp when record was created.
+        updated_at: Timestamp when data was fetched/updated.
     """
 
     id: int

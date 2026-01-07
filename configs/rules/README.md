@@ -4,9 +4,10 @@ This directory contains **rule definitions** used by the fundamental scoring eng
 
 All rules are expressed in **YAML** and act as a **domain-specific language (DSL)** describing:
 
-- What data fields are required
-- How metrics are derived from raw data
-- How scores are calculated from metrics
+- What metrics to compute
+- How to score metrics
+- How to apply filters
+- How dimensions combine into overall scores
 
 The engine is designed to **execute rules, not hard-code logic**.
 
@@ -29,75 +30,141 @@ Rules in this directory are intended to be:
 
 ```text
 rules/
-├── ppt-sample-min.yaml
+├── scoring_rules.yaml              # Primary scoring rule set
+├── scoring_rules_sample.yaml       # Simplified example rule set
 └── README.md
 ```
 
-### `ppt-sample-min.yaml`
+### `scoring_rules.yaml`
 
-A **minimal executable ruleset sample**.
+The **primary production rule set** based on the "赢家宝典" (Winners Bible) investment framework.
 
-It is intentionally simplified and exists to:
+Structure:
 
-- Validate rule parsing
-- Validate metric computation
-- Validate scoring execution
-- Serve as a baseline for further rule development
+- **Dimensions**: Objective Fundamentals (50%) + Subjective Analysis (50%)
+- **Metrics**: Specific financial indicators computed from CNInfo/Yahoo Finance data
+- **Filters**: Rules for excluding stocks that fail certain criteria
 
-This file is suitable for:
+### `scoring_rules_sample.yaml`
 
-- Unit testing
-- Engine bring-up
+A **simplified example rule set** suitable for:
+
+- Testing the rule engine
 - Reference implementation
+- Development and experimentation
 
-## Rule Structure Overview
+## YAML Structure
 
-Each ruleset YAML typically contains the following top-level sections:
+Each ruleset YAML contains the following top-level sections under `ruleset`:
 
-- `ruleset`
-  Metadata, scope, and execution settings
+```yaml
+ruleset:
+  id: <rule_id>
+  version: "x.y.z"
+  name: "<human_readable_name>"
+  total_score_scale: 100
 
-- `dimensions`
-  High-level scoring categories and weights
+  dimensions:
+    - id: <dimension_id>
+      name: "<dimension_name>"
+      weight: <0-100>
+      enabled: true|false
 
-- `fields`
-  Mapping between logical fields and raw data sources
+  metrics:
+    - id: <metric_id>
+      name: "<metric_name>"
+      dimension: <dimension_id>
+      metric: <metric_type>
+      description: "<description>"
+      params: {...}
+      max_score: <float>
+      weight: <0-100>
+      enabled: true|false
 
-- `derived_metrics`
-  Calculated metrics based on raw fields
+  filters:
+    - id: <filter_id>
+      name: "<filter_name>"
+      metric: <metric_id>
+      filter: <filter_type>
+      description: "<description>"
+      params: {...}
+      enabled: true|false
+```
 
-- `scoring`
-  Rules that convert metrics into points
+### Fields Reference
 
-The scoring engine is expected to interpret these sections sequentially.
+- **dimension**: Groups related metrics; each has a weight contributing to total score
+- **metric**: Computed from raw data (CNInfo balance sheets, income statements, Yahoo Finance historical data)
+  - `metric` field specifies computation type (e.g., `roe_weighted_average`, `gross_margin`)
+  - `params` contains metric-specific configuration
+  - `max_score` defines highest achievable score
+  - `weight` determines metric's contribution to dimension score
+- **filter**: Screening rules to exclude stocks
+  - `filter` field specifies filter type (e.g., `threshold`)
+  - `params` contains filter-specific thresholds/conditions
+  - Stocks failing enabled filters are marked as excluded
 
 ## Execution Model
 
-A typical execution flow for a ruleset in this directory is:
+The scoring engine executes rules in this order:
 
-1. Load the YAML file
+1. Load the YAML rule set
 2. Validate schema and references
-3. Resolve required raw data fields
-4. Compute derived metrics
-5. Aggregate metric values over time
-6. Apply scoring rules
-7. Combine dimension scores
-8. Output a final score
+3. Retrieve required raw data from database (stocks, API responses)
+4. Compute metrics for each stock
+5. Apply filters to determine stock eligibility
+6. Assign scores to metrics
+7. Aggregate metric scores by dimension
+8. Calculate final overall score (0-100)
+9. Store results in analysis table
 
 ## Design Principles
 
 Rules in this directory follow these principles:
 
-- **Configuration over code**
-- **Explicit dependencies**
-- **No hidden assumptions**
-- **Separation of data, logic, and execution**
+- **Configuration over code**: All logic in YAML, no hardcoded thresholds
+- **Explicit dependencies**: Metrics declare which data fields they need
+- **No hidden assumptions**: Clear weights, scales, and computation methods
+- **Separation of data, logic, and execution**: YAML defines logic; engine executes it
 
-This allows new rules to be added or modified without changing the scoring engine.
+This allows new rules to be added or modified without changing the scoring engine code.
 
-## Extending the Rules
+## Adding New Rules
 
-New rulesets can be added to this directory by:
+To add a new rule set:
+
+1. Create `scoring_rules_<name>.yaml` in this directory
+2. Define `ruleset` with unique `id`, `version`, `name`, and `total_score_scale`
+3. Add scoring `dimensions` with descriptive names and weights
+4. Define `metrics` with:
+   - Unique `id` and human-readable `name`
+   - Reference to target `dimension`
+   - `metric` type matching available metric implementations
+   - `max_score` and `weight` for scoring calculation
+   - `params` with metric-specific configuration
+5. Add `filters` for stock exclusion rules if needed
+6. Update `settings.py` `RULE_FILE_PATH` to point to new rule file
+
+## Available Metric Types
+
+Common metric types supported by the rule engine:
+
+- `roe_weighted_average`: Return on Equity (多年加权平均)
+- `gross_margin`: Gross profit margin
+- `net_margin`: Net profit margin
+- `profit_growth`: Year-over-year profit growth
+- `ocf_ratio`: Operating cash flow to net income ratio
+- `debt_ratio`: Total debt to total assets
+
+## Versioning Rules
+
+When updating rules:
+
+1. Increment `version` field in ruleset
+2. Document changes in comments
+3. Test thoroughly with historical stock data
+4. Consider backward compatibility if scores are stored
+5. Add new versions alongside old ones if needed for comparison
 
 - Copying an existing YAML file
 - Modifying metrics, thresholds, or weights

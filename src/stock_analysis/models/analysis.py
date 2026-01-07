@@ -1,4 +1,4 @@
-"""Stock analysis model definition."""
+"""Stock analysis results database models."""
 
 from datetime import datetime
 from typing import TYPE_CHECKING
@@ -14,18 +14,20 @@ if TYPE_CHECKING:
 
 
 class Analysis(Base):
-    """Stock analysis result model.
+    """Stock analysis results database model.
 
-    This model represents the results of stock analysis including
-    computed metrics and timestamps.
+    Stores computed analysis metrics and scores for stocks including
+    financial indicators and filtering status.
 
     Attributes:
-        stock_id: The ID of the stock analyzed.
-        metrics: A JSON string of computed metrics.
-        score: Overall score from the analysis.
-        filtered: A boolean indicating if the stock passed filtering criteria.
-        created_at: Timestamp when the record was created.
-        updated_at: Timestamp when the record was last updated.
+        id: Primary key identifier.
+        stock_id: Foreign key reference to the stock.
+        metrics: Computed metrics as JSON/JSONB object mapping metric names to values.
+        score: Overall analysis score calculated from metrics and rules.
+        filtered: Boolean indicating if stock passed filter criteria.
+        created_at: Timestamp when record was created (timezone-aware UTC).
+        updated_at: Timestamp when record was last updated (timezone-aware UTC).
+        stock: Relationship to the associated Stock model.
     """
 
     __tablename__: str = "analysis"
@@ -56,7 +58,12 @@ class Analysis(Base):
     )
 
     def __repr__(self) -> str:
-        """Get a string representation of the Analysis object."""
+        """Return a string representation of the Analysis instance.
+
+        Returns:
+            String representation containing id, stock_id, score,
+            and timestamp information.
+        """
         return (
             f"Analysis(id={self.id!r}, "
             f"stock_id={self.stock_id!r}, "

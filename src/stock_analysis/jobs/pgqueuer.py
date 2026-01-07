@@ -40,13 +40,16 @@ async def get_connection() -> AsyncConnection:
 
 
 async def create_pgqueuer_with_connection(connection: AsyncConnection) -> PgQueuer:
-    """Build and configure a PgQueuer using an existing connection.
+    """Build and configure a PgQueuer with an existing database connection.
+
+    Creates a PgQueuer instance for async job processing and registers
+    job handlers for crawling and analyzing stock data.
 
     Args:
-        connection (AsyncConnection): The database connection to use.
+        connection: Active AsyncConnection to PostgreSQL database.
 
     Returns:
-        PgQueuer: Configured PgQueuer instance.
+        Configured PgQueuer instance ready for job queueing and processing.
     """
     resources: dict[str, Any] = {
         "cninfo_adaptor": CNInfoAdaptor(),
@@ -77,15 +80,22 @@ async def create_pgqueuer_with_connection(connection: AsyncConnection) -> PgQueu
 
 
 async def create_pgqueuer() -> PgQueuer:
-    """Build and configure a PgQueuer.
+    """Build and configure a PgQueuer with a new database connection.
+
+    Creates a new database connection and initializes a PgQueuer instance
+    with job handlers.
 
     Returns:
-        PgQueuer: Configured PgQueuer instance.
+        Configured PgQueuer instance ready for job processing.
     """
     connection: AsyncConnection = await get_connection()
     return await create_pgqueuer_with_connection(connection)
 
 
 async def close_connection(conn: AsyncConnection) -> None:
-    """Close the database connection."""
+    """Close the database connection.
+
+    Args:
+        conn: The AsyncConnection to close.
+    """
     await conn.close()
