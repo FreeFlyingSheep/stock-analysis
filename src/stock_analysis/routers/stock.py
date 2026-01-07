@@ -109,6 +109,7 @@ async def get_stock_details(
         StockOut: Detailed information about the specified stock.
     """
     stock_service = StockService(db)
+
     stock: Stock | None = await stock_service.get_stock_by_code(stock_code)
     if not stock:
         msg: str = f"Stock with code {stock_code} not found."

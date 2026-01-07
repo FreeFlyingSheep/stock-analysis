@@ -17,6 +17,7 @@ from stock_analysis.jobs.pgqueuer import (
     create_pgqueuer_with_connection,
     get_connection,
 )
+from stock_analysis.routers.analysis import router as analysis_router
 from stock_analysis.routers.stock import router as stock_router
 from stock_analysis.settings import get_settings
 
@@ -40,7 +41,11 @@ tags: list[dict[str, str]] = [
     {
         "name": "stocks",
         "description": "Operations for querying stocks with filtering and pagination.",
-    }
+    },
+    {
+        "name": "analysis",
+        "description": "Operations for querying stock analysis results.",
+    },
 ]
 
 message: str = "Welcome to the Stock Analysis API!"
@@ -66,6 +71,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 app.include_router(stock_router, tags=["stocks"])
+app.include_router(analysis_router, tags=["analysis"])
 
 
 @app.get("/favicon.ico", include_in_schema=False)

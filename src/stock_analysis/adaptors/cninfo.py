@@ -135,8 +135,7 @@ class CNInfoAdaptor:
             wait: Tenacity wait strategy between retries.
         """
         self._config_dir: Path = (
-            config_dir
-            or Path(__file__).resolve().parents[3] / "configs" / "api" / "cninfo"
+            config_dir or Path(__file__).parents[3] / "configs" / "api" / "cninfo"
         )
         self._specs = _load_specs(self._config_dir)
         self.client = client

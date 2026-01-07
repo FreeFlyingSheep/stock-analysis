@@ -15,11 +15,13 @@ if TYPE_CHECKING:
     import logging
 
     from pgqueuer.models import Job
+    from sqlalchemy.ext.asyncio import AsyncSession
 
     from stock_analysis.adaptors.cninfo import CNInfoAdaptor
     from stock_analysis.adaptors.yahoo import YahooFinanceAdaptor
+    from stock_analysis.models.cninfo import CNInfoAPIResponse
     from stock_analysis.models.yahoo import YahooFinanceAPIResponse
-    from stock_analysis.services.stock import AsyncSession, CNInfoAPIResponse, Stock
+    from stock_analysis.services.stock import Stock
 
 
 class CrawlerError(RuntimeError):
@@ -166,7 +168,12 @@ async def crawl(
         raise CrawlerError(msg) from e
 
     async with async_session() as db:
-        await _crawl_cninfo_stock_data(db, payload, cninfo_adaptor, logger)
+        await _crawl_cninfo_stock_data(
+            db,
+            payload,
+            cninfo_adaptor,
+            logger,
+        )
         await crawl_yahoo_finance_stock_data(
             db,
             payload,

@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
+from stock_analysis.models.analysis import Analysis  # noqa: F401
 from stock_analysis.models.base import Base
 from stock_analysis.models.cninfo import CNInfoAPIResponse  # noqa: F401
 from stock_analysis.models.stock import Stock  # noqa: F401

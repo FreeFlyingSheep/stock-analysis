@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import func, select
 from sqlalchemy.engine.result import Result
 
+from stock_analysis.models.analysis import Analysis
 from stock_analysis.models.cninfo import CNInfoAPIResponse
 from stock_analysis.models.stock import Stock
 from stock_analysis.models.yahoo import YahooFinanceAPIResponse
@@ -120,7 +121,7 @@ class StockService:
         Returns:
             int: Total number of stocks matching the criteria.
         """
-        query: Select[tuple[int]] = select(func.count(Stock.stock_code))
+        query: Select[tuple[int]] = select(func.count(Stock.id))
 
         if classification:
             query = query.where(Stock.classification == classification)
@@ -165,3 +166,50 @@ class StockService:
             )
         )
         return list(result.scalars().all())
+
+    async def get_analysis(
+        self, limit: int | None = None, offset: int = 0
+    ) -> list[Analysis]:
+        """Get all analysis records.
+
+        Args:
+            limit: Maximum number of results to return. If None, returns all.
+            offset: Number of results to skip for pagination. Defaults to 0.
+
+        Returns:
+            List of Analysis objects.
+        """
+        query: Select[tuple[Analysis]] = select(Analysis)
+
+        if offset > 0:
+            query = query.offset(offset)
+        if limit:
+            query = query.limit(limit)
+
+        result: Result[tuple[Analysis]] = await self.db.execute(query)
+        return list(result.scalars().all())
+
+    async def get_analysis_by_stock_id(self, stock_id: int) -> list[Analysis]:
+        """Get analysis records for a given stock ID.
+
+        Args:
+            stock_id: The ID of the stock to retrieve analysis records for.
+
+        Returns:
+            List of Analysis objects associated with the stock.
+        """
+        result: Result[tuple[Analysis]] = await self.db.execute(
+            select(Analysis).where(Analysis.stock_id == stock_id)
+        )
+        return list(result.scalars().all())
+
+    async def count_analysis(self) -> int:
+        """Count total analysis records.
+
+        Returns:
+            Total number of analysis records.
+        """
+        result: Result[tuple[int]] = await self.db.execute(
+            select(func.count(Analysis.id))
+        )
+        return result.scalar() or 0

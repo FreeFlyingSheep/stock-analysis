@@ -170,17 +170,14 @@ class RuleAdaptor:
     _scores: dict[str, float]
     _current_year: int
 
-    def __init__(
-        self, rule_file_path: str | os.PathLike[str], data: dict[str, Any]
-    ) -> None:
+    def __init__(self, rule_file_path: str | os.PathLike[str]) -> None:
         """Initialize the RuleAdaptor.
 
         Args:
             rule_file_path: Path to the rule YAML file.
-            data: Data dictionary for scoring.
         """
         self._rule_file_path = Path(rule_file_path)
-        self._data = data
+        self._data = {}
         self._ruleset: RuleSet = _load_rules(self._rule_file_path)
         self._dimensions = {d.id: d for d in self._ruleset.dimensions}
         self._metrics = {m.id: m for m in self._ruleset.metrics}
@@ -414,7 +411,7 @@ class RuleAdaptor:
         return metric_filter.params["threshold"]
 
     def _metric_value(self, metric_filter: RuleFilter) -> float:
-        """Retrieve metric valuefor a filter.
+        """Retrieve metric value for a filter.
 
         Args:
             metric_filter: The filter to apply.
@@ -473,12 +470,25 @@ class RuleAdaptor:
         msg: str = f"Unknown filter type '{metric_filter.filter}' for filtering."
         raise RuleError(msg)
 
+    def set_data(self, data: dict[str, Any]) -> None:
+        """Set the data for scoring.
+
+        Args:
+            data: The data dictionary for scoring.
+        """
+        self._data = data
+        self._scores = {}
+
     def score(self) -> float:
         """Score a stock based on the loaded rules.
 
         Returns:
             The total score for the stock.
         """
+        if not self._data:
+            msg: str = "No data loaded for scoring."
+            raise RuleError(msg)
+
         total_score: float = 0.0
         max_score: float = 0.0
         for m in self._metrics.values():
@@ -492,12 +502,25 @@ class RuleAdaptor:
             else 0.0
         )
 
+    def metrics(self) -> dict[str, float]:
+        """Get computed scores for all metrics.
+
+        Returns:
+            A dictionary of metric IDs to their computed scores.
+        """
+        if not self._scores:
+            self.score()
+        return self._scores
+
     def apply_filter(self) -> bool:
         """Apply filters to a stock.
 
         Returns:
             True if the stock passes all filters, False otherwise.
         """
+        if not self._scores:
+            self.score()
+
         for f in self._filters.values():
             if f.enabled and not self._filter_metric(f):
                 return False

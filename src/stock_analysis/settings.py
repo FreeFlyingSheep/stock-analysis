@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     database_db: str
     """Database name."""
 
+    rule_file_path: str
+    """Path to the rule configuration file."""
+
     debug: bool
     """Enable or disable debug mode."""
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]

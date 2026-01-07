@@ -1,5 +1,8 @@
+import json
 from collections.abc import AsyncGenerator  # noqa: TC003
-from typing import TYPE_CHECKING
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 import pytest
 import pytest_asyncio
@@ -15,13 +18,16 @@ from tenacity import wait_exponential
 from testcontainers.postgres import PostgresContainer  # type: ignore[import-untyped]
 
 from stock_analysis.adaptors.cninfo import CNInfoAdaptor
+from stock_analysis.adaptors.rule import RuleAdaptor
+from stock_analysis.models.analysis import Analysis
 from stock_analysis.models.base import Base
+from stock_analysis.models.cninfo import CNInfoAPIResponse  # noqa: F401
 from stock_analysis.models.stock import Stock
+from stock_analysis.models.yahoo import YahooFinanceAPIResponse  # noqa: F401
 from stock_analysis.services.database import get_db
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
-    from pathlib import Path
 
     from fastapi import APIRouter
     from httpx import Request
@@ -98,6 +104,37 @@ async def seed_stocks(async_session: AsyncSession) -> list[Stock]:
     async_session.add_all(stocks)
     await async_session.flush()
     return stocks
+
+
+@pytest_asyncio.fixture
+async def analysis_data(seed_stocks: list[Stock]) -> list[Analysis]:
+    analysis: list[Analysis] = [
+        Analysis(
+            stock_id=seed_stocks[0].id,
+            metrics={"pe_ratio": 15.5, "pb_ratio": 2.3},
+            score=85.5,
+            filtered=True,
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
+        ),
+        Analysis(
+            stock_id=seed_stocks[1].id,
+            metrics={"pe_ratio": 12.3, "pb_ratio": 1.8},
+            score=78.0,
+            filtered=True,
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
+        ),
+        Analysis(
+            stock_id=seed_stocks[2].id,
+            metrics={"pe_ratio": 20.1, "pb_ratio": 3.2},
+            score=72.5,
+            filtered=False,
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
+        ),
+    ]
+    return analysis
 
 
 @pytest_asyncio.fixture
@@ -210,3 +247,44 @@ def cninfo_adaptor(
         retry_attempts=2,
         wait=wait_strategy,
     )
+
+
+@pytest.fixture
+def cninfo_data() -> dict[str, Any]:
+    data: dict[str, Any] = {}
+    data_dir: Path = Path(__file__).parents[2] / "data" / "api" / "cninfo"
+    for file in data_dir.iterdir():
+        with file.open("r", encoding="utf-8") as f:
+            content: dict[str, Any] = json.load(f)
+            content = content["data"]
+            data[file.name.removesuffix(".json")] = content
+    return data
+
+
+@pytest.fixture
+def yfinance_data() -> dict[str, Any]:
+    data: dict[str, Any] = {}
+    data_dir: Path = Path(__file__).parents[2] / "data" / "api" / "yahoo"
+    for file in data_dir.iterdir():
+        with file.open("r", encoding="utf-8") as f:
+            content: dict[str, Any] = json.load(f)
+            data[file.name.removesuffix(".json")] = {"records": content}
+    return data
+
+
+@pytest.fixture
+def stock_data(
+    cninfo_data: dict[str, Any],
+    yfinance_data: dict[str, Any],
+) -> dict[str, Any]:
+    return {**cninfo_data, **yfinance_data}
+
+
+@pytest.fixture
+def rule_adaptor(stock_data: dict[str, Any]) -> RuleAdaptor:
+    rule_file_path: Path = (
+        Path(__file__).parents[2] / "configs" / "rules" / "scoring_rules_sample.yaml"
+    )
+    adaptor = RuleAdaptor(rule_file_path=rule_file_path)
+    adaptor.set_data(stock_data)
+    return adaptor
