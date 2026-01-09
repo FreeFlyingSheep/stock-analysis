@@ -1,7 +1,9 @@
 """Job to analyze stock data using scoring rules."""
 
+from datetime import datetime
 from typing import TYPE_CHECKING
 
+from dateutil.relativedelta import relativedelta
 from pydantic import ValidationError
 
 from stock_analysis.schemas.api import JobPayload
@@ -52,11 +54,18 @@ async def _analyze_stock_data(
 
     analysis: list[Analysis] = await stock_service.get_analysis_by_stock_id(stock.id)
     if analysis:
-        logger.info(
-            "Analysis for stock %s already exists. Skipping analysis.",
-            payload.stock_code,
-        )
-        return
+        need_update: bool = False
+        for a in analysis:
+            if a.updated_at >= datetime.now().astimezone() - relativedelta(months=6):
+                need_update = True
+                break
+
+        if not need_update:
+            logger.info(
+                "Analysis for stock %s already exists. Skipping analysis.",
+                payload.stock_code,
+            )
+            return
 
     logger.info("Analyzing stock data for stock code: %s", payload.stock_code)
 

@@ -1,7 +1,9 @@
-"""Job to crawl stock data from CNInfo."""
+"""Job to crawl stock data."""
 
+from datetime import datetime
 from typing import TYPE_CHECKING
 
+from dateutil.relativedelta import relativedelta
 from pydantic import ValidationError
 
 from stock_analysis.adaptors.cninfo import CNInfoAdaptor
@@ -58,11 +60,18 @@ async def _crawl_cninfo_stock_data(
         CNInfoAPIResponse
     ] = await stock_service.get_cninfo_api_responses_by_stock_id(stock.id)
     if responses:
-        logger.info(
-            "Data for stock %s already exists. Skipping download.",
-            payload.stock_code,
-        )
-        return
+        need_update: bool = False
+        for r in responses:
+            if r.updated_at >= datetime.now().astimezone() - relativedelta(months=6):
+                need_update = True
+                break
+
+        if not need_update:
+            logger.info(
+                "Data for stock %s already exists. Skipping download.",
+                payload.stock_code,
+            )
+            return
 
     logger.info("Starting download for stock %s", payload.stock_code)
 

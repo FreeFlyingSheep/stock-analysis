@@ -32,7 +32,6 @@ I do **NOT** provide any financial, investment, or trading recommendations. User
 High priority:
 
 - Develop frontend dashboard for visualizing stock data and scores
-- Create scheduled task runners for regular data updates
 - Integrate LLM for advanced stock analysis and explanations
 - Add a chatbot interface for querying stock information
 
@@ -42,6 +41,7 @@ Medium priority:
 
 Low priority:
 
+- Avoid duplicate jobs in PgQueuer
 - Add observability and monitoring with logging aggregation
 - Deploy with Docker and Kubernetes
 

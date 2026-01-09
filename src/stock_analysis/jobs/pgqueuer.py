@@ -1,5 +1,6 @@
 """Build and configure PgQueuer for stock analysis jobs."""
 
+from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
 from pgqueuer import PgQueuer
@@ -11,14 +12,18 @@ from stock_analysis.adaptors.yahoo import YahooFinanceAdaptor
 from stock_analysis.jobs.analyzer import analyze
 from stock_analysis.jobs.crawler import crawl
 from stock_analysis.logger import get_logger
+from stock_analysis.schemas.api import JobPayload
+from stock_analysis.services.database import async_session
+from stock_analysis.services.stock import StockService
 from stock_analysis.settings import get_settings
 
 if TYPE_CHECKING:
     import logging
 
-    from pgqueuer import Job
-    from pgqueuer.models import Context
+    from pgqueuer.models import Context, Job, Schedule
+    from pgqueuer.queries import Queries
 
+    from stock_analysis.services.stock import Stock
     from stock_analysis.settings import Settings
 
 
@@ -59,9 +64,8 @@ async def create_pgqueuer_with_connection(connection: AsyncConnection) -> PgQueu
     }
     pgq: PgQueuer = PgQueuer.from_psycopg_connection(connection, resources=resources)
 
-    @pgq.entrypoint("crawl_stock_data")
-    async def crawl_stock_data(job: Job) -> None:
-        ctx: Context = pgq.qm.get_context(job.id)
+    @pgq.entrypoint("crawl_stock_data", accepts_context=True)
+    async def crawl_stock_data(job: Job, ctx: Context) -> None:
         cninfo_adaptor: CNInfoAdaptor = ctx.resources["cninfo_adaptor"]
         yahoo_finance_adaptor: YahooFinanceAdaptor = ctx.resources[
             "yahoo_finance_adaptor"
@@ -69,12 +73,43 @@ async def create_pgqueuer_with_connection(connection: AsyncConnection) -> PgQueu
         logger: logging.Logger = ctx.resources["logger"]
         await crawl(job, cninfo_adaptor, yahoo_finance_adaptor, logger)
 
-    @pgq.entrypoint("analyze_stock_data")
-    async def analyze_stock_data(job: Job) -> None:
-        ctx: Context = pgq.qm.get_context(job.id)
+    @pgq.entrypoint("analyze_stock_data", accepts_context=True)
+    async def analyze_stock_data(job: Job, ctx: Context) -> None:
         rule_adaptor: RuleAdaptor = ctx.resources["rule_adaptor"]
         logger: logging.Logger = ctx.resources["logger"]
         await analyze(job, rule_adaptor, logger)
+
+    @pgq.entrypoint("update_stock_data", accepts_context=True)
+    async def update_stock_data(_job: Job, ctx: Context) -> None:
+        queries: Queries = pgq.qm.queries
+        logger: logging.Logger = ctx.resources["logger"]
+        async with async_session() as db:
+            stock_service = StockService(db)
+            stocks: list[Stock] = await stock_service.get_stocks()
+            for stock in stocks:
+                payload: JobPayload = JobPayload(stock_code=stock.stock_code)
+                await queries.enqueue(
+                    "crawl_stock_data",
+                    payload.model_dump_json().encode(),
+                    priority=0,
+                )
+                await queries.enqueue(
+                    "analyze_stock_data",
+                    payload.model_dump_json().encode(),
+                    priority=0,
+                )
+        logger.info("%s update stock data jobs enqueued.", len(stocks))
+
+    @pgq.schedule("update_all_stocks", "0 0 1 1,7 *")
+    async def update_all_stocks(schedule: Schedule) -> None:
+        logger: logging.Logger = pgq.resources["logger"]
+        logger.info(
+            "Starting schedule %s at %s",
+            repr(schedule),
+            repr(datetime.now().astimezone()),
+        )
+        queries: Queries = pgq.qm.queries
+        await queries.enqueue("update_stock_data", None, priority=10)
 
     return pgq
 
