@@ -120,8 +120,11 @@ def test_set_unfixed_request_params(yaml_config_dir: Path) -> None:
             param_type="string",
             name="股票代码",
             value="000001",
+            fixed=False,
         ),
-        RequestParam(key="sign", label="sign", param_type="integer", value=1),
+        RequestParam(
+            key="sign_flag", label="sign", param_type="integer", value=1, fixed=True
+        ),
     )
     assert params == expected
 
@@ -138,9 +141,9 @@ def test_set_unfixed_request_params_invalid(yaml_config_dir: Path) -> None:
 
     with pytest.raises(CNInfoError) as e:
         adaptor.set_unfixed_request_params(
-            "income_statement", stock_code="000001", sign=2
+            "income_statement", stock_code="000001", sign_flag=2
         )
-    assert "Cannot override fixed param 'sign'" in str(e.value)
+    assert "Cannot override fixed param 'sign_flag'" in str(e.value)
 
 
 @pytest.mark.asyncio

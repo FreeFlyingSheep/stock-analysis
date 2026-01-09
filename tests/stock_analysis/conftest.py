@@ -187,7 +187,7 @@ api:
             label: scode
             type: string
             name: 股票代码
-        sign:
+        sign_flag:
             label: sign
             type: integer
             value: 1

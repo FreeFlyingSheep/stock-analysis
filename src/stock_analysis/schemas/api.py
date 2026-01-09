@@ -16,6 +16,7 @@ class RequestParam(BaseSchema):
         param_type: The parameter data type (e.g., 'string', 'integer').
         name: The parameter name (optional).
         value: The fixed parameter value (if any), overrides runtime values.
+        fixed: Whether the parameter value is fixed (True) or variable (False).
     """
 
     key: str
@@ -23,6 +24,7 @@ class RequestParam(BaseSchema):
     param_type: str
     name: str | None = None
     value: int | float | str | None = None
+    fixed: bool
 
 
 class RequestSpec(BaseSchema):
@@ -41,12 +43,14 @@ class RequestSpec(BaseSchema):
     @property
     def fixed_params(self) -> dict[str, int | float | str]:
         """Return dictionary mapping parameter labels to fixed values."""
-        return {p.label: p.value for p in self.params if p.value is not None}
+        return {
+            p.label: p.value for p in self.params if p.fixed and p.value is not None
+        }
 
     @property
     def required_params(self) -> frozenset[str]:
         """Return set of parameter labels that require runtime values."""
-        return frozenset(p.label for p in self.params if p.value is None)
+        return frozenset(p.label for p in self.params if not p.fixed)
 
 
 class ApiSpec(BaseSchema):

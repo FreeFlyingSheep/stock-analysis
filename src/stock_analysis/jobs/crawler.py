@@ -62,7 +62,7 @@ async def _crawl_cninfo_stock_data(
     if responses:
         need_update: bool = False
         for r in responses:
-            if r.updated_at >= datetime.now().astimezone() - relativedelta(months=6):
+            if r.updated_at < datetime.now().astimezone() - relativedelta(months=6):
                 need_update = True
                 break
 

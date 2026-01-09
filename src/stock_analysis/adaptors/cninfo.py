@@ -57,6 +57,7 @@ def _parse_request_params(params: dict[str, Any]) -> tuple[RequestParam, ...]:
                 param_type=param_type,
                 name=name,
                 value=value,
+                fixed=value is not None,
             )
         )
 
@@ -236,7 +237,7 @@ class CNInfoAdaptor:
         spec: ApiSpec = self.get_spec(endpoint)
         for param in spec.request.params:
             if param.key in kwargs:
-                if param.value is not None:
+                if param.fixed:
                     msg: str = (
                         f"Cannot override fixed param '{param.key}' for {endpoint}"
                     )

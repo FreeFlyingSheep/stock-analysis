@@ -56,7 +56,7 @@ async def _analyze_stock_data(
     if analysis:
         need_update: bool = False
         for a in analysis:
-            if a.updated_at >= datetime.now().astimezone() - relativedelta(months=6):
+            if a.updated_at < datetime.now().astimezone() - relativedelta(months=6):
                 need_update = True
                 break
 

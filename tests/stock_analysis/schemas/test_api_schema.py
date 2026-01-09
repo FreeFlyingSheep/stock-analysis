@@ -19,6 +19,7 @@ def test_request_param_with_name() -> None:
         param_type="string",
         name="Stock Code",
         value="000001",
+        fixed=False,
     )
 
     assert param.label == "scode"
@@ -30,10 +31,16 @@ def test_request_param_with_name() -> None:
 def test_request_spec_fixed_params() -> None:
     params: tuple[RequestParam, ...] = (
         RequestParam(
-            key="api_key", label="apikey", param_type="string", value="secret"
+            key="api_key",
+            label="apikey",
+            param_type="string",
+            value="secret",
+            fixed=True,
         ),
-        RequestParam(key="format", label="format", param_type="string", value="json"),
-        RequestParam(key="stock_code", label="scode", param_type="string"),
+        RequestParam(
+            key="format", label="format", param_type="string", value="json", fixed=True
+        ),
+        RequestParam(key="stock_code", label="scode", param_type="string", fixed=False),
     )
     spec = RequestSpec(method="POST", url="https://api.example.com", params=params)
 
@@ -44,10 +51,14 @@ def test_request_spec_fixed_params() -> None:
 def test_request_spec_required_params() -> None:
     params: tuple[RequestParam, ...] = (
         RequestParam(
-            key="api_key", label="apikey", param_type="string", value="secret"
+            key="api_key",
+            label="apikey",
+            param_type="string",
+            value="secret",
+            fixed=True,
         ),
-        RequestParam(key="stock_code", label="scode", param_type="string"),
-        RequestParam(key="year", label="year", param_type="string"),
+        RequestParam(key="stock_code", label="scode", param_type="string", fixed=False),
+        RequestParam(key="year", label="year", param_type="string", fixed=False),
     )
     spec = RequestSpec(method="GET", url="https://api.example.com", params=params)
 
@@ -65,7 +76,7 @@ def test_request_spec_empty_params() -> None:
 
 def test_api_spec_complete() -> None:
     params: tuple[RequestParam, ...] = (
-        RequestParam(key="stock_code", label="scode", param_type="string"),
+        RequestParam(key="stock_code", label="scode", param_type="string", fixed=False),
     )
     request = RequestSpec(method="POST", url="https://api.cninfo.com.cn", params=params)
     spec = ApiSpec(

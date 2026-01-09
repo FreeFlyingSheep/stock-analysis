@@ -22,16 +22,17 @@ if TYPE_CHECKING:
 
     from pgqueuer.models import Context, Job, Schedule
     from pgqueuer.queries import Queries
+    from psycopg.rows import TupleRow
 
     from stock_analysis.services.stock import Stock
     from stock_analysis.settings import Settings
 
 
-async def get_connection() -> AsyncConnection:
+async def get_connection() -> AsyncConnection[TupleRow]:
     """Get the database connection.
 
     Returns:
-        AsyncConnection: The database connection.
+        AsyncConnection[TupleRow]: The database connection.
     """
     settings: Settings = get_settings()
     return await AsyncConnection.connect(
@@ -44,7 +45,9 @@ async def get_connection() -> AsyncConnection:
     )
 
 
-async def create_pgqueuer_with_connection(connection: AsyncConnection) -> PgQueuer:
+async def create_pgqueuer_with_connection(
+    connection: AsyncConnection[TupleRow],
+) -> PgQueuer:
     """Build and configure a PgQueuer with an existing database connection.
 
     Creates a PgQueuer instance for async job processing and registers
@@ -83,21 +86,18 @@ async def create_pgqueuer_with_connection(connection: AsyncConnection) -> PgQueu
     async def update_stock_data(_job: Job, ctx: Context) -> None:
         queries: Queries = pgq.qm.queries
         logger: logging.Logger = ctx.resources["logger"]
+        payloads: list[bytes | None] = []
         async with async_session() as db:
             stock_service = StockService(db)
             stocks: list[Stock] = await stock_service.get_stocks()
             for stock in stocks:
                 payload: JobPayload = JobPayload(stock_code=stock.stock_code)
-                await queries.enqueue(
-                    "crawl_stock_data",
-                    payload.model_dump_json().encode(),
-                    priority=0,
-                )
-                await queries.enqueue(
-                    "analyze_stock_data",
-                    payload.model_dump_json().encode(),
-                    priority=0,
-                )
+                payloads.append(payload.model_dump_json().encode())
+        await queries.enqueue(
+            ["crawl_stock_data"] * len(payloads),
+            payloads,
+            priority=[0] * len(payloads),
+        )
         logger.info("%s update stock data jobs enqueued.", len(stocks))
 
     @pgq.schedule("update_all_stocks", "0 0 1 1,7 *")
