@@ -1,9 +1,10 @@
 """Build and configure PgQueuer for stock analysis jobs."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
 from pgqueuer import PgQueuer
+from pgqueuer.types import JobId
 from psycopg import AsyncConnection
 
 from stock_analysis.adaptors.cninfo import CNInfoAdaptor
@@ -93,12 +94,13 @@ async def create_pgqueuer_with_connection(
             for stock in stocks:
                 payload: JobPayload = JobPayload(stock_code=stock.stock_code)
                 payloads.append(payload.model_dump_json().encode())
-        await queries.enqueue(
-            ["crawl_stock_data"] * len(payloads),
+        job_ids: list[JobId] = await queries.enqueue(
+            ["crawl_stock_data"] * len(stocks),
             payloads,
-            priority=[0] * len(payloads),
+            priority=[0] * len(stocks),
+            execute_after=[timedelta(minutes=i) for i in range(len(stocks))],
         )
-        logger.info("%s update stock data jobs enqueued.", len(stocks))
+        logger.info("Enqueued crawl jobs: %s", repr(job_ids))
 
     @pgq.schedule("update_all_stocks", "0 0 1 1,7 *")
     async def update_all_stocks(schedule: Schedule) -> None:

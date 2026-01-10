@@ -26,7 +26,7 @@ async def main() -> None:
     """Update stock data by enqueueing update jobs."""
     settings: Settings = get_settings()
     logging.basicConfig(level=settings.log_level)
-    logger.info("Enqueued update_stock_data job...")
+    logger.info("Enqueuing update_stock_data job...")
 
     conn: AsyncConnection[TupleRow] = await get_connection()
     pgq: PgQueuer = await create_pgqueuer_with_connection(conn)
