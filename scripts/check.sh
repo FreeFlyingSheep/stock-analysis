@@ -6,6 +6,7 @@
 # - Linting and style checks (ruff check)
 # - Static type checking (mypy)
 # - Unit and integration tests (pytest)
+# - Frontend code checks (npm run check in the ui directory)
 #
 # Usage:
 #   ./scripts/check.sh
@@ -23,3 +24,4 @@ uv run ruff format --check .
 uv run ruff check .
 uv run mypy .
 uv run pytest
+npm --prefix ui run check

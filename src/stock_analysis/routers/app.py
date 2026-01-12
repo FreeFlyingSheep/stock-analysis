@@ -83,17 +83,6 @@ app.include_router(stock_router, tags=["stocks"])
 app.include_router(analysis_router, tags=["analysis"])
 
 
-@app.get("/favicon.ico", include_in_schema=False)
-async def favicon() -> FileResponse:
-    """Serve the application favicon file.
-
-    Returns:
-        FileResponse serving the favicon.ico file from static directory.
-    """
-    root: Path = Path(__file__).parents[3]
-    return FileResponse(root / "static" / "favicon.ico")
-
-
 @app.get("/")
 async def root() -> JSONResponse:
     """Root endpoint returning a welcome message.

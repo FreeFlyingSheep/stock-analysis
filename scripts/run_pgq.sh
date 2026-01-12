@@ -1,10 +1,6 @@
 #!/bin/bash
 # Run the PGQueuer to process jobs for the stock analysis application.
 #
-# Exit codes:
-#   0: PGQueuer started successfully
-#   others: PGQueuer failed to start
-#
 # Requirements:
 #   - Valid .env file with database credentials
 #   - scripts/init.sh has been run to set up the project

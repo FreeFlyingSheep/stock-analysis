@@ -30,10 +30,3 @@ async def test_root(client: AsyncClient) -> None:
 
     payload: dict = resp.json()
     assert payload == {"message": message}
-
-
-@pytest.mark.anyio
-async def test_favicon(client: AsyncClient) -> None:
-    resp: Response = await client.get("/favicon.ico")
-    assert resp.status_code == HTTPStatus.OK
-    assert resp.headers["content-type"] == "image/vnd.microsoft.icon"
