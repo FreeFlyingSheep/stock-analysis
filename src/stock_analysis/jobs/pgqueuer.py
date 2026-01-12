@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
 from pgqueuer import PgQueuer
-from pgqueuer.types import JobId
 from psycopg import AsyncConnection
 
 from stock_analysis.adaptors.cninfo import CNInfoAdaptor
@@ -23,6 +22,7 @@ if TYPE_CHECKING:
 
     from pgqueuer.models import Context, Job, Schedule
     from pgqueuer.queries import Queries
+    from pgqueuer.types import JobId
     from psycopg.rows import TupleRow
 
     from stock_analysis.services.stock import Stock
@@ -102,6 +102,24 @@ async def create_pgqueuer_with_connection(
         )
         logger.info("Enqueued crawl jobs: %s", repr(job_ids))
 
+    @pgq.entrypoint("analyze_all_stock_data", accepts_context=True)
+    async def analyze_all_stock_data(_job: Job, ctx: Context) -> None:
+        queries: Queries = pgq.qm.queries
+        logger: logging.Logger = ctx.resources["logger"]
+        payloads: list[bytes | None] = []
+        async with async_session() as db:
+            stock_service = StockService(db)
+            stocks: list[Stock] = await stock_service.get_stocks()
+            for stock in stocks:
+                payload: JobPayload = JobPayload(stock_code=stock.stock_code)
+                payloads.append(payload.model_dump_json().encode())
+        job_ids: list[JobId] = await queries.enqueue(
+            ["analyze_stock_data"] * len(stocks),
+            payloads,
+            priority=[0] * len(stocks),
+        )
+        logger.info("Enqueued analyze jobs: %s", repr(job_ids))
+
     @pgq.schedule("update_all_stocks", "0 0 1 1,7 *")
     async def update_all_stocks(schedule: Schedule) -> None:
         logger: logging.Logger = pgq.resources["logger"]
@@ -112,6 +130,17 @@ async def create_pgqueuer_with_connection(
         )
         queries: Queries = pgq.qm.queries
         await queries.enqueue("update_stock_data", None, priority=10)
+
+    @pgq.schedule("analyze_all_stocks", "0 0 1 2,8 *")
+    async def analyze_all_stocks(schedule: Schedule) -> None:
+        logger: logging.Logger = pgq.resources["logger"]
+        logger.info(
+            "Starting schedule %s at %s",
+            repr(schedule),
+            repr(datetime.now().astimezone()),
+        )
+        queries: Queries = pgq.qm.queries
+        await queries.enqueue("analyze_all_stock_data", None, priority=10)
 
     return pgq
 

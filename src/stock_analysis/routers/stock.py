@@ -1,7 +1,7 @@
 """Stock router definitions."""
 
 from http import HTTPStatus
-from typing import TYPE_CHECKING, Annotated, Any
+from typing import TYPE_CHECKING, Annotated
 
 from fastapi import (
     APIRouter,
@@ -9,9 +9,8 @@ from fastapi import (
     HTTPException,
     Query,
     Request,  # noqa: TC002
+    Response,  # noqa: TC002
 )
-from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession  # noqa: TC002
 
 from stock_analysis.schemas.api import (
@@ -97,16 +96,18 @@ async def get_stocks(
 
 @router.get("/stocks/{stock_code}")
 async def get_stock_details(
+    response: Response,
     request: Request,
     stock_code: str,
     db: Annotated[AsyncSession, Depends(get_db)],
-) -> JSONResponse:
+) -> StockDetailApiResponse:
     """Get detailed information and API data for a specific stock.
 
     Retrieves stock information along with CNInfo and Yahoo Finance API
     responses. If data is not cached, queues crawl jobs and returns empty data.
 
     Args:
+        response: The HTTP response object.
         request: FastAPI request object for accessing app state.
         stock_code: The stock code to retrieve details for.
         db: Database session for data queries.
@@ -141,12 +142,8 @@ async def get_stock_details(
     response_model = StockDetailApiResponse(
         cninfo_data=cninfo_api_responses, yahoo_data=yahoo_api_responses
     )
-    data: dict[str, Any] = jsonable_encoder(response_model)
     if cninfo_responses and yahoo_responses:
-        return JSONResponse(
-            content=data,
-            status_code=HTTPStatus.OK,
-        )
+        return response_model
 
     if not hasattr(request.app.state, "pgq") or request.app.state.pgq is None:
         msg = "Job queue is not initialized."
@@ -161,4 +158,5 @@ async def get_stock_details(
         priority=5,
     )
 
-    return JSONResponse(content=data, status_code=HTTPStatus.ACCEPTED)
+    response.status_code = HTTPStatus.ACCEPTED
+    return response_model

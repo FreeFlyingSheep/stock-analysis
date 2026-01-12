@@ -1,7 +1,7 @@
 """Score router definitions."""
 
 from http import HTTPStatus
-from typing import TYPE_CHECKING, Annotated, Any
+from typing import TYPE_CHECKING, Annotated
 
 from fastapi import (
     APIRouter,
@@ -9,9 +9,8 @@ from fastapi import (
     HTTPException,
     Query,
     Request,  # noqa: TC002
+    Response,  # noqa: TC002
 )
-from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession  # noqa: TC002
 
 from stock_analysis.schemas.analysis import (
@@ -74,13 +73,15 @@ async def get_scores(
 
 @router.get("/analysis/{stock_code}")
 async def get_score_details(
+    response: Response,
     request: Request,
     stock_code: str,
     db: Annotated[AsyncSession, Depends(get_db)],
-) -> JSONResponse:
+) -> AnalysisDetailApiResponse:
     """Get analysis details for a specific stock.
 
     Args:
+        response: The HTTP response object.
         request: The incoming HTTP request.
         stock_code: The stock code to retrieve analysis for.
         db: Database session dependency injection.
@@ -102,12 +103,8 @@ async def get_score_details(
     response_model = AnalysisDetailApiResponse(
         data=[AnalysisOut.model_validate(a) for a in analysis],
     )
-    data: dict[str, Any] = jsonable_encoder(response_model)
     if analysis:
-        return JSONResponse(
-            content=data,
-            status_code=HTTPStatus.OK,
-        )
+        return response_model
 
     if not hasattr(request.app.state, "pgq") or request.app.state.pgq is None:
         msg = "Job queue is not initialized."
@@ -122,4 +119,5 @@ async def get_score_details(
         priority=5,
     )
 
-    return JSONResponse(content=data, status_code=HTTPStatus.ACCEPTED)
+    response.status_code = HTTPStatus.ACCEPTED
+    return response_model
