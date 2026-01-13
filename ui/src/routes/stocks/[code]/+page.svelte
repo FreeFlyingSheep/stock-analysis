@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { page } from "$app/state";
+  import { page } from "$app/stores";
   import { getStockDetails, getStocks, getAnalysisDetails } from "$lib/api";
+  import { t } from "$lib/i18n";
   import type {
     StockDetailApiResponse,
     StockOut,
@@ -8,7 +9,7 @@
     AnalysisOut,
   } from "$lib/types";
 
-  const stockCode = $derived(page.params.code);
+  const stockCode = $derived($page.params.code);
 
   let loading = $state(true);
   let error = $state<string | null>(null);
@@ -102,10 +103,10 @@
   const latestAnalysis = $derived(getLatestAnalysis());
 </script>
 
-<a href="/stocks" class="back-link">← Back to Stocks</a>
+<a href="/stocks" class="back-link">← {$t("stock.back")}</a>
 
 {#if loading}
-  <div class="loading">Loading stock details...</div>
+  <div class="loading">{$t("loading")}</div>
 {:else if error}
   <div class="error">{error}</div>
 {:else}
@@ -122,7 +123,7 @@
     </div>
     {#if latestAnalysis}
       <div class="score-display {getScoreClass(latestAnalysis.score)}">
-        <span class="score-label">Score</span>
+        <span class="score-label">{$t("stock.score")}</span>
         <span class="score-value">{latestAnalysis.score.toFixed(1)}</span>
       </div>
     {/if}
@@ -134,21 +135,21 @@
       class:active={activeTab === "analysis"}
       onclick={() => (activeTab = "analysis")}
     >
-      📊 Analysis
+      📊 {$t("stock.tabs.analysis")}
     </button>
     <button
       class="tab"
       class:active={activeTab === "cninfo"}
       onclick={() => (activeTab = "cninfo")}
     >
-      📋 CNInfo ({stockDetails?.cninfoData.length || 0})
+      📋 {$t("stock.tabs.cninfo")} ({stockDetails?.cninfoData.length || 0})
     </button>
     <button
       class="tab"
       class:active={activeTab === "yahoo"}
       onclick={() => (activeTab = "yahoo")}
     >
-      📈 Yahoo Finance ({stockDetails?.yahooData.length || 0})
+      📈 {$t("stock.tabs.yahoo")} ({stockDetails?.yahooData.length || 0})
     </button>
   </div>
 
@@ -156,15 +157,13 @@
     {#if activeTab === "analysis"}
       {#if !analysisDetails || analysisDetails.data.length === 0}
         <div class="empty">
-          <p>No analysis results available yet for this stock.</p>
-          <p class="hint">
-            Analysis will be computed automatically. Please refresh in a moment.
-          </p>
+          <p>{$t("stock.noAnalysis")}</p>
+          <p class="hint">{$t("stock.analysisHint")}</p>
         </div>
       {:else if latestAnalysis}
         <div class="analysis-content">
           <div class="metrics-section">
-            <h3>Metrics</h3>
+            <h3>{$t("stock.metrics")}</h3>
             <div class="metrics-grid">
               {#each Object.entries(latestAnalysis.metrics) as [name, value]}
                 <div class="metric-card">
@@ -177,13 +176,13 @@
 
           {#if analysisDetails.data.length > 1}
             <div class="history-section">
-              <h3>History</h3>
+              <h3>{$t("stock.history")}</h3>
               <table>
                 <thead>
                   <tr>
-                    <th>Date</th>
-                    <th>Score</th>
-                    <th>Metrics</th>
+                    <th>{$t("stock.date")}</th>
+                    <th>{$t("stock.score")}</th>
+                    <th>{$t("stock.metricsCount")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -204,17 +203,15 @@
           {/if}
 
           <p class="update-info">
-            Last updated: {formatDate(latestAnalysis.updatedAt)}
+            {$t("stock.lastUpdated")}: {formatDate(latestAnalysis.updatedAt)}
           </p>
         </div>
       {/if}
     {:else if activeTab === "cninfo"}
       {#if !stockDetails || stockDetails.cninfoData.length === 0}
         <div class="empty">
-          <p>No CNInfo data available yet.</p>
-          <p class="hint">
-            Data will be fetched automatically. Please refresh in a moment.
-          </p>
+          <p>{$t("stock.noDataCninfo")}</p>
+          <p class="hint">{$t("stock.dataHint")}</p>
         </div>
       {:else}
         <div class="data-list">
@@ -232,9 +229,9 @@
                 <span class="updated">{formatDate(item.updatedAt)}</span>
               </summary>
               <div class="data-content">
-                <h4>Request Parameters</h4>
+                <h4>{$t("stock.requestParams")}</h4>
                 <pre><code>{formatJson(item.params)}</code></pre>
-                <h4>Response Data</h4>
+                <h4>{$t("stock.responseData")}</h4>
                 <pre><code>{formatJson(item.rawJson)}</code></pre>
               </div>
             </details>
@@ -244,10 +241,8 @@
     {:else if activeTab === "yahoo"}
       {#if !stockDetails || stockDetails.yahooData.length === 0}
         <div class="empty">
-          <p>No Yahoo Finance data available yet.</p>
-          <p class="hint">
-            Data will be fetched automatically. Please refresh in a moment.
-          </p>
+          <p>{$t("stock.noDataYahoo")}</p>
+          <p class="hint">{$t("stock.dataHint")}</p>
         </div>
       {:else}
         <div class="data-list">
@@ -258,9 +253,9 @@
                 <span class="updated">{formatDate(item.updatedAt)}</span>
               </summary>
               <div class="data-content">
-                <h4>Request Parameters</h4>
+                <h4>{$t("stock.requestParams")}</h4>
                 <pre><code>{formatJson(item.params)}</code></pre>
-                <h4>Response Data</h4>
+                <h4>{$t("stock.responseData")}</h4>
                 <pre><code>{item.rawJson}</code></pre>
               </div>
             </details>

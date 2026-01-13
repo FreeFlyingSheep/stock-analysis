@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { getStocks, type GetStocksParams } from "$lib/api";
+  import { t } from "$lib/i18n";
   import type { StockApiResponse, StockOut } from "$lib/types";
 
   let loading = $state(true);
@@ -82,72 +83,69 @@
 </script>
 
 <div class="page-header">
-  <h1>Stocks</h1>
-  <p class="subtitle">Browse and search Chinese A-share stocks</p>
+  <h1>{$t("stocks.title")}</h1>
+  <p class="muted">{$t("stocks.subtitle")}</p>
 </div>
 
 {#if loading && !data}
-  <div class="loading">Loading stocks...</div>
+  <div class="loading">{$t("loading")}</div>
 {:else if error}
   <div class="error">{error}</div>
 {:else if data}
   <div class="toolbar">
-    <div class="search-box">
+    <div class="search-box" style="position: relative; flex: 1; min-width: 260px; max-width: 420px;">
       <input
         type="text"
-        placeholder="Search by code or company name..."
+        placeholder={$t("stocks.searchPlaceholder")}
         bind:value={searchQuery}
         oninput={handleSearchInput}
+        style="width: 100%; padding-left: 2.2rem;"
       />
-      <span class="search-icon">🔍</span>
+      <span class="muted" style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%);">🔍</span>
     </div>
 
     <div class="filters">
-      <select
-        id="classification"
-        bind:value={classification}
-        onchange={handleFilterChange}
-      >
-        <option value="">All Classifications</option>
+      <select id="classification" bind:value={classification} onchange={handleFilterChange}>
+        <option value="">{$t("stocks.filterClassification")}</option>
         {#each data.data.classifications as c}
           <option value={c}>{c}</option>
         {/each}
       </select>
 
       <select id="industry" bind:value={industry} onchange={handleFilterChange}>
-        <option value="">All Industries</option>
+        <option value="">{$t("stocks.filterIndustry")}</option>
         {#each data.data.industries as i}
           <option value={i}>{i}</option>
         {/each}
       </select>
 
       {#if hasActiveFilters}
-        <button class="btn btn-secondary" onclick={clearFilters}>
-          Clear Filters
+        <button class="button" onclick={clearFilters}>
+          {$t("stocks.clearFilters")}
         </button>
       {/if}
     </div>
   </div>
 
   {#if filteredStocks.length === 0}
-    <div class="empty">No stocks found matching your criteria.</div>
+    <div class="empty">{$t("stocks.noResults")}</div>
   {:else}
-    <div class="results-info">
-      Showing {filteredStocks.length} stocks
+    <div class="muted">
+      {$t("stocks.showing")} {filteredStocks.length}
       {#if debouncedSearch}
-        matching "{debouncedSearch}"
+        {$t("stocks.matching")} "{debouncedSearch}"
       {/if}
     </div>
 
     <table>
       <thead>
         <tr>
-          <th>Stock Code</th>
-          <th>Company Name</th>
-          <th>Classification</th>
-          <th>Industry</th>
-          <th>Updated</th>
-          <th>Actions</th>
+          <th>{$t("stocks.code")}</th>
+          <th>{$t("stocks.name")}</th>
+          <th>{$t("stocks.classification")}</th>
+          <th>{$t("stocks.industry")}</th>
+          <th>{$t("stocks.updated")}</th>
+          <th>{$t("stocks.actions")}</th>
         </tr>
       </thead>
       <tbody>
@@ -161,8 +159,8 @@
             <td><span class="badge">{stock.industry}</span></td>
             <td class="date-cell">{formatDate(stock.updatedAt)}</td>
             <td>
-              <a href="/stocks/{stock.stockCode}" class="btn btn-primary btn-sm">
-                View Details
+              <a href="/stocks/{stock.stockCode}" class="button primary" style="padding: 0.45rem 0.75rem; font-size: 0.9rem;">
+                {$t("stocks.view")}
               </a>
             </td>
           </tr>
@@ -172,94 +170,24 @@
 
     {#if !debouncedSearch}
       <div class="pagination">
-        <button
-          class="btn btn-secondary"
-          disabled={currentPage <= 1}
-          onclick={() => goToPage(currentPage - 1)}
-        >
-          ← Previous
+        <button class="button" disabled={currentPage <= 1} onclick={() => goToPage(currentPage - 1)}>
+          ← {$t("stocks.prev")}
         </button>
         <span class="pagination-info">
-          Page {data.data.stockPage.pageNum} of {data.data.stockPage.total}
+          {$t("stocks.page")}
+          {data.data.stockPage.pageNum}
+          {$t("stocks.of")}
+          {data.data.stockPage.total}
         </span>
         <button
-          class="btn btn-secondary"
+          class="button"
           disabled={currentPage >= data.data.stockPage.total}
           onclick={() => goToPage(currentPage + 1)}
         >
-          Next →
+          {$t("stocks.next")}
+          →
         </button>
       </div>
     {/if}
   {/if}
 {/if}
-
-<style>
-  .page-header {
-    margin-bottom: 1.5rem;
-  }
-
-  .page-header h1 {
-    margin-bottom: 0.25rem;
-  }
-
-  .subtitle {
-    color: var(--color-text-secondary);
-    margin: 0;
-  }
-
-  .toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-    align-items: center;
-  }
-
-  .search-box {
-    position: relative;
-    flex: 1;
-    min-width: 250px;
-    max-width: 400px;
-  }
-
-  .search-box input {
-    width: 100%;
-    padding-left: 2.5rem;
-  }
-
-  .search-icon {
-    position: absolute;
-    left: 0.75rem;
-    top: 50%;
-    transform: translateY(-50%);
-    opacity: 0.5;
-  }
-
-  .filters {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    align-items: center;
-  }
-
-  .results-info {
-    font-size: 0.875rem;
-    color: var(--color-text-secondary);
-    margin-bottom: 1rem;
-  }
-
-  .code-cell {
-    font-family: "SF Mono", "Fira Code", monospace;
-  }
-
-  .date-cell {
-    color: var(--color-text-secondary);
-    font-size: 0.875rem;
-  }
-
-  .btn-sm {
-    padding: 0.375rem 0.75rem;
-    font-size: 0.8125rem;
-  }
-</style>

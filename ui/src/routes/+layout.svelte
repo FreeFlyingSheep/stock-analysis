@@ -1,8 +1,19 @@
 <script lang="ts">
   import favicon from "$lib/assets/favicon.ico";
+  import FloatingChat from "$lib/components/FloatingChat.svelte";
+  import { locales, locale, setLocale, t } from "$lib/i18n";
+  import { page } from "$app/stores";
   import "../app.css";
 
   let { children } = $props();
+
+  const links = [
+    { href: "/", label: () => $t("nav.home") },
+    { href: "/stocks", label: () => $t("nav.stocks") },
+    { href: "/chat", label: () => $t("nav.chat") },
+  ];
+
+  const currentPath = $derived($page.url.pathname);
 </script>
 
 <svelte:head>
@@ -10,92 +21,123 @@
   <title>Stock Analysis</title>
 </svelte:head>
 
-<div class="app">
-  <header>
-    <nav>
-      <a href="/" class="logo">📈 Stock Analysis</a>
-      <ul>
-        <li><a href="/stocks">Stocks</a></li>
-        <li><a href="/chat">Chat</a></li>
-      </ul>
-    </nav>
+<div class="app-shell">
+  <header class="topbar">
+    <div class="topbar__inner page-shell">
+      <a href="/" class="brand">📈 Stock Analysis</a>
+      <nav class="nav">
+        {#each links as link}
+          <a
+            class:active={currentPath === link.href || currentPath.startsWith(`${link.href}/`)}
+            href={link.href}
+          >
+            {link.label()}
+          </a>
+        {/each}
+      </nav>
+      <div class="lang-switch">
+        {#each locales as item}
+          <button
+            class:item-active={$locale === item.code}
+            onclick={() => setLocale(item.code)}
+            aria-label={`Switch to ${item.label}`}
+          >
+            {item.label}
+          </button>
+        {/each}
+      </div>
+    </div>
   </header>
 
-  <main>
+  <main class="page-shell">
     {@render children()}
   </main>
 
-  <footer>
-    <p>Stock Analysis Tool - For reference and educational purposes only.</p>
+  <footer class="footer">
+    <p>{$t("footer")}</p>
   </footer>
+
+  <FloatingChat />
 </div>
 
 <style>
-  .app {
+  .app-shell {
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
   }
 
-  header {
-    background: var(--color-primary);
-    color: white;
-    padding: 0 1rem;
+  .topbar {
     position: sticky;
     top: 0;
-    z-index: 100;
-    box-shadow: var(--shadow);
+    z-index: 50;
+    backdrop-filter: blur(6px);
+    background: rgba(5, 11, 19, 0.9);
+    border-bottom: 1px solid var(--color-border);
   }
 
-  nav {
-    display: flex;
+  .topbar__inner {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
     align-items: center;
-    justify-content: space-between;
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 0.75rem 0;
+    gap: 1rem;
   }
 
-  .logo {
-    font-size: 1.25rem;
-    font-weight: bold;
-    color: white;
-    text-decoration: none;
+  .brand {
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    color: #fff;
   }
 
-  nav ul {
+  .nav {
     display: flex;
-    gap: 2rem;
-    list-style: none;
-    margin: 0;
-    padding: 0;
+    gap: 1rem;
+    justify-content: center;
   }
 
-  nav ul a {
-    color: rgba(255, 255, 255, 0.85);
-    text-decoration: none;
-    font-weight: 500;
-    padding: 0.5rem 0;
-    transition: color 0.2s;
+  .nav a {
+    padding: 0.65rem 0.9rem;
+    border-radius: 12px;
+    color: var(--color-text-secondary);
+    border: 1px solid transparent;
   }
 
-  nav ul a:hover {
-    color: white;
+  .nav a.active {
+    color: #fff;
+    border-color: var(--color-border);
+    background: rgba(255, 255, 255, 0.03);
   }
 
-  main {
+  .lang-switch {
+    display: inline-flex;
+    gap: 0.4rem;
+    padding: 0.25rem;
+    border-radius: 999px;
+    border: 1px solid var(--color-border);
+    background: var(--color-panel);
+  }
+
+  .lang-switch button {
+    background: transparent;
+    border: none;
+    color: var(--color-text-secondary);
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+
+  .lang-switch .item-active {
+    background: var(--color-primary);
+    color: #fff;
+  }
+
+  main.page-shell {
     flex: 1;
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 1.5rem 1rem;
-    width: 100%;
   }
 
-  footer {
-    background: var(--color-bg-secondary);
-    padding: 1rem;
+  .footer {
+    padding: 1rem 1.25rem 2rem;
     text-align: center;
-    font-size: 0.875rem;
     color: var(--color-text-secondary);
     border-top: 1px solid var(--color-border);
   }
