@@ -1,75 +1,75 @@
 // TypeScript types matching FastAPI backend schemas
 
 export interface StockOut {
-	stockCode: string;
-	companyName: string;
-	classification: string;
-	industry: string;
-	createdAt: string;
-	updatedAt: string;
+    stockCode: string;
+    companyName: string;
+    classification: string;
+    industry: string;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface StockPage {
-	total: number;
-	pageNum: number;
-	pageSize: number;
-	data: StockOut[];
+    total: number;
+    pageNum: number;
+    pageSize: number;
+    data: StockOut[];
 }
 
 export interface StockListData {
-	industries: string[];
-	classifications: string[];
-	stockPage: StockPage;
+    industries: string[];
+    classifications: string[];
+    stockPage: StockPage;
 }
 
 export interface StockApiResponse {
-	data: StockListData;
+    data: StockListData;
 }
 
 export interface CNInfoAPIResponseOut {
-	id: number;
-	endpoint: string;
-	stockId: number;
-	params: Record<string, number | string>;
-	responseCode: number;
-	rawJson: Record<string, unknown>;
-	createdAt: string;
-	updatedAt: string;
+    id: number;
+    endpoint: string;
+    stockId: number;
+    params: Record<string, number | string>;
+    responseCode: number;
+    rawJson: Record<string, unknown>;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface YahooFinanceAPIResponseOut {
-	id: number;
-	stockId: number;
-	params: Record<string, number | string>;
-	rawJson: string;
-	createdAt: string;
-	updatedAt: string;
+    id: number;
+    stockId: number;
+    params: Record<string, number | string>;
+    rawJson: string;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface StockDetailApiResponse {
-	cninfoData: CNInfoAPIResponseOut[];
-	yahooData: YahooFinanceAPIResponseOut[];
+    cninfoData: CNInfoAPIResponseOut[];
+    yahooData: YahooFinanceAPIResponseOut[];
 }
 
 export interface AnalysisOut {
-	stockId: number;
-	metrics: Record<string, number>;
-	score: number;
-	createdAt: string;
-	updatedAt: string;
+    stockId: number;
+    metrics: Record<string, number>;
+    score: number;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface AnalysisPage {
-	total: number;
-	pageNum: number;
-	pageSize: number;
-	data: AnalysisOut[];
+    total: number;
+    pageNum: number;
+    pageSize: number;
+    data: AnalysisOut[];
 }
 
 export interface AnalysisApiResponse {
-	data: AnalysisPage;
+    data: AnalysisPage;
 }
 
 export interface AnalysisDetailApiResponse {
-	data: AnalysisOut[];
+    data: AnalysisOut[];
 }

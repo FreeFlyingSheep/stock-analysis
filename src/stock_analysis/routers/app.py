@@ -6,11 +6,10 @@ OpenAPI metadata (title, description, version, and tags).
 
 from contextlib import asynccontextmanager
 from importlib.metadata import version
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 from fastapi import FastAPI
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import JSONResponse
 
 from stock_analysis.jobs.pgqueuer import (
     close_connection,

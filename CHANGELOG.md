@@ -10,8 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - FastAPI API, async PostgreSQL via SQLAlchemy
-- Stocks model, schemas, and services (filtering + pagination)
+- Stocks model, schemas, and services
 - CSV import, Alembic migrations, and utility scripts
+- Crawler for stock data from CNInfo and Yahoo Finance
+- Background job processing with pgqueuer
 - Tests (pytest + testcontainers) and code quality (ruff, mypy)
+- Basic UI with SvelteKit
 
 [Unreleased]: https://github.com/FreeFlyingSheep/stock-analysis
