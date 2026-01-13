@@ -22,28 +22,32 @@ I do **NOT** provide any financial, investment, or trading recommendations. User
 - **Async Database Operations**: SQLAlchemy async with PostgreSQL for high performance
 - **CSV Import**: Bulk import stock data from CSV files
 - **Pagination & Filtering**: Query stocks with filtering by classification/industry and pagination
+- **Frontend Dashboard**: SvelteKit UI with stock explorer, floating chat widget, bilingual (EN/中文) toggle, and data explorer parsing configs/api + data/api samples
 - **Database Migrations**: Alembic integration for schema versioning
 - **Type Safety**: Full type hints with Pylance validation
 - **Google Docstrings**: Comprehensive documentation throughout the codebase
 - **Code Quality**: Type checking and formatting standards
+- **AI Assistant for Development**: Use of AI tools to enhance development productivity
 
 ## Features TODO List
 
 High priority:
 
-- Develop frontend dashboard for visualizing stock data and scores
 - Integrate LLM for advanced stock analysis and explanations
 - Add a chatbot interface for querying stock information
 
 Medium priority:
 
 - Expand data source integrations
+- Add RAG (Retrieval-Augmented Generation) capabilities
 
 Low priority:
 
 - Avoid duplicate jobs in PgQueuer
 - Add observability and monitoring with logging aggregation
 - Deploy with Docker and Kubernetes
+- Refine frontend UI/UX design
+- Map stock industry sectors to classifications correctly
 
 ## Requirements
 

@@ -1,6 +1,7 @@
 """Logging setup for stock analysis application."""
 
 import logging
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -29,7 +30,7 @@ def _add_file_handler_if_missing(logger: logging.Logger, log_file_path: Path) ->
         log_file_path: Path to the log file to handle.
     """
     if not any(isinstance(h, logging.FileHandler) for h in logger.handlers):
-        file_handler = logging.FileHandler(log_file_path)
+        file_handler = RotatingFileHandler(log_file_path, maxBytes=10**6, backupCount=5)
         file_handler.setFormatter(
             logging.Formatter(
                 "[%(asctime)s] %(levelname)s [%(name)s] %(message)s",
