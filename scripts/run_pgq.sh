@@ -8,4 +8,6 @@ set -euo pipefail
 
 source .env
 
-pgq run stock_analysis.jobs.pgqueuer:create_pgqueuer --batch-size 2 --max-concurrent-tasks 5
+pgq run stock_analysis.jobs.pgqueuer:create_pgqueuer \
+    --batch-size ${BATCH_SIZE} \
+    --max-concurrent-tasks ${MAX_CONCURRENT_TASKS}

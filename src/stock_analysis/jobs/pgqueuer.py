@@ -64,7 +64,7 @@ async def create_pgqueuer_with_connection(
         "cninfo_adaptor": CNInfoAdaptor(),
         "yahoo_finance_adaptor": YahooFinanceAdaptor(),
         "rule_adaptor": RuleAdaptor(get_settings().rule_file_path),
-        "logger": get_logger("pgqueuer"),
+        "logger": get_logger("pgqueuer", "worker"),
     }
     pgq: PgQueuer = PgQueuer.from_psycopg_connection(connection, resources=resources)
 

@@ -1,0 +1,44 @@
+# Git
+.git/
+.gitignore
+
+# Local environment files
+.vscode/
+
+# Log files
+logs/
+
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Cache files
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# Node modules
+node_modules
+
+# Output
+.output
+.vercel
+.netlify
+.wrangler
+/.svelte-kit
+/build
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*

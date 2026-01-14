@@ -9,7 +9,6 @@ from importlib.metadata import version
 from typing import TYPE_CHECKING
 
 from fastapi import FastAPI
-from fastapi.responses import JSONResponse
 
 from stock_analysis.jobs.pgqueuer import (
     close_connection,
@@ -83,10 +82,20 @@ app.include_router(analysis_router, tags=["analysis"])
 
 
 @app.get("/")
-async def root() -> JSONResponse:
+async def root() -> dict[str, str]:
     """Root endpoint returning a welcome message.
 
     Returns:
-        JSONResponse containing welcome message for the API.
+        Dict containing welcome message for the API.
     """
-    return JSONResponse({"message": message})
+    return {"message": message}
+
+
+@app.get("/healthz")
+async def health_check() -> dict[str, str]:
+    """Health check endpoint.
+
+    Returns:
+        Dict containing service health status.
+    """
+    return {"status": "ok"}

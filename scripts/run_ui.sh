@@ -7,5 +7,5 @@ set -euo pipefail
 
 source .env
 
-npm --prefix ui run build
-npm --prefix ui run preview
+pnpm --prefix ui run build
+pnpm --prefix ui run preview

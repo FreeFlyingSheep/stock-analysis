@@ -3,7 +3,7 @@
 import logging
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from stock_analysis.settings import get_settings
 
@@ -40,21 +40,28 @@ def _add_file_handler_if_missing(logger: logging.Logger, log_file_path: Path) ->
         logger.addHandler(file_handler)
 
 
-def get_logger(name: str) -> logging.Logger:
+def get_logger(name: str, type_: Literal["app", "worker"] = "app") -> logging.Logger:
     """Get a configured logger instance.
 
     Args:
         name: The name of the logger to retrieve.
+        type_: Type of logger, either "app" or "worker".
 
     Returns:
         Configured logger instance with file handler.
     """
     settings: Settings = get_settings()
-    log_file_path = Path(settings.log_file)
+    if type_ == "worker":
+        log_level: str = settings.worker_log_level
+        log_file_path = Path(settings.worker_log_file)
+    else:
+        log_level = settings.log_level
+        log_file_path = Path(settings.log_file)
+
     _create_log_file_if_not_exists(log_file_path)
 
     logger: logging.Logger = logging.getLogger(name)
-    logger.setLevel(settings.log_level)
+    logger.setLevel(log_level)
     _add_file_handler_if_missing(logger, log_file_path)
 
     return logger
