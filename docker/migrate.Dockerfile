@@ -10,6 +10,4 @@ COPY . .
 
 RUN uv sync --locked
 
-EXPOSE 8000
-
-CMD ["bash", "-c", "scripts/init.sh"]
+CMD ["bash", "-c", "./scripts/init.sh"]

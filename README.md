@@ -62,6 +62,10 @@ Low priority:
 
 ## Setup
 
+**Warning: all the setup methods below will drop and recreate the database, erasing any existing data.**
+
+If you want to keep existing data, skip the database initialization step (``./scripts/init.sh``) and ensure the database schema is up to date by running Alembic migrations manually.
+
 ### Local Development Setup
 
 Local development setup is not recommended and only intended for development and testing purposes. For production deployment, use the Docker Compose or Kubernetes deployment method below.
@@ -104,7 +108,7 @@ Local development setup is not recommended and only intended for development and
     In a separate terminal, run the PgQueuer to process crawl and analysis jobs:
 
     ```bash
-    ./scripts/run-pgq.sh
+    ./scripts/run_pgq.sh
     ```
 
     This will start the job processor that:
@@ -159,7 +163,21 @@ Local development setup is not recommended and only intended for development and
     docker compose up -d
     ```
 
-    This will start all necessary services including PostgreSQL, the API server, and the frontend UI.
+    This will start all necessary services including PostgreSQL, the vLLM server, the API server, and the frontend UI.
+    If you update the code or configuration, rebuild the images with:
+
+    ```bash
+    docker compose up -d --build --force-recreate
+    ```
+
+    Note: vLLM server may require additional time to start depending on the model size; adjust health check settings as needed.
+
+    ```yaml
+    service:
+        vllm:
+            healthcheck:
+                start_period: 1200s # Adjust based on model size
+    ```
 
 5. Remove all local images after shutting down:
 
@@ -167,7 +185,11 @@ Local development setup is not recommended and only intended for development and
     docker compose down --rmi local
     ```
 
-    Remove volumes if needed by adding the `-v` flag.
+    If you want to remove the volumes as well, use:
+
+    ```bash
+    docker compose down -v --rmi local
+    ```
 
 ### Kubernetes Deployment
 

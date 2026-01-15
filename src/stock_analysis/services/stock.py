@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import func, select
 from sqlalchemy.engine.result import Result
+from sqlalchemy.sql.selectable import Select
 
 from stock_analysis.models.analysis import Analysis
 from stock_analysis.models.cninfo import CNInfoAPIResponse
@@ -96,15 +97,23 @@ class StockService:
         )
         return list(result.scalars().all())
 
-    async def get_industries(self) -> list[str]:
+    async def get_industries(self, classification: str | None = None) -> list[str]:
         """Get all unique industries from stocks.
+
+        Args:
+            classification: Optional filter by classification category.
 
         Returns:
             list[str]: Sorted list of unique industry names.
         """
-        result: Result[tuple[str]] = await self.db.execute(
+        query: Select[tuple[str]] = (
             select(Stock.industry).distinct().order_by(Stock.industry)
         )
+
+        if classification:
+            query = query.where(Stock.classification == classification)
+
+        result: Result[tuple[str]] = await self.db.execute(query)
         return list(result.scalars().all())
 
     async def count_stocks(

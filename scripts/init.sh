@@ -24,14 +24,12 @@
 #   - CSV file at data/stocks.csv
 set -euo pipefail
 
-source .env
-
 uv run scripts/drop_db.py
 uv run scripts/create_db.py
 uv run alembic upgrade head
 uv run scripts/import_csv.py
 
-pgq \
+uv run pgq \
     --pg-host ${DATABASE_HOST} \
     --pg-port ${DATABASE_PORT} \
     --pg-user ${DATABASE_USER} \

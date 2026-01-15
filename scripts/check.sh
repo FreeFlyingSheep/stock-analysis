@@ -24,4 +24,4 @@ uv run ruff format --check .
 uv run ruff check .
 uv run mypy .
 uv run pytest
-npm --prefix ui run check
+pnpm --prefix ui run check

@@ -6,8 +6,7 @@
 #   - scripts/init.sh has been run to set up the project
 set -euo pipefail
 
-source .env
-
-pgq run stock_analysis.jobs.pgqueuer:create_pgqueuer \
+uv run pgq \
+    run stock_analysis.jobs.pgqueuer:create_pgqueuer \
     --batch-size ${BATCH_SIZE} \
     --max-concurrent-tasks ${MAX_CONCURRENT_TASKS}

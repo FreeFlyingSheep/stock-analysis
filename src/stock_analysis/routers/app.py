@@ -91,6 +91,7 @@ async def root() -> dict[str, str]:
     return {"message": message}
 
 
+@app.get("/health")
 @app.get("/healthz")
 async def health_check() -> dict[str, str]:
     """Health check endpoint.

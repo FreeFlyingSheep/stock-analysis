@@ -65,7 +65,9 @@ async def get_stocks(
     stock_service = StockService(db)
 
     classifications: list[str] = await stock_service.get_classifications()
-    industries: list[str] = await stock_service.get_industries()
+    industries: list[str] = await stock_service.get_industries(
+        classification=classification
+    )
 
     offset: int = (page - 1) * size
     stocks: list[Stock] = await stock_service.get_stocks(

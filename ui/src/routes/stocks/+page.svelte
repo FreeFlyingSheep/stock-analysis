@@ -2,7 +2,7 @@
     import { onMount } from "svelte";
     import { getStocks, type GetStocksParams } from "$lib/api";
     import { t } from "$lib/i18n";
-    import type { StockApiResponse, StockOut } from "$lib/types";
+    import type { StockApiResponse } from "$lib/types";
 
     let loading = $state(true);
     let error = $state<string | null>(null);

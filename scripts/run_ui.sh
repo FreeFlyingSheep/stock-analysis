@@ -5,7 +5,6 @@
 #   - Backend services are running
 set -euo pipefail
 
-source .env
-
-pnpm --prefix ui run build
-pnpm --prefix ui run preview
+cd ui
+pnpm run build
+HOST=${UI_HOST:-localhost} PORT=${UI_PORT:-3000} node build

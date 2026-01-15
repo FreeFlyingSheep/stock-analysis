@@ -43,9 +43,9 @@ class Settings(BaseSettings):
     """Logging level for the application."""
     log_file: str
     """File path for the log file."""
-    host: str
+    app_host: str
     """Host address to run the application on."""
-    port: int
+    app_port: int
     """Port to run the application on."""
 
     worker_log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
@@ -57,19 +57,10 @@ class Settings(BaseSettings):
     max_concurrent_tasks: int
     """Maximum number of concurrent tasks."""
 
-    hf_token: str | None
-    """Hugging Face authentication token."""
-    vllm_model: str
-    """Model name to be used by the VLLM server."""
     vllm_host: str
     """VLLM server host address."""
     vllm_port: int
     """Port number for the VLLM server."""
-
-    ui_host: str
-    """Host address for the UI to bind to."""
-    ui_port: int
-    """Port number for the UI to listen on."""
 
     @cached_property
     def database_url(self) -> str:
