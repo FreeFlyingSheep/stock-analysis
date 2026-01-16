@@ -1,0 +1,8 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: app
+  namespace: stock-analysis
+spec:
+  rules:
+    - host: stock-analysis.dev

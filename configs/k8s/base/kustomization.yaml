@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: stock-analysis
+resources:
+  - namespace.yaml
+  - common/configmap.yaml
+  - common/secret.yaml
+  - components/api
+  - components/web
+  - components/worker
+  - components/postgres
+  - components/vllm
+  - components/migrate
+  - common/ingress.yaml

@@ -1,0 +1,13 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+spec:
+  template:
+    spec:
+      initContainers:
+        - name: wait-postgres
+          image: stock-analysis-worker:dev
+      containers:
+        - name: worker
+          image: stock-analysis-worker:dev

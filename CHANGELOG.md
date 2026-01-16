@@ -16,5 +16,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Background job processing with pgqueuer
 - Tests (pytest + testcontainers) and code quality (ruff, mypy)
 - Basic UI with SvelteKit
+- Docker Compose and Kubernetes for deployment
 
 [Unreleased]: https://github.com/FreeFlyingSheep/stock-analysis

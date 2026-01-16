@@ -81,6 +81,7 @@ Local development setup is not recommended and only intended for development and
 
     ```bash
     uv sync --all-extras
+    source .venv/bin/activate
     ```
 
 3. Configure environment variables:
@@ -88,6 +89,7 @@ Local development setup is not recommended and only intended for development and
     ```bash
     cp .env.example .env
     # Edit .env with your database credentials and settings
+    export $(grep -v '^#' .env | xargs)
     ```
 
 4. Initialize the database:
@@ -193,68 +195,54 @@ Local development setup is not recommended and only intended for development and
 
 ### Kubernetes Deployment
 
-TODO
+Take Minikube as an example for local Kubernetes deployment.
 
-## Development
+1. Ensure you have Minikube running and `kubectl` configured.
 
-### Running Tests
+   Enable the Ingress addon if not already enabled:
 
-```bash
-uv run pytest
-```
+   ```bash
+   minikube addons enable ingress
+   ```
 
-### Code Quality Checks
+2. Clone the repository:
 
-```bash
-./scripts/check.sh
-```
+    ```bash
+    git clone https://github.com/FreeFlyingSheep/stock-analysis
+    cd stock-analysis
+    ```
 
-This runs:
+3. Build Docker images for Minikube:
 
-- Type checking with Pylance
-- Formatting validation with Ruff
-- Linting with Ruff
+    ```bash
+    ./scripts/build.sh
+    ```
 
-### Database Management
+4. Set up the Kubernetes resources using Kustomize:
 
-**Drop existing database:**
+    ```bash
+    kubectl apply -k configs/k8s/overlays/dev
+    ```
 
-```bash
-uv run scripts/drop_db.py
-```
+5. Get Minikube IP address:
 
-**Create database:**
+    ```bash
+    minikube ip
+    ```
 
-```bash
-uv run scripts/create_db.py
-```
+6. Get Minikube `ingress-nginx-controller` service port:
 
-**Run migrations:**
+    ```bash
+    kubectl get svc -n ingress-nginx ingress-nginx-controller
+    ```
 
-```bash
-uv run alembic upgrade head
-```
+    Access the app at `http://<MINIKUBE_IP>:<NODE_PORT>`.
 
-**Create new migration:**
+7. Remove the Kubernetes resources when done:
 
-```bash
-uv run alembic revision --autogenerate -m "description"
-```
-
-### Importing Stock Data
-
-To import stock data from a CSV file:
-
-```bash
-uv run scripts/import_csv.py
-```
-
-The CSV file should have columns matching the Stock model:
-
-- `stock_code`: Unique identifier
-- `company_name`: Company name
-- `classification`: Stock classification
-- `industry`: Industry sector
+    ```bash
+    kubectl delete -k configs/k8s/overlays/dev
+    ```
 
 ## Architecture
 

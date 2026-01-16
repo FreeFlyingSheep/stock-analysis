@@ -1,0 +1,151 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: worker
+  template:
+    metadata:
+      labels:
+        app: worker
+    spec:
+      initContainers:
+        - name: wait-postgres
+          image: stock-analysis-worker:local
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          command: ["sh", "-c"]
+          args:
+            - |
+              echo "waiting for postgres...";
+              until ./scripts/check_pgq.sh; do
+                sleep 2;
+              done;
+              echo "postgres is ready"
+          env:
+            - name: DATABASE_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: app
+                  key: DATABASE_HOST
+            - name: DATABASE_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: app
+                  key: DATABASE_PORT
+            - name: DATABASE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: app
+                  key: DATABASE_USER
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app
+                  key: DATABASE_PASSWORD
+            - name: DATABASE_DB
+              valueFrom:
+                secretKeyRef:
+                  name: app
+                  key: DATABASE_DB
+          resources:
+            requests:
+              cpu: "250m"
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+      containers:
+        - name: worker
+          image: stock-analysis-worker:local
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          env:
+            - name: DATABASE_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: app
+                  key: DATABASE_HOST
+            - name: DATABASE_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: app
+                  key: DATABASE_PORT
+            - name: DATABASE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: app
+                  key: DATABASE_USER
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app
+                  key: DATABASE_PASSWORD
+            - name: DATABASE_DB
+              valueFrom:
+                secretKeyRef:
+                  name: app
+                  key: DATABASE_DB
+            - name: BATCH_SIZE
+              valueFrom:
+                configMapKeyRef:
+                  name: app
+                  key: BATCH_SIZE
+            - name: MAX_CONCURRENT_TASKS
+              valueFrom:
+                configMapKeyRef:
+                  name: app
+                  key: MAX_CONCURRENT_TASKS
+            - name: VLLM_SERVER_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: app
+                  key: VLLM_SERVER_HOST
+            - name: VLLM_SERVER_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: app
+                  key: VLLM_SERVER_PORT
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - ./scripts/check_pgq.sh
+            initialDelaySeconds: 20
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 5
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - ./scripts/check_pgq.sh
+            initialDelaySeconds: 10
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: "250m"
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 2Gi

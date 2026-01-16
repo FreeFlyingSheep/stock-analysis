@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      containers:
+        - name: web
+          image: stock-analysis-web:local
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          env:
+            - name: FRONTEND_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: app
+                  key: FRONTEND_HOST
+            - name: FRONTEND_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: app
+                  key: FRONTEND_PORT
+            - name: BACKEND_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: app
+                  key: BACKEND_HOST
+            - name: BACKEND_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: app
+                  key: BACKEND_PORT
+          ports:
+            - containerPort: 3000
+              name: http
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 20
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: "100m"
+              memory: 256Mi
+            limits:
+              cpu: "500m"
+              memory: 512Mi

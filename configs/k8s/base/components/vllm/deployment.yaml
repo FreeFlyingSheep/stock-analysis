@@ -1,0 +1,110 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm
+  namespace: stock-analysis
+  labels:
+    app: vllm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vllm
+  template:
+    metadata:
+      labels:
+        app: vllm
+    spec:
+      volumes:
+        - name: hf-cache
+          persistentVolumeClaim:
+            claimName: hf-cache
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: "2Gi"
+      containers:
+        - name: vllm
+          image: vllm/vllm-openai:nightly
+          command: ["vllm"]
+          args:
+            - serve
+            - "$VLLM_MODEL"
+            - "--trust-remote-code"
+            - "--enable-chunked-prefill"
+            - "--max-model-len"
+            - "$VLLM_MAX_MODEL_LENGTH"
+            - "--max-num-seqs"
+            - "$VLLM_MAX_NUM_SEQUENCES"
+            - "--gpu-memory-utilization"
+            - "$GPU_MEMORY_UTILIZATION"
+            - "--override-generation-config"
+            - '{"temperature": $VLLM_TEMPERATURE}'
+          env:
+            - name: VLLM_MODEL
+              valueFrom:
+                configMapKeyRef:
+                  name: stock-analysis-app
+                  key: VLLM_MODEL
+            - name: VLLM_MAX_MODEL_LENGTH
+              valueFrom:
+                configMapKeyRef:
+                  name: stock-analysis-app
+                  key: VLLM_MAX_MODEL_LENGTH
+            - name: VLLM_MAX_NUM_SEQUENCES
+              valueFrom:
+                configMapKeyRef:
+                  name: stock-analysis-app
+                  key: VLLM_MAX_NUM_SEQUENCES
+            - name: GPU_MEMORY_UTILIZATION
+              valueFrom:
+                configMapKeyRef:
+                  name: stock-analysis-app
+                  key: GPU_MEMORY_UTILIZATION
+            - name: VLLM_TEMPERATURE
+              valueFrom:
+                configMapKeyRef:
+                  name: stock-analysis-app
+                  key: VLLM_TEMPERATURE
+            - name: HF_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: stock-analysis-app
+                  key: HF_TOKEN
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          ports:
+            - containerPort: 8000
+              name: http
+          resources:
+            limits:
+              cpu: "4"
+              memory: 6Gi
+              nvidia.com/gpu: "1"
+            requests:
+              cpu: "2"
+              memory: 2Gi
+              nvidia.com/gpu: "1"
+          volumeMounts:
+            - mountPath: /root/.cache/huggingface
+              name: hf-cache
+            - name: shm
+              mountPath: /dev/shm
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 60
+            periodSeconds: 5
