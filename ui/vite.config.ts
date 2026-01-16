@@ -3,8 +3,8 @@ import { defineConfig, loadEnv } from "vite";
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), "APP_");
-    const host = env.APP_HOST ?? "localhost";
-    const port = env.APP_PORT ?? "8000";
+    const host = env.BACKEND_HOST ?? "localhost";
+    const port = env.BACKEND_PORT ?? "8000";
 
     return {
         plugins: [sveltekit()],

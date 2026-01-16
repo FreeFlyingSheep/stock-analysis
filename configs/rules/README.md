@@ -76,7 +76,7 @@ ruleset:
       dimension: <dimension_id>
       metric: <metric_type>
       description: "<description>"
-      params: {...}
+      params: { ... }
       max_score: <float>
       weight: <0-100>
       enabled: true|false
@@ -87,7 +87,7 @@ ruleset:
       metric: <metric_id>
       filter: <filter_type>
       description: "<description>"
-      params: {...}
+      params: { ... }
       enabled: true|false
 ```
 
@@ -174,6 +174,6 @@ Multiple rulesets may coexist and be selected at runtime by `ruleset.id`.
 
 ## Notes
 
-- These rules define *how* scoring is performed, not *how data is collected*.
+- These rules define _how_ scoring is performed, not _how data is collected_.
 - Data acquisition and normalization are handled outside this directory.
 - No investment recommendations are implied by any ruleset.

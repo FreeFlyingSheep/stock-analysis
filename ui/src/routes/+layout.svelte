@@ -2,7 +2,7 @@
     import favicon from "$lib/assets/favicon.ico";
     import FloatingChat from "$lib/components/FloatingChat.svelte";
     import { locales, locale, setLocale, t } from "$lib/i18n";
-    import { page } from "$app/stores";
+    import { page } from "$app/state";
     import "../app.css";
 
     let { children } = $props();
@@ -13,7 +13,7 @@
         { href: "/chat", label: () => $t("nav.chat") },
     ];
 
-    const currentPath = $derived($page.url.pathname);
+    const currentPath = $derived(page.url.pathname);
 </script>
 
 <svelte:head>

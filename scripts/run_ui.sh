@@ -7,4 +7,4 @@ set -euo pipefail
 
 cd ui
 pnpm run build
-HOST=${UI_HOST:-localhost} PORT=${UI_PORT:-3000} node build
+HOST=${FRONTEND_HOST:-localhost} PORT=${FRONTEND_PORT:-3000} node build

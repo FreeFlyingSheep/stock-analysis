@@ -21,8 +21,8 @@ def main() -> None:
     settings: Settings = get_settings()
     uvicorn.run(
         "stock_analysis.routers.app:app",
-        host=settings.app_host,
-        port=settings.app_port,
+        host=settings.backend_host,
+        port=settings.backend_port,
         reload=True,
     )
 

@@ -40,7 +40,7 @@ response:
     result_code:
       label: resultCode
       type: string
-      value: '200'
+      value: "200"
     records:
       label: records
       type: array
@@ -425,7 +425,7 @@ response:
               name: 流动比率
     index_records:
       label: indexRecords
-      type: 'null'
+      type: "null"
   params:
     label: params
     type: object

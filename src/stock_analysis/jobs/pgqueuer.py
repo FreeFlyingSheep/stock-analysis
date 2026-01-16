@@ -61,7 +61,7 @@ async def create_pgqueuer_with_connection(
         Configured PgQueuer instance ready for job queueing and processing.
     """
     resources: dict[str, Any] = {
-        "cninfo_adaptor": CNInfoAdaptor(),
+        "cninfo_adaptor": CNInfoAdaptor(get_settings().config_dir),
         "yahoo_finance_adaptor": YahooFinanceAdaptor(),
         "rule_adaptor": RuleAdaptor(get_settings().rule_file_path),
         "logger": get_logger("pgqueuer", "worker"),

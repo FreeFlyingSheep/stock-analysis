@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { page } from "$app/stores";
+    import { page } from "$app/state";
     import { getStockDetails, getStocks, getAnalysisDetails } from "$lib/api";
     import { t } from "$lib/i18n";
     import type {
@@ -9,7 +9,7 @@
         AnalysisOut,
     } from "$lib/types";
 
-    const stockCode = $derived($page.params.code);
+    const stockCode = $derived(page.params.code);
 
     let loading = $state(true);
     let error = $state<string | null>(null);

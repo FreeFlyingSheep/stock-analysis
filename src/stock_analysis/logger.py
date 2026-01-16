@@ -53,15 +53,22 @@ def get_logger(
     settings: Settings = get_settings()
     if type_ == "worker":
         log_level: str = settings.worker_log_level
-        log_file_path = Path(settings.worker_log_file)
+        log_file_path: Path | None = (
+            Path(settings.worker_log_file) if settings.worker_log_file else None
+        )
     else:
         log_level = settings.log_level
-        log_file_path = Path(settings.log_file)
-
-    _create_log_dir(log_file_path)
+        log_file_path: Path | None = (
+            Path(settings.log_file) if settings.log_file else None
+        )
 
     logger: logging.Logger = logging.getLogger(name)
     logger.setLevel(log_level)
+
+    if settings.no_log_file or log_file_path is None:
+        return logger
+
+    _create_log_dir(log_file_path)
     _add_file_handler(logger, log_file_path)
 
     return logger

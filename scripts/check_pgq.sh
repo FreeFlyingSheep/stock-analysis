@@ -14,7 +14,7 @@
 #   - Valid .env file with database credentials
 set -euo pipefail
 
-uv run pgq \
+pgq \
     --pg-host ${DATABASE_HOST} \
     --pg-port ${DATABASE_PORT} \
     --pg-user ${DATABASE_USER} \

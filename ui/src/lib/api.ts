@@ -23,7 +23,7 @@ export interface GetStocksParams {
 }
 
 export async function getStocks(
-    params: GetStocksParams = {}
+    params: GetStocksParams = {},
 ): Promise<StockApiResponse> {
     const searchParams = new URLSearchParams();
     if (params.page) searchParams.set("page", params.page.toString());
@@ -37,7 +37,7 @@ export async function getStocks(
 }
 
 export async function getStockDetails(
-    stockCode: string
+    stockCode: string,
 ): Promise<StockDetailApiResponse> {
     return fetchApi<StockDetailApiResponse>(`/stocks/${stockCode}`);
 }
@@ -48,7 +48,7 @@ export interface GetAnalysisParams {
 }
 
 export async function getAnalysis(
-    params: GetAnalysisParams = {}
+    params: GetAnalysisParams = {},
 ): Promise<AnalysisApiResponse> {
     const searchParams = new URLSearchParams();
     if (params.page) searchParams.set("page", params.page.toString());
@@ -56,12 +56,12 @@ export async function getAnalysis(
 
     const query = searchParams.toString();
     return fetchApi<AnalysisApiResponse>(
-        `/analysis${query ? `?${query}` : ""}`
+        `/analysis${query ? `?${query}` : ""}`,
     );
 }
 
 export async function getAnalysisDetails(
-    stockCode: string
+    stockCode: string,
 ): Promise<AnalysisDetailApiResponse> {
     return fetchApi<AnalysisDetailApiResponse>(`/analysis/${stockCode}`);
 }

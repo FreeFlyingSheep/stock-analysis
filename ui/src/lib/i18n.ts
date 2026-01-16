@@ -210,7 +210,7 @@ const messages: Record<Locale, TranslationMap> = {
 
 function getFromDictionary(
     dict: TranslationMap,
-    path: string[]
+    path: string[],
 ): string | TranslationMap | undefined {
     return path.reduce<TranslationMap | string | undefined>((acc, key) => {
         if (typeof acc !== "object" || acc === null) return undefined;

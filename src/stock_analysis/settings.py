@@ -24,6 +24,9 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+    no_log_file: bool = False
+    """Flag to disable logging to a file."""
+
     database_user: str
     """Database user."""
     database_password: str
@@ -35,31 +38,33 @@ class Settings(BaseSettings):
     database_db: str
     """Database name."""
 
+    config_dir: str
+    """Directory for configuration files."""
     rule_file_path: str
     """Path to the rule configuration file."""
     debug: bool
     """Enable or disable debug mode."""
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
-    """Logging level for the application."""
-    log_file: str
+    """Logging level for the backend."""
+    log_file: str | None
     """File path for the log file."""
-    app_host: str
-    """Host address to run the application on."""
-    app_port: int
-    """Port to run the application on."""
+    backend_host: str
+    """Host address to run the backend on."""
+    backend_port: int
+    """Port to run the backend on."""
 
     worker_log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
     """Logging level for worker processes."""
-    worker_log_file: str
+    worker_log_file: str | None
     """File path for the worker log file."""
     batch_size: int
     """Batch size for processing data."""
     max_concurrent_tasks: int
     """Maximum number of concurrent tasks."""
 
-    vllm_host: str
+    vllm_server_host: str
     """VLLM server host address."""
-    vllm_port: int
+    vllm_server_port: int
     """Port number for the VLLM server."""
 
     @cached_property

@@ -22,6 +22,7 @@ from stock_analysis.schemas.api import (
 )
 
 if TYPE_CHECKING:
+    import os
     from types import TracebackType
 
     from httpx import Response
@@ -138,8 +139,7 @@ class CNInfoAdaptor:
 
     def __init__(  # noqa: PLR0913
         self,
-        *,
-        config_dir: Path | None = None,
+        config_dir: str | os.PathLike[str],
         client: AsyncClient | None = None,
         timeout: float = 30.0,
         limiter: AsyncLimiter | None = None,
@@ -158,9 +158,7 @@ class CNInfoAdaptor:
             retry_attempts: Number of retry attempts for failed requests.
             wait: Tenacity wait strategy between retries.
         """
-        self._config_dir: Path = (
-            config_dir or Path(__file__).parents[3] / "configs" / "api" / "cninfo"
-        )
+        self._config_dir = Path(config_dir)
         self._specs = _load_specs(self._config_dir)
         self.client = client
         self.timeout = timeout
