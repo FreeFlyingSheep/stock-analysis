@@ -11,4 +11,3 @@ resources:
   - components/postgres
   - components/vllm
   - components/migrate
-  - common/ingress.yaml

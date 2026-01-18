@@ -31,10 +31,17 @@ patches:
       name: web
       namespace: stock-analysis
       version: v1
-  - path: patches/ingress-dev.yaml
+  - path: patches/api-ingress.yaml
     target:
       group: networking.k8s.io
       kind: Ingress
-      name: app-ingress
+      name: api-ingress
+      namespace: stock-analysis
+      version: v1
+  - path: patches/web-ingress.yaml
+    target:
+      group: networking.k8s.io
+      kind: Ingress
+      name: web-ingress
       namespace: stock-analysis
       version: v1

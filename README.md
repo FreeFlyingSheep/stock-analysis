@@ -110,6 +110,8 @@ Local development setup is not recommended and only intended for development and
     In a separate terminal, run the PgQueuer to process crawl and analysis jobs:
 
     ```bash
+    source .venv/bin/activate
+    export $(grep -v '^#' .env | xargs)
     ./scripts/run_pgq.sh
     ```
 
@@ -136,6 +138,7 @@ Local development setup is not recommended and only intended for development and
     In another terminal, run the SvelteKit frontend:
 
     ```bash
+    export $(grep -v '^#' .env | xargs)
     pnpm --prefix ui run dev
     ```
 
@@ -224,21 +227,24 @@ Take Minikube as an example for local Kubernetes deployment.
     kubectl apply -k configs/k8s/overlays/dev
     ```
 
-5. Get Minikube IP address:
+5. Get service IP and port:
 
     ```bash
     minikube ip
-    ```
-
-6. Get Minikube `ingress-nginx-controller` service port:
-
-    ```bash
     kubectl get svc -n ingress-nginx ingress-nginx-controller
     ```
 
     Access the app at `http://<MINIKUBE_IP>:<NODE_PORT>`.
 
-7. Remove the Kubernetes resources when done:
+    If you are using Minikube in WSL2 (not via Docker Desktop), you may need to set up port forwarding:
+
+    ```bash
+    kubectl -n ingress-nginx port-forward svc/ingress-nginx-controller 8080:80
+    ```
+
+    Then access the app at `http://localhost:8080`.
+
+6. Remove the Kubernetes resources when done:
 
     ```bash
     kubectl delete -k configs/k8s/overlays/dev

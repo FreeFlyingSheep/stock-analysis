@@ -27,4 +27,4 @@ ENV NODE_ENV=production
 COPY --from=prod-deps /app/ui/node_modules /app/ui/node_modules
 COPY --from=build /app/ui/build /app/ui/build
 
-CMD ["node", "build"]
+CMD ["pnpm", "start"]
