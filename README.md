@@ -66,9 +66,11 @@ Low priority:
 
 If you want to keep existing data, skip the database initialization step (``./scripts/init.sh``) and ensure the database schema is up to date by running Alembic migrations manually.
 
-### Local Development Setup
+Docker Compose setup is recommended for most users due to its simplicity and ease of use.
+Local development setup is not recommended and only intended for early-stage development and testing.
+Kubernetes deployment is for production deployment scenarios, but due to hardware limitations, only partial models are supported.
 
-Local development setup is not recommended and only intended for development and testing purposes. For production deployment, use the Docker Compose or Kubernetes deployment method below.
+### Local Development Setup
 
 1. Clone the repository:
 
@@ -92,7 +94,7 @@ Local development setup is not recommended and only intended for development and
     export $(grep -v '^#' .env | xargs)
     ```
 
-4. Initialize the database:
+4. Initialize the database (install PostgreSQL and [pgvector](https://github.com/pgvector/pgvector) first):
 
     ```bash
     ./scripts/init.sh
@@ -101,6 +103,7 @@ Local development setup is not recommended and only intended for development and
     This script will:
     - Drop any existing database
     - Create a fresh database
+    - Enable the pgvector extension
     - Run Alembic migrations to create tables
     - Import initial stock data from `data/stocks.csv`
     - Initialize the PgQueuer job queue
@@ -120,7 +123,7 @@ Local development setup is not recommended and only intended for development and
     - Computes scores and metrics using configured rules
     - Stores results in the database
 
-6. Start the vLLM Server (if applicable).
+6. Start the [vLLM](https://github.com/vllm-project/vllm) Server.
 
 7. Start the API Server:
 
@@ -255,7 +258,7 @@ Take Minikube as an example for local Kubernetes deployment.
 ### Data Flow
 
 1. **Data Crawling**: PgQueuer jobs fetch data from CNInfo and Yahoo Finance
-2. **API Adaptors**: Validate parameters and handle HTTP requests with retries
+2. **API Adapters**: Validate parameters and handle HTTP requests with retries
 3. **Database Storage**: Raw API responses stored in dedicated tables
 4. **Rule Engine**: Computes metrics from raw data using YAML rules
 5. **Analysis**: Generates scores and stores analysis results
@@ -263,7 +266,7 @@ Take Minikube as an example for local Kubernetes deployment.
 
 ### Key Components
 
-- **Adaptors**: Handle external API integrations (CNInfo, Yahoo Finance)
+- **Adapters**: Handle external API integrations (CNInfo, Yahoo Finance)
 - **Services**: Implement business logic (stock queries, analysis)
 - **Jobs**: Async tasks for data processing (crawling, analysis)
 - **Routers**: FastAPI endpoints for HTTP API

@@ -15,7 +15,7 @@ logger: logging.Logger = logging.getLogger(__name__)
 
 
 def create_database(settings: Settings) -> None:
-    """Create the database if it does not exist.
+    """Create the database if it does not exist. Enable the pgvector extension.
 
     Args:
         settings: Application settings containing database connection details.
@@ -41,6 +41,7 @@ def create_database(settings: Settings) -> None:
                     sql.Identifier(settings.database_db)
                 )
             )
+            cur.execute(sql.SQL("CREATE EXTENSION vector"))
             logger.info("Created database: %s", settings.database_db)
         else:
             logger.info("Database already exists: %s", settings.database_db)

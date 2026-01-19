@@ -41,7 +41,7 @@ def anyio_backend() -> str:
 
 @pytest_asyncio.fixture(scope="session")
 async def postgres_container() -> AsyncGenerator[PostgresContainer]:
-    with PostgresContainer("postgres:18", driver="psycopg") as container:
+    with PostgresContainer("pgvector/pgvector:pg18", driver="psycopg") as container:
         yield container
 
 

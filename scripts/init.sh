@@ -6,9 +6,10 @@
 # This script performs the following operations in sequence:
 # 1. Drops the existing database (if it exists)
 # 2. Creates a fresh database
-# 3. Runs Alembic migrations to create tables
-# 4. Imports initial stock data from CSV file
-# 5. Initializes the PgQueuer database
+# 3. Enables the pgvector extension
+# 4. Runs Alembic migrations to create tables
+# 5. Imports initial stock data from CSV file
+# 6. Initializes the PgQueuer database
 #
 # Usage:
 #   ./scripts/init.sh
