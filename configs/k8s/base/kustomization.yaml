@@ -9,5 +9,4 @@ resources:
   - components/web
   - components/worker
   - components/postgres
-  - components/vllm
   - components/migrate

@@ -2,8 +2,9 @@
 
 from functools import cached_property, lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, Self
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 if TYPE_CHECKING:
@@ -62,10 +63,34 @@ class Settings(BaseSettings):
     max_concurrent_tasks: int
     """Maximum number of concurrent tasks."""
 
-    vllm_server_host: str
-    """VLLM server host address."""
-    vllm_server_port: int
-    """Port number for the VLLM server."""
+    use_llm: bool
+    """Flag to enable or disable the use of online LLM for LLM tasks."""
+    llm_api_key: str | None = None
+    """API key for the online LLM service."""
+    llm_server_base_url: str | None = None
+    """Base URL for the online LLM server."""
+    llm_model: str | None = None
+    """LLM model name."""
+    llm_embedding_model: str | None = None
+    """LLM embedding model name."""
+
+    @model_validator(mode="after")
+    def _check_llm_fields(self) -> Self:
+        if self.use_llm:
+            missing: list[str] = [
+                name
+                for name in (
+                    "llm_api_key",
+                    "llm_server_base_url",
+                    "llm_model",
+                    "llm_embedding_model",
+                )
+                if getattr(self, name) in (None, "")
+            ]
+            if missing:
+                msg: str = f"LLM is enabled, but missing fields: {', '.join(missing)}"
+                raise ValueError(msg)
+        return self
 
     @cached_property
     def database_url(self) -> str:

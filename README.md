@@ -67,8 +67,8 @@ Low priority:
 If you want to keep existing data, skip the database initialization step (``./scripts/init.sh``) and ensure the database schema is up to date by running Alembic migrations manually.
 
 Docker Compose setup is recommended for most users due to its simplicity and ease of use.
-Local development setup is not recommended and only intended for early-stage development and testing.
-Kubernetes deployment is for production deployment scenarios, but due to hardware limitations, only partial models are supported.
+Local development setup is only intended for development and testing.
+Kubernetes deployment is for production deployment scenarios, but due to hardware limitations, only partial modules are supported and tested.
 
 ### Local Development Setup
 
@@ -123,9 +123,7 @@ Kubernetes deployment is for production deployment scenarios, but due to hardwar
     - Computes scores and metrics using configured rules
     - Stores results in the database
 
-6. Start the [vLLM](https://github.com/vllm-project/vllm) Server.
-
-7. Start the API Server:
+6. Start the API Server:
 
     ```bash
     uv run app
@@ -136,7 +134,7 @@ Kubernetes deployment is for production deployment scenarios, but due to hardwar
     - Swagger UI: `http://127.0.0.1:8000/docs`
     - ReDoc: `http://127.0.0.1:8000/redoc`
 
-8. Start the Frontend UI:
+7. Start the Frontend UI:
 
     In another terminal, run the SvelteKit frontend:
 
@@ -178,14 +176,7 @@ Kubernetes deployment is for production deployment scenarios, but due to hardwar
     docker compose up -d --build --force-recreate
     ```
 
-    Note: vLLM server may require additional time to start depending on the model size; adjust health check settings as needed.
-
-    ```yaml
-    service:
-        vllm:
-            healthcheck:
-                start_period: 1200s # Adjust based on model size
-    ```
+    You can access the services at `http://127.0.0.1`.
 
 5. Remove all local images after shutting down:
 
