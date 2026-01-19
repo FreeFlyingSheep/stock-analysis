@@ -6,9 +6,9 @@ from typing import TYPE_CHECKING, Any
 from pgqueuer import PgQueuer
 from psycopg import AsyncConnection
 
-from stock_analysis.adaptors.cninfo import CNInfoAdaptor
-from stock_analysis.adaptors.rule import RuleAdaptor
-from stock_analysis.adaptors.yahoo import YahooFinanceAdaptor
+from stock_analysis.adapters.cninfo import CNInfoAdapter
+from stock_analysis.adapters.rule import RuleAdapter
+from stock_analysis.adapters.yahoo import YahooFinanceAdapter
 from stock_analysis.jobs.analyzer import analyze
 from stock_analysis.jobs.crawler import crawl
 from stock_analysis.logger import get_logger
@@ -61,27 +61,27 @@ async def create_pgqueuer_with_connection(
         Configured PgQueuer instance ready for job queueing and processing.
     """
     resources: dict[str, Any] = {
-        "cninfo_adaptor": CNInfoAdaptor(get_settings().config_dir),
-        "yahoo_finance_adaptor": YahooFinanceAdaptor(),
-        "rule_adaptor": RuleAdaptor(get_settings().rule_file_path),
+        "cninfo_adapter": CNInfoAdapter(get_settings().config_dir),
+        "yahoo_finance_adapter": YahooFinanceAdapter(),
+        "rule_adapter": RuleAdapter(get_settings().rule_file_path),
         "logger": get_logger("pgqueuer", "worker"),
     }
     pgq: PgQueuer = PgQueuer.from_psycopg_connection(connection, resources=resources)
 
     @pgq.entrypoint("crawl_stock_data", accepts_context=True)
     async def crawl_stock_data(job: Job, ctx: Context) -> None:
-        cninfo_adaptor: CNInfoAdaptor = ctx.resources["cninfo_adaptor"]
-        yahoo_finance_adaptor: YahooFinanceAdaptor = ctx.resources[
-            "yahoo_finance_adaptor"
+        cninfo_adapter: CNInfoAdapter = ctx.resources["cninfo_adapter"]
+        yahoo_finance_adapter: YahooFinanceAdapter = ctx.resources[
+            "yahoo_finance_adapter"
         ]
         logger: logging.Logger = ctx.resources["logger"]
-        await crawl(job, cninfo_adaptor, yahoo_finance_adaptor, logger)
+        await crawl(job, cninfo_adapter, yahoo_finance_adapter, logger)
 
     @pgq.entrypoint("analyze_stock_data", accepts_context=True)
     async def analyze_stock_data(job: Job, ctx: Context) -> None:
-        rule_adaptor: RuleAdaptor = ctx.resources["rule_adaptor"]
+        rule_adapter: RuleAdapter = ctx.resources["rule_adapter"]
         logger: logging.Logger = ctx.resources["logger"]
-        await analyze(job, rule_adaptor, logger)
+        await analyze(job, rule_adapter, logger)
 
     @pgq.entrypoint("update_stock_data", accepts_context=True)
     async def update_stock_data(_job: Job, ctx: Context) -> None:

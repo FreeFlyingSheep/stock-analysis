@@ -1,4 +1,4 @@
-"""CNInfo adaptor that reads endpoint specs from YAML and fetches data."""
+"""CNInfo adapter that reads endpoint specs from YAML and fetches data."""
 
 from http import HTTPStatus
 from pathlib import Path
@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 
 
 class CNInfoError(RuntimeError):
-    """Error raised when HTTP or validation issues occur in CNInfo adaptor."""
+    """Error raised when HTTP or validation issues occur in CNInfo adapter."""
 
 
 def _parse_request_params(params: dict[str, Any]) -> tuple[RequestParam, ...]:
@@ -125,8 +125,8 @@ def _load_specs(config_dir: Path) -> dict[str, ApiSpec]:
     return specs
 
 
-class CNInfoAdaptor:
-    """Async adaptor for CNInfo endpoints defined in YAML specs."""
+class CNInfoAdapter:
+    """Async adapter for CNInfo endpoints defined in YAML specs."""
 
     client: AsyncClient | None
     timeout: float
@@ -146,7 +146,7 @@ class CNInfoAdaptor:
         retry_attempts: int = 5,
         wait: wait_exponential | None = None,
     ) -> None:
-        """Initialize the CNInfo adaptor.
+        """Initialize the CNInfo adapter.
 
         If a client is provided, the caller is responsible for its lifecycle.
 
@@ -183,7 +183,7 @@ class CNInfoAdaptor:
         Creates a new AsyncClient if one was not provided during initialization.
 
         Returns:
-            Self: The CNInfoAdaptor instance for use in async with block.
+            Self: The CNInfoAdapter instance for use in async with block.
         """
         self._use_private_client = self.client is None
         if self.client is None:

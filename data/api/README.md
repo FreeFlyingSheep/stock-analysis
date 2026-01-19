@@ -57,7 +57,7 @@ Responses include:
 When you need to update a sample response:
 
 1. **Get fresh data from the real endpoint**:
-   - Use the adaptor directly: `python -c "..."`
+   - Use the adapter directly: `python -c "..."`
    - Or call the endpoint manually with proper parameters
 
 2. **Save the full JSON response**:

@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING
 from dateutil.relativedelta import relativedelta
 from pydantic import ValidationError
 
-from stock_analysis.adaptors.cninfo import CNInfoAdaptor
-from stock_analysis.adaptors.stock import get_stock_code_with_market
+from stock_analysis.adapters.cninfo import CNInfoAdapter
+from stock_analysis.adapters.stock import get_stock_code_with_market
 from stock_analysis.schemas.api import JobPayload
 from stock_analysis.services.database import async_session
 from stock_analysis.services.downloader import CNInfoDownloader, YahooFinanceDownloader
@@ -19,8 +19,8 @@ if TYPE_CHECKING:
     from pgqueuer.models import Job
     from sqlalchemy.ext.asyncio import AsyncSession
 
-    from stock_analysis.adaptors.cninfo import CNInfoAdaptor
-    from stock_analysis.adaptors.yahoo import YahooFinanceAdaptor
+    from stock_analysis.adapters.cninfo import CNInfoAdapter
+    from stock_analysis.adapters.yahoo import YahooFinanceAdapter
     from stock_analysis.models.cninfo import CNInfoAPIResponse
     from stock_analysis.models.yahoo import YahooFinanceAPIResponse
     from stock_analysis.services.stock import Stock
@@ -33,7 +33,7 @@ class CrawlerError(RuntimeError):
 async def _crawl_cninfo_stock_data(
     db: AsyncSession,
     payload: JobPayload,
-    adaptor: CNInfoAdaptor,
+    adapter: CNInfoAdapter,
     logger: logging.Logger,
 ) -> None:
     """Crawl and store stock data from all CNInfo API endpoints.
@@ -44,7 +44,7 @@ async def _crawl_cninfo_stock_data(
     Args:
         db: Database session for storing responses.
         payload: Job payload containing stock code.
-        adaptor: CNInfo adaptor for fetching endpoint data.
+        adapter: CNInfo adapter for fetching endpoint data.
         logger: Logger for recording operations.
 
     Raises:
@@ -76,10 +76,10 @@ async def _crawl_cninfo_stock_data(
     logger.info("Starting download for stock %s", payload.stock_code)
 
     try:
-        downloader: CNInfoDownloader = CNInfoDownloader(db, adaptor)
+        downloader: CNInfoDownloader = CNInfoDownloader(db, adapter)
         record_ids: list[int] = [
             await downloader.download(endpoint, stock.id, stock_code=payload.stock_code)
-            for endpoint in adaptor.available_endpoints
+            for endpoint in adapter.available_endpoints
         ]
         await db.commit()
         logger.info(
@@ -97,7 +97,7 @@ async def _crawl_cninfo_stock_data(
 async def crawl_yahoo_finance_stock_data(
     db: AsyncSession,
     payload: JobPayload,
-    adaptor: YahooFinanceAdaptor,
+    adapter: YahooFinanceAdapter,
     logger: logging.Logger,
 ) -> None:
     """Crawl and store stock data from Yahoo Finance API.
@@ -108,7 +108,7 @@ async def crawl_yahoo_finance_stock_data(
     Args:
         db: Database session for storing responses.
         payload: Job payload containing stock code.
-        adaptor: Yahoo Finance adaptor for fetching historical data.
+        adapter: Yahoo Finance adapter for fetching historical data.
         logger: Logger for recording operations.
 
     Raises:
@@ -134,7 +134,7 @@ async def crawl_yahoo_finance_stock_data(
 
     symbol: str = get_stock_code_with_market(payload.stock_code)
     try:
-        downloader = YahooFinanceDownloader(db, adaptor)
+        downloader = YahooFinanceDownloader(db, adapter)
         record_id: int = await downloader.download(
             stock_id=stock.id,
             symbol=symbol,
@@ -153,8 +153,8 @@ async def crawl_yahoo_finance_stock_data(
 
 async def crawl(
     job: Job,
-    cninfo_adaptor: CNInfoAdaptor,
-    yahoo_finance_adaptor: YahooFinanceAdaptor,
+    cninfo_adapter: CNInfoAdapter,
+    yahoo_finance_adapter: YahooFinanceAdapter,
     logger: logging.Logger,
 ) -> None:
     """Crawl stock data from both CNInfo and Yahoo Finance sources.
@@ -164,8 +164,8 @@ async def crawl(
 
     Args:
         job: Job instance containing encoded payload.
-        cninfo_adaptor: CNInfo adaptor for endpoint data.
-        yahoo_finance_adaptor: Yahoo Finance adaptor for historical data.
+        cninfo_adapter: CNInfo adapter for endpoint data.
+        yahoo_finance_adapter: Yahoo Finance adapter for historical data.
         logger: Logger for recording operations.
 
     Raises:
@@ -186,12 +186,12 @@ async def crawl(
         await _crawl_cninfo_stock_data(
             db,
             payload,
-            cninfo_adaptor,
+            cninfo_adapter,
             logger,
         )
         await crawl_yahoo_finance_stock_data(
             db,
             payload,
-            yahoo_finance_adaptor,
+            yahoo_finance_adapter,
             logger,
         )

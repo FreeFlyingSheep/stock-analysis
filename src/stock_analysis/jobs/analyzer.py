@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from pgqueuer.models import Job
     from sqlalchemy.ext.asyncio import AsyncSession
 
-    from stock_analysis.adaptors.rule import RuleAdaptor
+    from stock_analysis.adapters.rule import RuleAdapter
     from stock_analysis.models.analysis import Analysis
     from stock_analysis.services.stock import Stock
 
@@ -29,7 +29,7 @@ class AnalyzerError(Exception):
 async def _analyze_stock_data(
     db: AsyncSession,
     payload: JobPayload,
-    adaptor: RuleAdaptor,
+    adapter: RuleAdapter,
     logger: logging.Logger,
 ) -> None:
     """Analyze stock data using scoring rules.
@@ -40,7 +40,7 @@ async def _analyze_stock_data(
     Args:
         db: Database session for reading/writing analysis.
         payload: Job payload containing stock code.
-        adaptor: Rule adaptor for applying scoring rules.
+        adapter: Rule adapter for applying scoring rules.
         logger: Logger for recording operations.
 
     Raises:
@@ -70,7 +70,7 @@ async def _analyze_stock_data(
     logger.info("Analyzing stock data for stock code: %s", payload.stock_code)
 
     try:
-        analyzer = Analyzer(db, adaptor)
+        analyzer = Analyzer(db, adapter)
         record_ids: list[int] = await analyzer.analyze(stock.id)
         await db.commit()
         logger.info(
@@ -87,7 +87,7 @@ async def _analyze_stock_data(
 
 async def analyze(
     job: Job,
-    rule_adaptor: RuleAdaptor,
+    rule_adapter: RuleAdapter,
     logger: logging.Logger,
 ) -> None:
     """Analyze stock data from job payload.
@@ -97,7 +97,7 @@ async def analyze(
 
     Args:
         job: Job instance containing encoded payload.
-        rule_adaptor: Rule adaptor for computing scores and metrics.
+        rule_adapter: Rule adapter for computing scores and metrics.
         logger: Logger for recording operations.
 
     Raises:
@@ -118,6 +118,6 @@ async def analyze(
         await _analyze_stock_data(
             db,
             payload,
-            rule_adaptor,
+            rule_adapter,
             logger,
         )

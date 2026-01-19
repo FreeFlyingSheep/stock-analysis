@@ -1,4 +1,4 @@
-"""Yahoo Finance adaptor for fetching historical stock price data."""
+"""Yahoo Finance adapter for fetching historical stock price data."""
 
 from typing import TYPE_CHECKING
 
@@ -13,11 +13,11 @@ if TYPE_CHECKING:
 
 
 class YahooFinanceError(RuntimeError):
-    """Error raised for Yahoo Finance adaptor issues."""
+    """Error raised for Yahoo Finance adapter issues."""
 
 
-class YahooFinanceAdaptor:
-    """Adaptor for fetching stock data from Yahoo Finance.
+class YahooFinanceAdapter:
+    """Adapter for fetching stock data from Yahoo Finance.
 
     Uses the yfinance library to retrieve historical stock price and volume data
     for specified symbols and time periods.
@@ -41,7 +41,7 @@ class YahooFinanceAdaptor:
         period: str = "5y",
         interval: str = "1mo",
     ) -> None:
-        """Initialize the Yahoo Finance adaptor.
+        """Initialize the Yahoo Finance adapter.
 
         Args:
             limiter: Optional AsyncLimiter to control request rate.

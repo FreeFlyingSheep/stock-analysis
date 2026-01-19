@@ -58,9 +58,7 @@ def get_logger(
         )
     else:
         log_level = settings.log_level
-        log_file_path: Path | None = (
-            Path(settings.log_file) if settings.log_file else None
-        )
+        log_file_path = Path(settings.log_file) if settings.log_file else None
 
     logger: logging.Logger = logging.getLogger(name)
     logger.setLevel(log_level)

@@ -1,4 +1,4 @@
-"""Scoring rules adaptors."""
+"""Scoring rules adapters."""
 
 import re
 from datetime import datetime
@@ -183,8 +183,8 @@ def _get_value(data: dict[str, Any], source: str, index: str | None = None) -> A
     return value
 
 
-class RuleAdaptor:
-    """Adaptor for applying and evaluating stock scoring rules.
+class RuleAdapter:
+    """Adapter for applying and evaluating stock scoring rules.
 
     Loads scoring rules from YAML configuration and provides methods
     to compute metrics and scores for stocks.
@@ -210,7 +210,7 @@ class RuleAdaptor:
     _current_year: int
 
     def __init__(self, rule_file_path: str | os.PathLike[str]) -> None:
-        """Initialize the RuleAdaptor with a rule configuration file.
+        """Initialize the RuleAdapter with a rule configuration file.
 
         Args:
             rule_file_path: Path to the YAML file with rule definitions.

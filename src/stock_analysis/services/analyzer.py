@@ -10,7 +10,7 @@ from stock_analysis.schemas.analysis import AnalysisIn
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
-    from stock_analysis.adaptors.rule import RuleAdaptor
+    from stock_analysis.adapters.rule import RuleAdapter
 
 
 class AnalyzerError(RuntimeError):
@@ -25,21 +25,21 @@ class Analyzer:
 
     Attributes:
         _session: AsyncSession for database operations.
-        _adaptor: RuleAdaptor for applying scoring rules.
+        _adapter: RuleAdapter for applying scoring rules.
     """
 
     _session: AsyncSession
-    _adaptor: RuleAdaptor
+    _adapter: RuleAdapter
 
-    def __init__(self, session: AsyncSession, adaptor: RuleAdaptor) -> None:
+    def __init__(self, session: AsyncSession, adapter: RuleAdapter) -> None:
         """Initialize the analyzer.
 
         Args:
             session: Database session for reading/writing data.
-            adaptor: Rule adaptor for applying analysis rules.
+            adapter: Rule adapter for applying analysis rules.
         """
         self._session = session
-        self._adaptor = adaptor
+        self._adapter = adapter
 
     async def analyze(self, stock_id: int) -> list[int]:
         """Analyze a stock and compute metrics and scores.
@@ -56,9 +56,9 @@ class Analyzer:
         Raises:
             AnalyzerError: If analysis data validation fails.
         """
-        metrics: dict[str, float] = self._adaptor.metrics()
-        score: float = self._adaptor.score()
-        filtered: bool = self._adaptor.apply_filter()
+        metrics: dict[str, float] = self._adapter.metrics()
+        score: float = self._adapter.score()
+        filtered: bool = self._adapter.apply_filter()
         try:
             analysis_in: AnalysisIn = AnalysisIn(
                 stock_id=stock_id,

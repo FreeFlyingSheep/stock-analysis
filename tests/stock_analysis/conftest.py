@@ -17,8 +17,8 @@ from sqlalchemy.ext.asyncio import (
 from tenacity import wait_exponential
 from testcontainers.postgres import PostgresContainer  # type: ignore[import-untyped]
 
-from stock_analysis.adaptors.cninfo import CNInfoAdaptor
-from stock_analysis.adaptors.rule import RuleAdaptor
+from stock_analysis.adapters.cninfo import CNInfoAdapter
+from stock_analysis.adapters.rule import RuleAdapter
 from stock_analysis.models.analysis import Analysis
 from stock_analysis.models.base import Base
 from stock_analysis.models.cninfo import CNInfoAPIResponse  # noqa: F401
@@ -237,10 +237,10 @@ def wait_strategy() -> wait_exponential:
 
 
 @pytest.fixture
-def cninfo_adaptor(
+def cninfo_adapter(
     yaml_config_dir: Path, async_limiter: AsyncLimiter, wait_strategy: wait_exponential
-) -> CNInfoAdaptor:
-    return CNInfoAdaptor(
+) -> CNInfoAdapter:
+    return CNInfoAdapter(
         config_dir=yaml_config_dir,
         timeout=2.0,
         limiter=async_limiter,
@@ -281,10 +281,10 @@ def stock_data(
 
 
 @pytest.fixture
-def rule_adaptor(stock_data: dict[str, Any]) -> RuleAdaptor:
+def rule_adapter(stock_data: dict[str, Any]) -> RuleAdapter:
     rule_file_path: Path = (
         Path(__file__).parents[2] / "configs" / "rules" / "scoring_rules_sample.yaml"
     )
-    adaptor = RuleAdaptor(rule_file_path=rule_file_path)
-    adaptor.set_data(stock_data)
-    return adaptor
+    adapter = RuleAdapter(rule_file_path=rule_file_path)
+    adapter.set_data(stock_data)
+    return adapter

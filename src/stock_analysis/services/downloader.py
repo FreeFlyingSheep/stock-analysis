@@ -11,8 +11,8 @@ from stock_analysis.schemas.api import CNInfoAPIResponseIn, YahooFinanceAPIRespo
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
-    from stock_analysis.adaptors.cninfo import CNInfoAdaptor
-    from stock_analysis.adaptors.yahoo import YahooFinanceAdaptor
+    from stock_analysis.adapters.cninfo import CNInfoAdapter
+    from stock_analysis.adapters.yahoo import YahooFinanceAdapter
     from stock_analysis.schemas.api import CNInfoFetchResult
 
 
@@ -24,21 +24,21 @@ class CNInfoDownloader:
     """Service for downloading raw CNInfo API data."""
 
     _session: AsyncSession
-    _adaptor: CNInfoAdaptor
+    _adapter: CNInfoAdapter
 
     def __init__(
         self,
         session: AsyncSession,
-        adaptor: CNInfoAdaptor,
+        adapter: CNInfoAdapter,
     ) -> None:
         """Initialize the downloader.
 
         Args:
             session: Database session for storing raw data.
-            adaptor: CNInfo API adaptor for fetching data.
+            adapter: CNInfo API adapter for fetching data.
         """
         self._session = session
-        self._adaptor = adaptor
+        self._adapter = adapter
 
     async def download(
         self,
@@ -63,8 +63,8 @@ class CNInfoDownloader:
             DownloaderError: If the download or storage validation fails.
         """
         try:
-            async with self._adaptor:
-                result: CNInfoFetchResult = await self._adaptor.fetch(
+            async with self._adapter:
+                result: CNInfoFetchResult = await self._adapter.fetch(
                     endpoint, **kwargs
                 )
             try:
@@ -92,21 +92,21 @@ class YahooFinanceDownloader:
     """Service for downloading raw Yahoo Finance API data."""
 
     _session: AsyncSession
-    _adaptor: YahooFinanceAdaptor
+    _adapter: YahooFinanceAdapter
 
     def __init__(
         self,
         session: AsyncSession,
-        adaptor: YahooFinanceAdaptor,
+        adapter: YahooFinanceAdapter,
     ) -> None:
         """Initialize the downloader.
 
         Args:
             session: Database session for storing raw data.
-            adaptor: Yahoo Finance API adaptor for fetching data.
+            adapter: Yahoo Finance API adapter for fetching data.
         """
         self._session = session
-        self._adaptor = adaptor
+        self._adapter = adapter
 
     async def download(
         self,
@@ -128,14 +128,14 @@ class YahooFinanceDownloader:
         Raises:
             DownloaderError: If the download or storage validation fails.
         """
-        raw_json: str = await self._adaptor.get_stock_history(symbol)
+        raw_json: str = await self._adapter.get_stock_history(symbol)
         try:
             raw_record = YahooFinanceAPIResponseIn(
                 stock_id=stock_id,
                 params={
                     "symbol": symbol,
-                    "period": self._adaptor.period,
-                    "interval": self._adaptor.interval,
+                    "period": self._adapter.period,
+                    "interval": self._adapter.interval,
                 },
                 raw_json=raw_json,
             )

@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from httpx import AsyncClient
     from sqlalchemy.ext.asyncio import AsyncSession
 
-    from stock_analysis.adaptors.cninfo import CNInfoAdaptor
+    from stock_analysis.adapters.cninfo import CNInfoAdapter
     from stock_analysis.models.stock import Stock
 
 
@@ -32,26 +32,26 @@ async def client_ok(
 
 
 @pytest_asyncio.fixture
-async def cninfo_adaptor_ok(
-    cninfo_adaptor: CNInfoAdaptor, client_ok: tuple[AsyncClient, dict[str, int]]
-) -> AsyncGenerator[CNInfoAdaptor]:
-    cninfo_adaptor.client = client_ok[0]
-    yield cninfo_adaptor
-    await cninfo_adaptor.client.aclose()
+async def cninfo_adapter_ok(
+    cninfo_adapter: CNInfoAdapter, client_ok: tuple[AsyncClient, dict[str, int]]
+) -> AsyncGenerator[CNInfoAdapter]:
+    cninfo_adapter.client = client_ok[0]
+    yield cninfo_adapter
+    await cninfo_adapter.client.aclose()
 
 
 @pytest.mark.asyncio
 async def test_download_success(
     async_session: AsyncSession,
     seed_stocks: list[Stock],
-    cninfo_adaptor_ok: CNInfoAdaptor,
+    cninfo_adapter_ok: CNInfoAdapter,
 ) -> None:
     """Test successful download and storage of API response."""
     endpoint = "income_statement"
     stock_id: int = seed_stocks[0].id
     stock_code: str = seed_stocks[0].stock_code
 
-    downloader = CNInfoDownloader(async_session, cninfo_adaptor_ok)
+    downloader = CNInfoDownloader(async_session, cninfo_adapter_ok)
     record_id: int = await downloader.download(
         endpoint, stock_id=stock_id, stock_code=stock_code
     )

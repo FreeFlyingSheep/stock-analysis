@@ -3,7 +3,7 @@
 ## Purpose
 
 - Define upstream API contracts for each provider.
-- Serve adaptors (see [src/stock_analysis/adaptors/cninfo.py](../../src/stock_analysis/adaptors/cninfo.py)) and developers as the single source of truth for calls and parsing logic.
+- Serve adapters (see [src/stock_analysis/adapters/cninfo.py](../../src/stock_analysis/adapters/cninfo.py)) and developers as the single source of truth for calls and parsing logic.
 
 ## Layout
 
