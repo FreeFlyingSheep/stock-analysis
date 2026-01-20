@@ -4,7 +4,10 @@ from functools import cached_property, lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, Self
 
-from pydantic import model_validator
+from pydantic import (
+    SecretStr,  # noqa: TC002
+    model_validator,
+)
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 if TYPE_CHECKING:
@@ -30,7 +33,7 @@ class Settings(BaseSettings):
 
     database_user: str
     """Database user."""
-    database_password: str
+    database_password: SecretStr
     """Database password."""
     database_host: str
     """Database host."""
@@ -65,7 +68,7 @@ class Settings(BaseSettings):
 
     use_llm: bool
     """Flag to enable or disable the use of online LLM for LLM tasks."""
-    llm_api_key: str | None = None
+    llm_api_key: SecretStr | None = None
     """API key for the online LLM service."""
     llm_server_base_url: str | None = None
     """Base URL for the online LLM server."""
