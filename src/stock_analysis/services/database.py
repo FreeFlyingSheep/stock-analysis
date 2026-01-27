@@ -12,9 +12,7 @@ from sqlalchemy.ext.asyncio import (
 from stock_analysis.settings import get_settings
 
 if TYPE_CHECKING:
-    from sqlalchemy.ext.asyncio import (
-        AsyncEngine,
-    )
+    from sqlalchemy.ext.asyncio import AsyncEngine
 
     from stock_analysis.settings import Settings
 

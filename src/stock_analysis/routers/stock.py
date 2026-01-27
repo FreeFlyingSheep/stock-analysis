@@ -39,9 +39,10 @@ if TYPE_CHECKING:
 router = APIRouter()
 
 
-@router.get("/stocks")
-async def get_stocks(
+@router.get("/stocks", operation_id="get_stocks")
+async def get_stocks(  # noqa: PLR0913
     db: Annotated[AsyncSession, Depends(get_db)],
+    search: str | None = None,
     classification: str | None = None,
     industry: str | None = None,
     page: Annotated[int, Query(ge=1)] = 1,
@@ -54,6 +55,7 @@ async def get_stocks(
 
     Args:
         db: Database session for data queries.
+        search: Optional search string to filter stocks by code or name.
         classification: Optional filter by classification category.
         industry: Optional filter by industry sector.
         page: Page number (1-indexed, defaults to 1, minimum 1).
@@ -71,12 +73,14 @@ async def get_stocks(
 
     offset: int = (page - 1) * size
     stocks: list[Stock] = await stock_service.get_stocks(
+        search=search,
         classification=classification,
         industry=industry,
         limit=size,
         offset=offset,
     )
     total_count: int = await stock_service.count_stocks(
+        search=search,
         classification=classification,
         industry=industry,
     )
@@ -96,7 +100,7 @@ async def get_stocks(
     )
 
 
-@router.get("/stocks/{stock_code}")
+@router.get("/stocks/{stock_code}", operation_id="get_stock_details")
 async def get_stock_details(
     response: Response,
     request: Request,

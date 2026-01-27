@@ -33,6 +33,7 @@ I do **NOT** provide any financial, investment, or trading recommendations. User
 - **Google Docstrings**: Comprehensive documentation throughout the codebase
 - **Code Quality**: Type checking and formatting standards
 - **Docker Compose and Kubernetes Deployment**: Containerized deployment for easy setup
+- **MCP Server**: FastMCP integration for FastAPI services
 
 ## Features TODO List
 

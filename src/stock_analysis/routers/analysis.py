@@ -34,8 +34,8 @@ if TYPE_CHECKING:
 router = APIRouter()
 
 
-@router.get("/analysis")
-async def get_scores(
+@router.get("/analysis", operation_id="get_analysis")
+async def get_analysis(
     db: Annotated[AsyncSession, Depends(get_db)],
     page: Annotated[int, Query(ge=1)] = 1,
     size: Annotated[int, Query(ge=1, le=200)] = 50,
@@ -71,8 +71,8 @@ async def get_scores(
     )
 
 
-@router.get("/analysis/{stock_code}")
-async def get_score_details(
+@router.get("/analysis/{stock_code}", operation_id="get_analysis_details")
+async def get_analysis_details(
     response: Response,
     request: Request,
     stock_code: str,

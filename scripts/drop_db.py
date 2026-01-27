@@ -27,7 +27,7 @@ def drop_database(settings: Settings) -> None:
         psycopg.connect(
             dbname="postgres",
             user=settings.database_user,
-            password=settings.database_password,
+            password=settings.database_password.get_secret_value(),
             host=settings.database_host,
             port=settings.database_port,
             autocommit=True,

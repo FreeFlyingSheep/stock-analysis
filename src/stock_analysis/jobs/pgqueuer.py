@@ -39,7 +39,7 @@ async def get_connection() -> AsyncConnection[TupleRow]:
     return await AsyncConnection.connect(
         dbname=settings.database_db,
         user=settings.database_user,
-        password=settings.database_password,
+        password=settings.database_password.get_secret_value(),
         host=settings.database_host,
         port=settings.database_port,
         autocommit=True,

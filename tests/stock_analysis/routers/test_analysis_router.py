@@ -6,7 +6,7 @@ import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession  # noqa: TC002
 
-from stock_analysis.routers.analysis import get_scores, router
+from stock_analysis.routers.analysis import get_analysis, router
 from stock_analysis.schemas.analysis import AnalysisApiResponse
 
 if TYPE_CHECKING:
@@ -32,12 +32,12 @@ async def client(
 
 
 @pytest.mark.anyio
-async def test_get_scores_default(client: AsyncClient) -> None:
+async def test_get_analysis_default(client: AsyncClient) -> None:
     resp: Response = await client.get("/analysis")
     assert resp.status_code == HTTPStatus.OK
 
     payload: AnalysisApiResponse = AnalysisApiResponse.model_validate(resp.json())
-    sig: Signature = signature(get_scores)
+    sig: Signature = signature(get_analysis)
     expected_page_num: int = sig.parameters["page"].default
     expected_page_size: int = sig.parameters["size"].default
     assert payload.data.page_num == expected_page_num
@@ -45,7 +45,7 @@ async def test_get_scores_default(client: AsyncClient) -> None:
 
 
 @pytest.mark.anyio
-async def test_get_scores_custom_page_size(client: AsyncClient) -> None:
+async def test_get_analysis_custom_page_size(client: AsyncClient) -> None:
     expected_page_size = 10
     resp: Response = await client.get("/analysis", params={"size": expected_page_size})
     assert resp.status_code == HTTPStatus.OK
@@ -54,7 +54,7 @@ async def test_get_scores_custom_page_size(client: AsyncClient) -> None:
 
 
 @pytest.mark.anyio
-async def test_get_scores_pagination(client: AsyncClient) -> None:
+async def test_get_analysis_pagination(client: AsyncClient) -> None:
     expected_page_num = 2
     expected_page_size = 25
     resp: Response = await client.get(
@@ -68,32 +68,32 @@ async def test_get_scores_pagination(client: AsyncClient) -> None:
 
 
 @pytest.mark.anyio
-async def test_get_scores_invalid_page(client: AsyncClient) -> None:
+async def test_get_analysis_invalid_page(client: AsyncClient) -> None:
     resp: Response = await client.get("/analysis", params={"page": 0})
     assert resp.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
 
 
 @pytest.mark.anyio
-async def test_get_scores_invalid_size(client: AsyncClient) -> None:
+async def test_get_analysis_invalid_size(client: AsyncClient) -> None:
     resp: Response = await client.get("/analysis", params={"size": 0})
     assert resp.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
 
 
 @pytest.mark.anyio
-async def test_get_scores_size_exceeds_max(client: AsyncClient) -> None:
+async def test_get_analysis_size_exceeds_max(client: AsyncClient) -> None:
     resp: Response = await client.get("/analysis", params={"size": 201})
     assert resp.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
 
 
 @pytest.mark.anyio
-async def test_get_score_details_not_found(client: AsyncClient) -> None:
+async def test_get_analysis_details_not_found(client: AsyncClient) -> None:
     resp: Response = await client.get("/analysis/999999")
     assert resp.status_code == HTTPStatus.NOT_FOUND
     assert "not found" in resp.json()["detail"].lower()
 
 
 @pytest.mark.anyio
-async def test_get_score_details(
+async def test_get_analysis_details(
     client: AsyncClient,
     seed_stocks: list[Stock],
     analysis_data: list[Analysis],

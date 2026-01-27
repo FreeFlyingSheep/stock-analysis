@@ -40,8 +40,9 @@ dependencies = [
     "alembic>=1.17.2",
     "asyncio>=4.0.0",
     "fastapi[standard-no-fastapi-cloud-cli]>=0.124.4",
-    "httpx>=0.28.1",
+    "fastmcp>=2.14.4",
     "langchain>=1.1.3",
+    "langchain-mcp-adapters>=0.2.1",
     "langchain-openai>=1.1.7",
     "langchain-postgres>=0.0.16",
     "langgraph>=1.0.5",
@@ -103,10 +104,7 @@ executable = "%(here)s/.venv/bin/ruff"
 options = "check --fix --unsafe-fixes REVISION_SCRIPT_FILENAME"
 
 [tool.pytest.ini_options]
-filterwarnings = [
-    "ignore:The @wait_container_is_ready decorator is deprecated.*:DeprecationWarning",
-    "ignore:Core Pydantic V1 functionality isn't compatible with Python 3.14 or greater.*:UserWarning",
-]
+asyncio_mode = "auto"
 
 [tool.ruff.lint]
 select = ["ALL"]

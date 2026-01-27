@@ -39,6 +39,7 @@ class StockService:
 
     async def get_stocks(
         self,
+        search: str | None = None,
         classification: str | None = None,
         industry: str | None = None,
         limit: int | None = None,
@@ -47,6 +48,7 @@ class StockService:
         """Get stocks with optional filtering.
 
         Args:
+            search: Optional search string to filter stocks by code or name.
             classification: Optional filter by classification category.
             industry: Optional filter by industry sector.
             limit: Maximum number of results to return. If None, returns all.
@@ -56,6 +58,13 @@ class StockService:
             list[Stock]: List of Stock objects matching the criteria.
         """
         query: Select[tuple[Stock]] = select(Stock)
+
+        if search:
+            search_pattern: str = f"%{search}%"
+            query = query.where(
+                (Stock.stock_code.ilike(search_pattern))
+                | (Stock.company_name.ilike(search_pattern))
+            )
 
         if classification:
             query = query.where(Stock.classification == classification)
@@ -118,12 +127,14 @@ class StockService:
 
     async def count_stocks(
         self,
+        search: str | None = None,
         classification: str | None = None,
         industry: str | None = None,
     ) -> int:
         """Count stocks matching the given criteria.
 
         Args:
+            search: Optional search string to filter stocks by code or name.
             classification: Optional filter by classification category.
             industry: Optional filter by industry sector.
 
@@ -131,6 +142,13 @@ class StockService:
             int: Total number of stocks matching the criteria.
         """
         query: Select[tuple[int]] = select(func.count(Stock.id))
+
+        if search:
+            search_pattern: str = f"%{search}%"
+            query = query.where(
+                (Stock.stock_code.ilike(search_pattern))
+                | (Stock.company_name.ilike(search_pattern))
+            )
 
         if classification:
             query = query.where(Stock.classification == classification)

@@ -8,6 +8,8 @@ import pytest
 import pytest_asyncio
 from aiolimiter import AsyncLimiter
 from fastapi import FastAPI
+from fastmcp import FastMCP
+from fastmcp.client import Client
 from httpx import ASGITransport, AsyncClient, MockTransport, Response
 from sqlalchemy.ext.asyncio import (
     AsyncSession,  # noqa: TC002
@@ -24,12 +26,16 @@ from stock_analysis.models.base import Base
 from stock_analysis.models.cninfo import CNInfoAPIResponse  # noqa: F401
 from stock_analysis.models.stock import Stock
 from stock_analysis.models.yahoo import YahooFinanceAPIResponse  # noqa: F401
+from stock_analysis.routers.analysis import router as analysis_router
+from stock_analysis.routers.stock import router as stock_router
 from stock_analysis.services.database import get_db
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
     from fastapi import APIRouter
+    from fastmcp.client import FastMCPTransport
+    from fastmcp.server.openapi import FastMCPOpenAPI
     from httpx import Request
     from sqlalchemy.ext.asyncio import AsyncEngine
 
@@ -288,3 +294,13 @@ def rule_adapter(stock_data: dict[str, Any]) -> RuleAdapter:
     adapter = RuleAdapter(rule_file_path=rule_file_path)
     adapter.set_data(stock_data)
     return adapter
+
+
+@pytest_asyncio.fixture
+async def mcp_client(
+    app_factory: Callable[[list[APIRouter]], FastAPI],
+) -> AsyncGenerator[Client[FastMCPTransport]]:
+    app: FastAPI = app_factory([analysis_router, stock_router])
+    mcp: FastMCPOpenAPI = FastMCP.from_fastapi(app=app)
+    async with Client(mcp) as client:
+        yield client

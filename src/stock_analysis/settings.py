@@ -104,9 +104,18 @@ class Settings(BaseSettings):
         """
         return (
             f"postgresql+psycopg://{self.database_user}:"
-            f"{self.database_password}@{self.database_host}:"
+            f"{self.database_password.get_secret_value()}@{self.database_host}:"
             f"{self.database_port}/{self.database_db}"
         )
+
+    @cached_property
+    def api_url(self) -> str:
+        """Construct the API base URL.
+
+        Returns:
+            Base URL for the backend API.
+        """
+        return f"http://{self.backend_host}:{self.backend_port}"
 
 
 @lru_cache(maxsize=1)
