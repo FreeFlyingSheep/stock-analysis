@@ -77,6 +77,11 @@ class Settings(BaseSettings):
     llm_embedding_model: str | None = None
     """LLM embedding model name."""
 
+    mcp_host: str
+    """Host address for the MCP server."""
+    mcp_port: int
+    """Port for the MCP server."""
+
     @model_validator(mode="after")
     def _check_llm_fields(self) -> Self:
         if self.use_llm:
@@ -87,6 +92,8 @@ class Settings(BaseSettings):
                     "llm_server_base_url",
                     "llm_model",
                     "llm_embedding_model",
+                    "mcp_host",
+                    "mcp_port",
                 )
                 if getattr(self, name) in (None, "")
             ]
@@ -116,6 +123,15 @@ class Settings(BaseSettings):
             Base URL for the backend API.
         """
         return f"http://{self.backend_host}:{self.backend_port}"
+
+    @cached_property
+    def mcp_url(self) -> str:
+        """Construct the MCP server URL.
+
+        Returns:
+            URL for the MCP server.
+        """
+        return f"http://{self.mcp_host}:{self.mcp_port}/mcp"
 
 
 @lru_cache(maxsize=1)

@@ -9,19 +9,24 @@ from importlib.metadata import version
 from typing import TYPE_CHECKING
 
 from fastapi import FastAPI
+from langchain_mcp_adapters.client import MultiServerMCPClient
+from langchain_mcp_adapters.sessions import StreamableHttpConnection
 
+from stock_analysis.agent.graph import ChatAgent
 from stock_analysis.jobs.pgqueuer import (
     close_connection,
     create_pgqueuer_with_connection,
     get_connection,
 )
 from stock_analysis.routers.analysis import router as analysis_router
+from stock_analysis.routers.chat import router as chat_router
 from stock_analysis.routers.stock import router as stock_router
 from stock_analysis.settings import get_settings
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
 
+    from langchain_core.tools.base import BaseTool
     from psycopg import AsyncConnection
 
     from stock_analysis.settings import Settings
@@ -44,6 +49,14 @@ tags: list[dict[str, str]] = [
         "name": "analysis",
         "description": "Operations for querying stock analysis results.",
     },
+    {
+        "name": "health",
+        "description": "Health check endpoint to verify service status.",
+    },
+    {
+        "name": "chat",
+        "description": "Chat with the stock analysis agent for insights and data.",
+    },
 ]
 
 message: str = "Welcome to the Stock Analysis API!"
@@ -64,6 +77,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     conn: AsyncConnection = await get_connection()
     app.state.pgq = await create_pgqueuer_with_connection(conn)
 
+    client = MultiServerMCPClient(
+        {
+            "stock-analysis": StreamableHttpConnection(
+                {"transport": "streamable_http", "url": settings.mcp_url}
+            )
+        }
+    )
+    tools: list[BaseTool] = await client.get_tools()
+    app.state.agent = ChatAgent(tools)
+
     yield
 
     await close_connection(conn)
@@ -79,6 +102,7 @@ app = FastAPI(
 )
 app.include_router(stock_router, tags=["stocks"])
 app.include_router(analysis_router, tags=["analysis"])
+app.include_router(chat_router, tags=["chat"])
 
 
 @app.get("/")
@@ -91,7 +115,7 @@ async def root() -> dict[str, str]:
     return {"message": message}
 
 
-@app.get("/health")
+@app.get("/health", tags=["health"])
 async def health_check() -> dict[str, str]:
     """Health check endpoint.
 

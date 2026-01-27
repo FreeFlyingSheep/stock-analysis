@@ -135,7 +135,17 @@ Kubernetes deployment is for production deployment scenarios, but due to hardwar
     - Swagger UI: `http://127.0.0.1:8000/docs`
     - ReDoc: `http://127.0.0.1:8000/redoc`
 
-7. Start the Frontend UI:
+7. Start the MCP server:
+
+    In another terminal, run the FastMCP server:
+
+    ```bash
+    source .venv/bin/activate
+    export $(grep -v '^#' .env | xargs)
+    ./scripts/run_mcp.sh
+    ```
+
+8. Start the Frontend UI:
 
     In another terminal, run the SvelteKit frontend:
 
@@ -193,7 +203,7 @@ Kubernetes deployment is for production deployment scenarios, but due to hardwar
 
 ### Kubernetes Deployment
 
-Take Minikube as an example for local Kubernetes deployment.
+Take Minikube as an example for local Kubernetes deployment (MCP is not supported due to hardware limitations).
 
 1. Ensure you have Minikube running and `kubectl` configured.
 

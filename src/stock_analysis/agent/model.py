@@ -8,6 +8,9 @@ from stock_analysis.settings import get_settings
 
 if TYPE_CHECKING:
     from langchain.messages import AIMessage
+    from langchain.tools import BaseTool
+    from langchain_core.language_models import LanguageModelInput
+    from langgraph.graph.state import Runnable
 
     from stock_analysis.settings import Settings
 
@@ -19,10 +22,10 @@ class LLMError(Exception):
 class LLM:
     """Wrapper around the OpenAI language model."""
 
-    _llm: ChatOpenAI | None
+    _llm: ChatOpenAI | Runnable[LanguageModelInput, AIMessage] | None
     """Instance of the OpenAI language model."""
 
-    def __init__(self) -> None:
+    def __init__(self, tools: list[BaseTool] | None = None) -> None:
         """Initialize the LLM wrapper."""
         settings: Settings = get_settings()
         if (
@@ -31,15 +34,16 @@ class LLM:
             and settings.llm_api_key is not None
             and settings.llm_server_base_url is not None
         ):
-            self._llm = ChatOpenAI(
+            llm = ChatOpenAI(
                 model=settings.llm_model,
                 api_key=settings.llm_api_key,
                 base_url=settings.llm_server_base_url,
             )
+            self._llm = llm.bind_tools(tools) if tools is not None else llm
         else:
             self._llm = None
 
-    def invoke(self, prompt: str) -> AIMessage:
+    def invoke(self, prompt: str | list[str | dict]) -> AIMessage:
         """Invoke the language model with the given prompt.
 
         Args:
@@ -57,7 +61,7 @@ class LLM:
 
         return self._llm.invoke(prompt)
 
-    async def ainvoke(self, prompt: str) -> AIMessage:
+    async def ainvoke(self, prompt: str | list[str | dict]) -> AIMessage:
         """Asynchronously invoke the language model with the given prompt.
 
         Args:
