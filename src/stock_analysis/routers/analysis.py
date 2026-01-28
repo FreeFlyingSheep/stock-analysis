@@ -11,6 +11,7 @@ from fastapi import (
     Request,  # noqa: TC002
     Response,  # noqa: TC002
 )
+from pgqueuer import PgQueuer  # noqa: TC002
 from sqlalchemy.ext.asyncio import AsyncSession  # noqa: TC002
 
 from stock_analysis.schemas.analysis import (
@@ -21,10 +22,10 @@ from stock_analysis.schemas.analysis import (
 )
 from stock_analysis.schemas.api import JobPayload
 from stock_analysis.services.database import get_db
+from stock_analysis.services.pgqueuer import get_pgqueuer
 from stock_analysis.services.stock import StockService
 
 if TYPE_CHECKING:
-    from pgqueuer import PgQueuer
     from pgqueuer.queries import Queries
 
     from stock_analysis.models.analysis import Analysis
@@ -82,9 +83,9 @@ async def get_analysis_details(
 
     Args:
         response: The HTTP response object.
-        request: The incoming HTTP request.
+        request: FastAPI request object for accessing app state.
         stock_code: The stock code to retrieve analysis for.
-        db: Database session dependency injection.
+        db: Database session for data queries.
 
     Returns:
         Analysis results for the specified stock.
@@ -106,11 +107,7 @@ async def get_analysis_details(
     if analysis:
         return response_model
 
-    if not hasattr(request.app.state, "pgq") or request.app.state.pgq is None:
-        msg = "Job queue is not initialized."
-        raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=msg)
-
-    pgq: PgQueuer = request.app.state.pgq
+    pgq: PgQueuer = await get_pgqueuer(request)
     queries: Queries = pgq.qm.queries
     payload: JobPayload = JobPayload(stock_code=stock_code)
     await queries.enqueue(

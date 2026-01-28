@@ -10,22 +10,14 @@ from typing import TYPE_CHECKING
 
 from fastapi import FastAPI
 
-from stock_analysis.agent.client import init_agent
-from stock_analysis.jobs.pgqueuer import (
-    close_connection,
-    create_pgqueuer_with_connection,
-    get_connection,
-)
 from stock_analysis.routers.analysis import router as analysis_router
 from stock_analysis.routers.chat import router as chat_router
 from stock_analysis.routers.stock import router as stock_router
-from stock_analysis.services.bucket import init_buckets
+from stock_analysis.services.pgqueuer import close_pgqueuer
 from stock_analysis.settings import get_settings
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
-
-    from psycopg import AsyncConnection
 
     from stock_analysis.settings import Settings
 
@@ -72,17 +64,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     Yields:
         None during application running phase.
     """
-    conn: AsyncConnection = await get_connection()
-    app.state.pgq = await create_pgqueuer_with_connection(conn)
-
-    app.state.mc = init_buckets()
-
-    if settings.use_llm:
-        app.state.agent = await init_agent()
+    app.state.conn = None
+    app.state.pgq = None
+    app.state.mc = None
+    app.state.mcp = None
 
     yield
 
-    await close_connection(conn)
+    await close_pgqueuer(app)
 
 
 app = FastAPI(

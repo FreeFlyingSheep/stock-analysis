@@ -4,11 +4,8 @@ import asyncio
 import logging
 from typing import TYPE_CHECKING
 
-from stock_analysis.jobs.pgqueuer import (
-    close_connection,
-    create_pgqueuer_with_connection,
-    get_connection,
-)
+from stock_analysis.jobs.pgqueuer import get_connection
+from stock_analysis.services.pgqueuer import create_pgqueuer_with_connection
 from stock_analysis.settings import get_settings
 
 if TYPE_CHECKING:
@@ -35,7 +32,7 @@ async def main() -> None:
     await queries.enqueue("analyze_all_stocks", None, priority=10)
 
     await asyncio.sleep(5)
-    await close_connection(conn)
+    await conn.close()
     logger.info("Finished.")
 
 

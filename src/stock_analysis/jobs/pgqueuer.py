@@ -46,20 +46,16 @@ async def get_connection() -> AsyncConnection[TupleRow]:
     )
 
 
-async def create_pgqueuer_with_connection(
-    connection: AsyncConnection[TupleRow],
-) -> PgQueuer:
-    """Build and configure a PgQueuer with an existing database connection.
+async def create_pgqueuer() -> PgQueuer:
+    """Build and configure a PgQueuer with a new database connection.
 
-    Creates a PgQueuer instance for async job processing and registers
-    job handlers for crawling and analyzing stock data.
-
-    Args:
-        connection: Active AsyncConnection to PostgreSQL database.
+    Creates a new database connection and initializes a PgQueuer instance
+    with job handlers.
 
     Returns:
         Configured PgQueuer instance ready for job queueing and processing.
     """
+    connection: AsyncConnection = await get_connection()
     resources: dict[str, Any] = {
         "cninfo_adapter": CNInfoAdapter(get_settings().config_dir),
         "yahoo_finance_adapter": YahooFinanceAdapter(),
@@ -143,25 +139,3 @@ async def create_pgqueuer_with_connection(
         await queries.enqueue("analyze_all_stock_data", None, priority=10)
 
     return pgq
-
-
-async def create_pgqueuer() -> PgQueuer:
-    """Build and configure a PgQueuer with a new database connection.
-
-    Creates a new database connection and initializes a PgQueuer instance
-    with job handlers.
-
-    Returns:
-        Configured PgQueuer instance ready for job processing.
-    """
-    connection: AsyncConnection = await get_connection()
-    return await create_pgqueuer_with_connection(connection)
-
-
-async def close_connection(conn: AsyncConnection) -> None:
-    """Close the database connection.
-
-    Args:
-        conn: The AsyncConnection to close.
-    """
-    await conn.close()

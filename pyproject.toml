@@ -38,7 +38,6 @@ classifiers = [
 dependencies = [
     "aiolimiter>=1.2.1",
     "alembic>=1.17.2",
-    "asyncio>=4.0.0",
     "fastapi[standard-no-fastapi-cloud-cli]>=0.124.4",
     "fastmcp>=2.14.4",
     "langchain>=1.1.3",
