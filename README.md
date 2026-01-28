@@ -15,6 +15,10 @@ I do **NOT** provide any financial, investment, or trading recommendations. User
 
 **Investment involves risk, including possible loss of principal.** Past performance is not indicative of future results. Use this tool at your own risk and discretion.
 
+The crawler/downloader will automatically fetch data from third-party websites like CNInfo and Yahoo Finance in 1st January and 1st June; the analyzer will compute scores based on the fetched data and user-defined rules in 1st February and 1st July. The limited frequency is to reduce the traffic to the target websites and avoid being blocked. They are for testing purposes only.
+
+Only ten annual reports are downloaded in `data` in advance. They are for testing RAG (Retrieval-Augmented Generation) capability only and I will not provide reports crawler for ethics and security reasons, as they may cause huge traffic to the target websites.
+
 ## Features
 
 - **Stock Data Management**: Store and query Chinese A-share stock information with classifications and industries
@@ -44,16 +48,14 @@ High priority:
 
 Medium priority:
 
-- Expand data source integrations
 - Add RAG (Retrieval-Augmented Generation) capabilities
+- Add observability and monitoring with logging aggregation
 
 Low priority:
 
 - Avoid duplicate jobs in PgQueuer
-- Add observability and monitoring with logging aggregation
-- Deploy with Docker and Kubernetes
+- Expand data source integrations
 - Refine frontend UI/UX design
-- Map stock industry sectors to classifications correctly
 
 ## Requirements
 
@@ -65,7 +67,7 @@ Low priority:
 
 **Warning: all the setup methods below will drop and recreate the database, erasing any existing data.**
 
-If you want to keep existing data, skip the database initialization step (``./scripts/init.sh``) and ensure the database schema is up to date by running Alembic migrations manually.
+If you want to keep existing data, dump the database first (``./scripts/dump_db.sh``) or ensure the database schema is up to date by running Alembic migrations manually.
 
 [Docker Compose setup](#docker-compose-setup) is **recommended** for most users due to its simplicity and ease of use.
 [Local development setup](#local-development-setup) is only intended for development and testing.
@@ -98,7 +100,7 @@ If you want to keep existing data, skip the database initialization step (``./sc
 4. Initialize the database (install PostgreSQL and [pgvector](https://github.com/pgvector/pgvector) first):
 
     ```bash
-    ./scripts/init.sh
+    ./scripts/init_db.sh
     ```
 
     This script will:

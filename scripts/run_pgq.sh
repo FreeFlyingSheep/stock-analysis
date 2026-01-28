@@ -3,7 +3,7 @@
 #
 # Requirements:
 #   - Valid .env file with database credentials
-#   - scripts/init.sh has been run to set up the project
+#   - scripts/init_db.sh has been run to set up the project
 set -euo pipefail
 
 pgq \

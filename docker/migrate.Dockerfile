@@ -28,4 +28,4 @@ COPY --from=build /app/scripts /app/scripts
 COPY --from=build /app/src /app/src
 COPY --from=build /app/pyproject.toml /app/pyproject.toml
 
-CMD ["bash", "-c", "./scripts/init.sh"]
+CMD ["bash", "-c", "./scripts/migrate.sh"]

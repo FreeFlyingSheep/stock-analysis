@@ -68,6 +68,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      minio:
+        condition: service_healthy
     restart: "no"
 
   api:
@@ -104,8 +106,6 @@ services:
     depends_on:
       migrate:
         condition: service_completed_successfully
-      minio:
-        condition: service_healthy
       mcp:
         condition: service_healthy
     healthcheck:
@@ -125,8 +125,6 @@ services:
     depends_on:
       migrate:
         condition: service_completed_successfully
-      minio:
-        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:9000/health"]
       interval: 30s
