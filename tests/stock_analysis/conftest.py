@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from tenacity import wait_exponential
+from testcontainers.minio import MinioContainer  # type: ignore[import-untyped]
 from testcontainers.postgres import PostgresContainer  # type: ignore[import-untyped]
 
 from stock_analysis.adapters.cninfo import CNInfoAdapter
@@ -31,12 +32,13 @@ from stock_analysis.routers.stock import router as stock_router
 from stock_analysis.services.database import get_db
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable, Callable
+    from collections.abc import Awaitable, Callable, Generator
 
     from fastapi import APIRouter
     from fastmcp.client import FastMCPTransport
     from fastmcp.server.openapi import FastMCPOpenAPI
     from httpx import Request
+    from minio import Minio
     from sqlalchemy.ext.asyncio import AsyncEngine
 
 
@@ -77,6 +79,17 @@ async def async_session(
         await s.rollback()
     async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
+
+
+@pytest.fixture(scope="session")
+def minio_container() -> Generator[MinioContainer]:
+    with MinioContainer("minio/minio:RELEASE.2025-09-07T16-13-09Z") as container:
+        yield container
+
+
+@pytest.fixture(scope="session")
+def minio_client(minio_container: MinioContainer) -> Minio:
+    return minio_container.get_client()
 
 
 @pytest_asyncio.fixture

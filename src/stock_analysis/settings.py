@@ -42,6 +42,19 @@ class Settings(BaseSettings):
     database_db: str
     """Database name."""
 
+    minio_host: str
+    """MinIO host."""
+    minio_port: int
+    """MinIO port."""
+    minio_user: str
+    """MinIO root user."""
+    minio_password: SecretStr
+    """MinIO root password."""
+    minio_bucket_prefix: str
+    """Prefix for MinIO buckets."""
+    minio_secure: bool
+    """Use secure connection for MinIO."""
+
     config_dir: str
     """Directory for configuration files."""
     rule_file_path: str
@@ -132,6 +145,33 @@ class Settings(BaseSettings):
             URL for the MCP server.
         """
         return f"http://{self.mcp_host}:{self.mcp_port}/mcp"
+
+    @cached_property
+    def minio_endpoint(self) -> str:
+        """Construct the MinIO server endpoint.
+
+        Returns:
+            Endpoint for the MinIO server.
+        """
+        return f"{self.minio_host}:{self.minio_port}"
+
+    @cached_property
+    def minio_bucket_raw(self) -> str:
+        """Construct the raw MinIO bucket name.
+
+        Returns:
+            Raw bucket name for MinIO.
+        """
+        return f"{self.minio_bucket_prefix}raw"
+
+    @cached_property
+    def minio_bucket_processed(self) -> str:
+        """Construct the processed MinIO bucket name.
+
+        Returns:
+            Processed bucket name for MinIO.
+        """
+        return f"{self.minio_bucket_prefix}processed"
 
 
 @lru_cache(maxsize=1)

@@ -9,10 +9,8 @@ from importlib.metadata import version
 from typing import TYPE_CHECKING
 
 from fastapi import FastAPI
-from langchain_mcp_adapters.client import MultiServerMCPClient
-from langchain_mcp_adapters.sessions import StreamableHttpConnection
 
-from stock_analysis.agent.graph import ChatAgent
+from stock_analysis.agent.client import init_agent
 from stock_analysis.jobs.pgqueuer import (
     close_connection,
     create_pgqueuer_with_connection,
@@ -21,12 +19,12 @@ from stock_analysis.jobs.pgqueuer import (
 from stock_analysis.routers.analysis import router as analysis_router
 from stock_analysis.routers.chat import router as chat_router
 from stock_analysis.routers.stock import router as stock_router
+from stock_analysis.services.bucket import init_buckets
 from stock_analysis.settings import get_settings
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
 
-    from langchain_core.tools.base import BaseTool
     from psycopg import AsyncConnection
 
     from stock_analysis.settings import Settings
@@ -77,15 +75,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     conn: AsyncConnection = await get_connection()
     app.state.pgq = await create_pgqueuer_with_connection(conn)
 
-    client = MultiServerMCPClient(
-        {
-            "stock-analysis": StreamableHttpConnection(
-                {"transport": "streamable_http", "url": settings.mcp_url}
-            )
-        }
-    )
-    tools: list[BaseTool] = await client.get_tools()
-    app.state.agent = ChatAgent(tools)
+    app.state.mc = init_buckets()
+
+    if settings.use_llm:
+        app.state.agent = await init_agent()
 
     yield
 

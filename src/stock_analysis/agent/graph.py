@@ -3,14 +3,17 @@
 import operator
 from typing import TYPE_CHECKING, Annotated
 
-from langchain.messages import AIMessage, ToolMessage
+from langchain.messages import (
+    AIMessage,
+    AnyMessage,  # noqa: TC002
+    ToolMessage,
+)
 from langgraph.graph import END, START, StateGraph
 from typing_extensions import TypedDict
 
 from stock_analysis.agent.model import LLM, Embeddings
 
 if TYPE_CHECKING:
-    from langchain.messages import AnyMessage
     from langchain.tools import BaseTool
     from langgraph.graph.state import CompiledStateGraph
 

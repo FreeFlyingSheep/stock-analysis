@@ -1,7 +1,10 @@
 # Local environment files
 .env
 .vscode/
+
+# Database files
 data/data.sql
+data/minio/
 
 # Log files
 logs/
