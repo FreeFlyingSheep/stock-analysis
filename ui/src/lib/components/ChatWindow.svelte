@@ -1,7 +1,11 @@
 <script lang="ts">
     import { t } from "$lib/i18n";
+    import { sendChatMessage } from "$lib/api";
 
-    type Message = { role: "user" | "assistant"; content: string };
+    type Message = {
+        role: "system" | "user" | "assistant" | "tool";
+        content: string;
+    };
 
     let { floating = false, onClose = undefined } = $props<{
         floating?: boolean;
@@ -11,6 +15,7 @@
     let messages = $state<Message[]>([]);
     let inputMessage = $state("");
     let isLoading = $state(false);
+    let error = $state<string | null>(null);
 
     async function sendMessage() {
         if (!inputMessage.trim() || isLoading) return;
@@ -19,17 +24,20 @@
         inputMessage = "";
         messages = [...messages, { role: "user", content: userMessage }];
         isLoading = true;
+        error = null;
 
-        // Placeholder for future LLM integration
-        await new Promise((resolve) => setTimeout(resolve, 800));
-        messages = [
-            ...messages,
-            {
-                role: "assistant",
-                content: "🚧 " + $t("chat.comingSoon"),
-            },
-        ];
-        isLoading = false;
+        try {
+            const response = await sendChatMessage(userMessage);
+            messages = [...messages, ...response.messages];
+        } catch (err) {
+            error =
+                err instanceof Error
+                    ? err.message
+                    : "Failed to send message. Please try again.";
+            console.error("Chat error:", err);
+        } finally {
+            isLoading = false;
+        }
     }
 
     function handleKeydown(event: KeyboardEvent) {
@@ -41,6 +49,7 @@
 
     function clearChat() {
         messages = [];
+        error = null;
     }
 </script>
 
@@ -104,7 +113,15 @@
             {#each messages as message}
                 <div class={`message ${message.role}`}>
                     <div class="avatar">
-                        {message.role === "user" ? "👤" : "🤖"}
+                        {#if message.role === "system"}
+                            ⚙️
+                        {:else if message.role === "user"}
+                            👤
+                        {:else if message.role === "assistant"}
+                            🤖
+                        {:else if message.role === "tool"}
+                            🛠️
+                        {/if}
                     </div>
                     <div class="bubble">{message.content}</div>
                 </div>
@@ -117,6 +134,12 @@
                         <span class="dot"></span>
                         <span class="dot"></span>
                     </div>
+                </div>
+            {/if}
+            {#if error}
+                <div class="error-message">
+                    <div class="avatar">⚠️</div>
+                    <div class="bubble error-bubble">{error}</div>
                 </div>
             {/if}
         {/if}
@@ -148,8 +171,6 @@
             {$t("chat.send")}
         </button>
     </div>
-
-    <p class="muted notice">{$t("chat.comingSoon")}</p>
 </div>
 
 <style>
@@ -360,8 +381,16 @@
         cursor: not-allowed;
     }
 
-    .notice {
-        text-align: center;
-        padding: 0.75rem 1.25rem 1rem;
+    .error-message {
+        display: flex;
+        gap: 0.5rem;
+        max-width: 90%;
+        align-self: flex-start;
+    }
+
+    .error-bubble {
+        background: rgba(239, 68, 68, 0.1) !important;
+        border-color: #ef4444 !important;
+        color: #dc2626;
     }
 </style>

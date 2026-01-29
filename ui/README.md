@@ -72,6 +72,7 @@ The frontend communicates with the FastAPI backend via the `/api` endpoint, whic
 - `GET /stocks` - List stocks with pagination and filtering
 - `GET /stocks/{code}` - Get stock details with CNInfo and Yahoo Finance data
 - `GET /analysis/{code}` - Get analysis scores and metrics for a stock
+- `POST /chat` - Send chat messages to the AI agent and receive responses
 
 ## Technologies
 

@@ -73,3 +73,12 @@ export interface AnalysisApiResponse {
 export interface AnalysisDetailApiResponse {
     data: AnalysisOut[];
 }
+
+export interface ChatMessageOut {
+    role: "system" | "user" | "assistant" | "tool";
+    content: string;
+}
+
+export interface ChatResponseOut {
+    messages: ChatMessageOut[];
+}

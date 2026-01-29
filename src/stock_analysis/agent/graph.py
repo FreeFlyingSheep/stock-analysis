@@ -1,11 +1,12 @@
 """Graph node definitions for stock analysis agent."""
 
 import operator
-from typing import TYPE_CHECKING, Annotated
+from typing import TYPE_CHECKING, Annotated, NotRequired
 
 from langchain.messages import (
     AIMessage,
     AnyMessage,  # noqa: TC002
+    HumanMessage,
     ToolMessage,
 )
 from langgraph.graph import END, START, StateGraph
@@ -23,9 +24,9 @@ class MessagesState(TypedDict):
 
     messages: Annotated[list[AnyMessage], operator.add]
     """List of messages exchanged in the chat."""
-    llm_calls: int
+    llm_calls: NotRequired[int]
     """Number of LLM calls made."""
-    tool_calls: int
+    tool_calls: NotRequired[int]
     """Number of tool calls made."""
 
 
@@ -127,3 +128,27 @@ class ChatAgent:
             agent_builder.compile()
         )
         return agent
+
+    def invoke(self, message: str) -> dict:
+        """Invoke the chat agent with a user message.
+
+        Args:
+            message: User's input message.
+
+        Returns:
+            Resulting state after processing the message.
+        """
+        messages: list[AnyMessage] = [HumanMessage(content=message)]
+        return self._agent.invoke({"messages": messages})
+
+    async def ainvoke(self, message: str) -> dict:
+        """Asynchronously invoke the chat agent with a user message.
+
+        Args:
+            message: User's input message.
+
+        Returns:
+            Resulting state after processing the message.
+        """
+        messages: list[AnyMessage] = [HumanMessage(content=message)]
+        return await self._agent.ainvoke({"messages": messages})
