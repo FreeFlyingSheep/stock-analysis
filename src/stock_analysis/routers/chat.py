@@ -40,7 +40,7 @@ def _convert_messages(messages: list[AnyMessage]) -> list[ChatMessageOut]:
             content: str = message.text
             result.append(ChatMessageOut(role="system", content=content))
         elif isinstance(message, HumanMessage):
-            content: str = message.text
+            content = message.text
             result.append(ChatMessageOut(role="user", content=content))
         elif isinstance(message, AIMessage):
             content = message.text

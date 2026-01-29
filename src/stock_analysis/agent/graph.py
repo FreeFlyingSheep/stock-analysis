@@ -7,6 +7,7 @@ from langchain.messages import (
     AIMessage,
     AnyMessage,  # noqa: TC002
     HumanMessage,
+    SystemMessage,
     ToolMessage,
 )
 from langgraph.graph import END, START, StateGraph
@@ -47,7 +48,7 @@ class ChatAgent:
         self._tools_by_name = {tool.name: tool for tool in tools}
         self._agent = self._create_agent()
 
-    def _llm_call(self, state: MessagesState) -> dict:
+    async def _llm_call(self, state: MessagesState) -> dict:
         """Invoke the LLM with the current messages.
 
         Args:
@@ -56,13 +57,15 @@ class ChatAgent:
         Returns:
             Updated state with new message and incremented LLM call count.
         """
+        messages: list[AnyMessage] = [
+            SystemMessage(content="You are a helpful assistant."),
+        ]
         return {
-            "messages": self._llm.invoke(state["messages"][-1].content)
-            + state["messages"],
+            "messages": [await self._llm.ainvoke(messages + state["messages"])],
             "llm_calls": state.get("llm_calls", 0) + 1,
         }
 
-    def _tool_node(self, state: MessagesState) -> dict:
+    async def _tool_node(self, state: MessagesState) -> dict:
         """Performs the tool call.
 
         Args:
@@ -77,7 +80,9 @@ class ChatAgent:
         if isinstance(message, AIMessage):
             for tool_call in message.tool_calls:
                 tool: BaseTool = self._tools_by_name[tool_call["name"]]
-                observation: str | list[str | dict] = tool.invoke(tool_call["args"])
+                observation: str | list[str | dict] = await tool.ainvoke(
+                    tool_call["args"]
+                )
                 result.append(
                     ToolMessage(content=observation, tool_call_id=tool_call["id"])
                 )

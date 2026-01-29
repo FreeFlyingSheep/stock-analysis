@@ -2,7 +2,7 @@
 .env
 .vscode/
 
-# Database files
+# Data files
 data/data.sql
 data/minio/
 

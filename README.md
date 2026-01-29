@@ -44,7 +44,6 @@ Only ten annual reports are downloaded in `data` in advance. They are for testin
 High priority:
 
 - Integrate LLM for advanced stock analysis and explanations
-- Add a chatbot interface for querying stock information
 
 Medium priority:
 
@@ -201,7 +200,7 @@ The configurations are set in `.env` and overridden in `compose.yaml`. If you ne
     docker compose up -d --build --force-recreate
     ```
 
-    You can access the services at `http://127.0.0.1`.
+    You can access the services at `http://127.0.0.1:8080`.
 
 5. Remove all local images after shutting down:
 
@@ -214,6 +213,8 @@ The configurations are set in `.env` and overridden in `compose.yaml`. If you ne
     ```bash
     docker compose down -v --rmi local
     ```
+
+If you have dumped the database, you can restore it by running `docker exec -i stock-analysis-postgres-1 psql -U postgres -d stock_analysis < data/data.sql`, ignoring the error messages about existing objects.
 
 ### Kubernetes Setup
 

@@ -43,7 +43,7 @@ class LLM:
         else:
             self._llm = None
 
-    def invoke(self, prompt: str | list[str | dict]) -> AIMessage:
+    def invoke(self, prompt: LanguageModelInput) -> AIMessage:
         """Invoke the language model with the given prompt.
 
         Args:
@@ -61,7 +61,7 @@ class LLM:
 
         return self._llm.invoke(prompt)
 
-    async def ainvoke(self, prompt: str | list[str | dict]) -> AIMessage:
+    async def ainvoke(self, prompt: LanguageModelInput) -> AIMessage:
         """Asynchronously invoke the language model with the given prompt.
 
         Args:

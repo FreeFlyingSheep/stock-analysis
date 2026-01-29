@@ -18,5 +18,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Basic UI with SvelteKit
 - Docker Compose and Kubernetes for deployment
 - MCP server via FastMCP
+- Chatbot interface for querying stock information
 
 [Unreleased]: https://github.com/FreeFlyingSheep/stock-analysis

@@ -2,6 +2,8 @@
 
 from typing import TYPE_CHECKING
 
+from fastapi import Request  # noqa: TC002
+from fastapi.responses import JSONResponse
 from fastmcp import FastMCP
 from fastmcp.server.openapi import MCPType, RouteMap
 
@@ -17,3 +19,9 @@ mcp: FastMCPOpenAPI = FastMCP.from_fastapi(
         RouteMap(tags={"chat"}, mcp_type=MCPType.EXCLUDE),
     ],
 )
+
+
+@mcp.custom_route("/health", methods=["GET"])
+async def health_check(_request: Request) -> JSONResponse:
+    """Health check endpoint for MCP server."""
+    return JSONResponse({"status": "healthy", "service": "mcp-server"})

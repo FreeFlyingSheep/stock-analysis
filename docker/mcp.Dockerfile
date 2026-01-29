@@ -1,5 +1,7 @@
 FROM python:3.14.2-slim-trixie AS build
 
+RUN apt-get update && apt-get install -y curl
+
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 WORKDIR /app

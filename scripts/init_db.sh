@@ -17,7 +17,12 @@ python scripts/drop_db.py
 python scripts/create_db.py
 
 if [ -f data/data.sql ]; then
-    psql -h ${DATABASE_HOST} -p ${DATABASE_PORT} -U ${DATABASE_USER} -d ${DATABASE_DB} -f data/data.sql
+    psql \
+    -h ${DATABASE_HOST} \
+    -p ${DATABASE_PORT} \
+    -U ${DATABASE_USER} \
+    -d ${DATABASE_DB} \
+    -f data/data.sql
 else
     alembic -c pyproject.toml upgrade head
     python scripts/import_csv.py

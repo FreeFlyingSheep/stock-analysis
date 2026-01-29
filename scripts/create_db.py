@@ -41,7 +41,7 @@ def create_database(settings: Settings) -> None:
                     sql.Identifier(settings.database_db)
                 )
             )
-            cur.execute(sql.SQL("CREATE EXTENSION vector"))
+            cur.execute(sql.SQL("CREATE EXTENSION IF NOT EXISTS vector"))
             logger.info("Created database: %s", settings.database_db)
         else:
             logger.info("Database already exists: %s", settings.database_db)
