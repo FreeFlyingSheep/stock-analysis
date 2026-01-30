@@ -39,5 +39,8 @@ jobs:
       - name: Install dependencies
         run: pnpm --prefix ui install
 
+      - name: Copy env file
+        run: cp .env.example .env
+
       - name: Run check script
         run: ./scripts/check.sh
