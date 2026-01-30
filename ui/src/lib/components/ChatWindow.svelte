@@ -52,10 +52,7 @@
                 }
             }
         } catch (err) {
-            error =
-                err instanceof Error
-                    ? err.message
-                    : "Failed to send message. Please try again.";
+            error = err instanceof Error ? err.message : $t("chatErrorMessage");
             console.error("Chat error:", err);
         } finally {
             isLoading = false;

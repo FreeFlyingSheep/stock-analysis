@@ -104,9 +104,12 @@ const messages: Record<Locale, TranslationMap> = {
                 "Data will be fetched automatically. Please refresh soon.",
             requestParams: "Request Parameters",
             responseData: "Response Data",
+            yahooHistoricalPrice: "Historical Price Data",
         },
         loading: "loading...",
         footer: "Stock Analysis Tool - For reference and educational purposes only.",
+        appTitle: "Stock Analysis",
+        chatErrorMessage: "Failed to send message. Please try again.",
     },
     zh: {
         nav: {
@@ -200,9 +203,12 @@ const messages: Record<Locale, TranslationMap> = {
             dataHint: "数据将自动抓取，请稍后刷新。",
             requestParams: "请求参数",
             responseData: "响应数据",
+            yahooHistoricalPrice: "历史价格数据",
         },
         loading: "加载中……",
         footer: "Stock Analysis 工具 - 仅供参考与学习。",
+        appTitle: "股票分析",
+        chatErrorMessage: "消息发送失败。请重试。",
     },
 };
 

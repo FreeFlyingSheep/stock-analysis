@@ -18,13 +18,13 @@
 
 <svelte:head>
     <link rel="icon" href={favicon} />
-    <title>Stock Analysis</title>
+    <title>{$t("appTitle")}</title>
 </svelte:head>
 
 <div class="app-shell">
     <header class="topbar">
         <div class="topbar__inner page-shell">
-            <a href="/" class="brand">📈 Stock Analysis</a>
+            <a href="/" class="brand">📈 {$t("appTitle")}</a>
             <nav class="nav">
                 {#each links as link}
                     <a

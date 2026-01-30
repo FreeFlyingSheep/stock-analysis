@@ -32,7 +32,7 @@
             analysisDetails = analysisRes;
             stockInfo =
                 stocksRes.data.stockPage.data.find(
-                    (s) => s.stockCode === stockCode
+                    (s) => s.stockCode === stockCode,
                 ) || null;
         } catch (e) {
             error =
@@ -97,7 +97,7 @@
         return analysisDetails.data.reduce((latest, current) =>
             new Date(current.updatedAt) > new Date(latest.updatedAt)
                 ? current
-                : latest
+                : latest,
         );
     }
 
@@ -198,7 +198,7 @@
                                         <tr>
                                             <td
                                                 >{formatDate(
-                                                    analysis.updatedAt
+                                                    analysis.updatedAt,
                                                 )}</td
                                             >
                                             <td>
@@ -226,7 +226,7 @@
 
                     <p class="update-info">
                         {$t("stock.lastUpdated")}: {formatDate(
-                            latestAnalysis.updatedAt
+                            latestAnalysis.updatedAt,
                         )}
                     </p>
                 </div>
@@ -282,7 +282,7 @@
                         <details class="card data-item">
                             <summary>
                                 <span class="endpoint"
-                                    >Historical Price Data</span
+                                    >{$t("stock.yahooHistoricalPrice")}</span
                                 >
                                 <span class="updated"
                                     >{formatDate(item.updatedAt)}</span

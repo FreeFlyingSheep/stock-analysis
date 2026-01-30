@@ -94,7 +94,7 @@ Only ten annual reports are downloaded in `data` in advance. They are for testin
 
 - **Interactive Dashboard**: SvelteKit UI with stock explorer and data visualization
 - **Advanced Filtering**: Query stocks with filtering by classification, industry, and custom criteria with pagination
-- **Bilingual Support**: Full `EN/中文` toggle for global accessibility
+- **Internationalization (i18n) Support**: English and Chinese toggle for global accessibility
 - **Floating Chat Widget**: Integrated AI chatbot for on-demand analysis assistance
 
 ### Infrastructure & Deployment
