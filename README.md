@@ -4,6 +4,18 @@
 
 Stock Analysis is a comprehensive A-share fundamental scoring agent for Chinese stock analysis. It provides data crawling from multiple sources (CNInfo, Yahoo Finance), rule-based scoring, filtering, and a RESTful API for querying results.
 
+## Disclaimer
+
+**This tool is for reference and educational purposes only. The data and analysis provided are for informational purposes and should not be considered as financial advice.**
+
+I do **NOT** provide any financial, investment, or trading recommendations. Users should conduct their own research and consult with qualified financial advisors before making any investment decisions.
+
+**Investment involves risk, including possible loss of principal.** Past performance is not indicative of future results. Use this tool at your own risk and discretion.
+
+The crawler/downloader will automatically fetch data from third-party websites like CNInfo and Yahoo Finance on Jan 1 and Jul 1; the analyzer will compute scores based on the fetched data and user-defined rules on Feb 1 and Aug 1. The limited frequency is to reduce the traffic to the target websites and avoid being blocked. They are for testing purposes only.
+
+Only ten annual reports are downloaded in `data` in advance. They are for testing RAG (Retrieval-Augmented Generation) capability only and I will not provide reports crawler for ethics and security reasons, as they may cause huge traffic to the target websites.
+
 This project is developed with the assistance of AI tools:
 
 - GitHub Copilot for code and documentation generation, and suggestions
@@ -59,18 +71,6 @@ This project is developed with the assistance of AI tools:
 
 - **YAML** for API specifications, scoring rules, and configuration
 - **CSV** for bulk data import and export
-
-## Disclaimer
-
-**This tool is for reference and educational purposes only. The data and analysis provided are for informational purposes and should not be considered as financial advice.**
-
-I do **NOT** provide any financial, investment, or trading recommendations. Users should conduct their own research and consult with qualified financial advisors before making any investment decisions.
-
-**Investment involves risk, including possible loss of principal.** Past performance is not indicative of future results. Use this tool at your own risk and discretion.
-
-The crawler/downloader will automatically fetch data from third-party websites like CNInfo and Yahoo Finance on Jan 1 and Jul 1; the analyzer will compute scores based on the fetched data and user-defined rules on Feb 1 and Aug 1. The limited frequency is to reduce the traffic to the target websites and avoid being blocked. They are for testing purposes only.
-
-Only ten annual reports are downloaded in `data` in advance. They are for testing RAG (Retrieval-Augmented Generation) capability only and I will not provide reports crawler for ethics and security reasons, as they may cause huge traffic to the target websites.
 
 ## Features
 
