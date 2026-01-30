@@ -3,31 +3,12 @@ import type {
     StockDetailApiResponse,
     AnalysisApiResponse,
     AnalysisDetailApiResponse,
-    ChatResponseOut,
 } from "./types";
 
 const API_BASE_URL = "/api";
 
 async function fetchApi<T>(endpoint: string): Promise<T> {
     const response = await fetch(`${API_BASE_URL}${endpoint}`);
-    if (!response.ok) {
-        throw new Error(`API error: ${response.status} ${response.statusText}`);
-    }
-    return response.json();
-}
-
-async function fetchApiWithBody<T>(
-    endpoint: string,
-    method: string,
-    body: unknown,
-): Promise<T> {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-        method,
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
-    });
     if (!response.ok) {
         throw new Error(`API error: ${response.status} ${response.statusText}`);
     }
@@ -85,8 +66,77 @@ export async function getAnalysisDetails(
     return fetchApi<AnalysisDetailApiResponse>(`/analysis/${stockCode}`);
 }
 
-export async function sendChatMessage(
+export type StreamTokenEvent = {
+    type: "token";
+    data: string;
+}
+
+export type StreamDoneEvent = {
+    type: "done";
+}
+
+export type StreamEvent = StreamTokenEvent | StreamDoneEvent;
+
+export async function* streamChatMessage(
     message: string,
-): Promise<ChatResponseOut> {
-    return fetchApiWithBody<ChatResponseOut>("/chat", "POST", { message });
+): AsyncGenerator<StreamEvent, void, unknown> {
+    const response = await fetch(`${API_BASE_URL}/chat`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Accept: "text/event-stream",
+        },
+        body: JSON.stringify({ message }),
+    });
+
+    if (!response.ok) {
+        throw new Error(`API error: ${response.status} ${response.statusText}`);
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) {
+        throw new Error("No response body");
+    }
+
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        const events = buffer.split("\n\n");
+        buffer = events.pop() || "";
+
+        for (const event of events) {
+            if (!event.trim()) continue;
+
+            const lines = event.split("\n");
+            let eventType = "";
+            let data = "";
+
+            for (const line of lines) {
+                if (line.startsWith("event: ")) {
+                    eventType = line.slice(7).trim();
+                } else if (line.startsWith("data: ")) {
+                    data = line.slice(6);
+                }
+            }
+
+            if (eventType === "done") {
+                yield { type: "done" };
+                return;
+            }
+
+            if (eventType === "token" && data) {
+                try {
+                    yield { type: "token", data: data };
+                } catch {
+                    // Skip invalid JSON
+                }
+            }
+        }
+    }
 }

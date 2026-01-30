@@ -15,23 +15,13 @@ class ChatMessageIn(BaseSchema):
     message: str
 
 
-class ChatMessageOut(BaseSchema):
-    """Output schema for chat messages.
+class StreamEvent(BaseSchema):
+    """Generic stream event schema.
 
     Attributes:
-        role: The role of the message sender.
-        content: The message content.
+        type: Type of the event.
+        data: Content of the event, if applicable.
     """
 
-    role: Literal["system", "user", "assistant", "tool"]
-    content: str
-
-
-class ChatResponseOut(BaseSchema):
-    """Output schema for chat responses.
-
-    Attributes:
-        messages: Response messages.
-    """
-
-    messages: list[ChatMessageOut]
+    event: Literal["token", "done"]
+    data: str | None = None

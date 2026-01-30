@@ -1,9 +1,9 @@
 <script lang="ts">
     import { t } from "$lib/i18n";
-    import { sendChatMessage } from "$lib/api";
+    import { streamChatMessage } from "$lib/api";
 
     type Message = {
-        role: "system" | "user" | "assistant" | "tool";
+        role: "user" | "assistant";
         content: string;
     };
 
@@ -26,9 +26,31 @@
         isLoading = true;
         error = null;
 
+        let currentAssistantMessage = "";
+        let hasStartedResponse = false;
+
         try {
-            const response = await sendChatMessage(userMessage);
-            messages = [...messages, ...response.messages];
+            for await (const event of streamChatMessage(userMessage)) {
+                if (event.type === "token") {
+                    if (!hasStartedResponse) {
+                        hasStartedResponse = true;
+                        messages = [
+                            ...messages,
+                            { role: "assistant", content: event.data },
+                        ];
+                    } else {
+                        currentAssistantMessage += event.data;
+                        messages = messages.map((msg, idx) =>
+                            idx === messages.length - 1
+                                ? {
+                                      ...msg,
+                                      content: msg.content + event.data,
+                                  }
+                                : msg,
+                        );
+                    }
+                }
+            }
         } catch (err) {
             error =
                 err instanceof Error
@@ -113,14 +135,10 @@
             {#each messages as message}
                 <div class={`message ${message.role}`}>
                     <div class="avatar">
-                        {#if message.role === "system"}
-                            ⚙️
-                        {:else if message.role === "user"}
+                        {#if message.role === "user"}
                             👤
                         {:else if message.role === "assistant"}
                             🤖
-                        {:else if message.role === "tool"}
-                            🛠️
                         {/if}
                     </div>
                     <div class="bubble">{message.content}</div>
@@ -181,13 +199,21 @@
         border: 1px solid var(--color-border-strong);
         border-radius: 16px;
         box-shadow: var(--shadow-lg);
-        max-width: 720px;
-        width: 100%;
+        width: 720px;
+        min-height: 400px;
         max-height: 80vh;
+        flex-shrink: 0;
     }
 
     .chat-window.floating {
         width: 420px;
+    }
+
+    @media (max-width: 768px) {
+        .chat-window {
+            width: 100%;
+            min-width: 280px;
+        }
     }
 
     .chat-header {
@@ -222,6 +248,7 @@
         display: flex;
         flex-direction: column;
         gap: 0.75rem;
+        min-width: 0;
     }
 
     .welcome {
@@ -229,6 +256,7 @@
         padding: 1rem;
         border: 1px dashed var(--color-border);
         border-radius: 12px;
+        width: 100%;
     }
 
     .welcome-icon {
@@ -287,6 +315,7 @@
         background: var(--color-surface-strong);
         border: 1px solid var(--color-border);
         line-height: 1.5;
+        word-break: break-word;
     }
 
     .message.user .bubble {
@@ -299,6 +328,7 @@
         display: flex;
         gap: 0.25rem;
         align-items: center;
+        min-width: 50px;
     }
 
     .dot {

@@ -6,7 +6,15 @@
 <section>
     <h1>💬 {$t("chat.title")}</h1>
     <p class="muted">{$t("chat.subtitle")}</p>
-    <div class="card">
+    <div class="chat-container">
         <ChatWindow />
     </div>
 </section>
+
+<style>
+    .chat-container {
+        width: 100%;
+        min-width: 320px;
+        max-width: 720px;
+    }
+</style>

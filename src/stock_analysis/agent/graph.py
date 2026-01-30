@@ -16,6 +16,9 @@ from typing_extensions import TypedDict
 from stock_analysis.agent.model import LLM, Embeddings
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+
+    from langchain.messages import AIMessageChunk
     from langchain.tools import BaseTool
     from langgraph.graph.state import CompiledStateGraph
 
@@ -157,3 +160,27 @@ class ChatAgent:
         """
         messages: list[AnyMessage] = [HumanMessage(content=message)]
         return await self._agent.ainvoke({"messages": messages})
+
+    async def astream_events(self, message: str) -> AsyncGenerator[str]:
+        """Stream token-by-token events from the chat agent.
+
+        Args:
+            message: User's input message.
+
+        Yields:
+            Token content for each streaming event.
+        """
+        messages: list[AnyMessage] = [HumanMessage(content=message)]
+        async for event in self._agent.astream_events({"messages": messages}):
+            kind: str = event.get("event", "")
+            if kind == "on_chat_model_stream":
+                chunk: AIMessageChunk | None = event.get("data", {}).get("chunk")
+                if chunk and chunk.content:
+                    content: str | list[str | dict] = chunk.content
+                    if isinstance(content, str):
+                        yield content
+                    else:
+                        text_parts: list[str] = [
+                            p if isinstance(p, str) else str(p) for p in content
+                        ]
+                        yield "".join(text_parts)

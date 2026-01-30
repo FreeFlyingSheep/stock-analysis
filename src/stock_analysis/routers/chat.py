@@ -8,75 +8,52 @@ from fastapi import (
     HTTPException,
     Request,  # noqa: TC002
 )
-from langchain.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
+from fastapi.responses import StreamingResponse
 
-from stock_analysis.schemas.chat import (
-    ChatMessageIn,  # noqa: TC001
-    ChatMessageOut,
-    ChatResponseOut,
-)
+from stock_analysis.schemas.chat import ChatMessageIn  # noqa: TC001
 from stock_analysis.services.mcp import get_mcp
 
 if TYPE_CHECKING:
-    from langchain_core.messages import AnyMessage
+    from collections.abc import AsyncGenerator
 
     from stock_analysis.agent.graph import ChatAgent
 
 router = APIRouter()
 
 
-def _convert_messages(messages: list[AnyMessage]) -> list[ChatMessageOut]:
-    """Convert langchain messages to chat message output schema.
-
-    Args:
-        messages: List of langchain messages.
-
-    Returns:
-        List of chat message output schemas.
-    """
-    result: list[ChatMessageOut] = []
-    for message in messages:
-        if isinstance(message, SystemMessage):
-            content: str = message.text
-            result.append(ChatMessageOut(role="system", content=content))
-        elif isinstance(message, HumanMessage):
-            content = message.text
-            result.append(ChatMessageOut(role="user", content=content))
-        elif isinstance(message, AIMessage):
-            content = message.text
-            result.append(ChatMessageOut(role="assistant", content=content))
-        elif isinstance(message, ToolMessage):
-            content = message.text
-            result.append(ChatMessageOut(role="tool", content=content))
-        else:
-            msg: str = f"Unsupported message type: {type(message)}"
-            raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail=msg)
-    return result
-
-
 @router.post("/chat")
-async def chat(request: Request, chat_message: ChatMessageIn) -> ChatResponseOut:
-    """Send a message to the chat agent and get a response.
+async def chat(request: Request, chat_message: ChatMessageIn) -> StreamingResponse:
+    """Send a message to the chat agent and stream responses.
 
     Args:
         request: Chat message request containing user message.
         chat_message: Chat message input schema.
 
     Returns:
-        Chat response with assistant message and conversation history.
+        StreamingResponse with SSE events.
 
     Raises:
         HTTPException: If the chat operation fails.
     """
     agent: ChatAgent = await get_mcp(request)
 
-    result: dict = await agent.ainvoke(chat_message.message)
+    async def event_generator() -> AsyncGenerator[str]:
+        """Generate SSE events from agent stream."""
+        try:
+            async for content in agent.astream_events(chat_message.message):
+                yield f"event: token\ndata: {content}\n\n"
+            yield "event: done\n\n"
+        except Exception as e:
+            msg: str = "Error during chat streaming"
+            raise HTTPException(
+                status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=msg
+            ) from e
 
-    messages: list[AnyMessage] = result.get("messages", [])
-    if not isinstance(messages[-1], AIMessage):
-        msg: str = "No response from agent"
-        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail=msg)
-
-    return ChatResponseOut(
-        messages=_convert_messages(messages),
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        },
     )
