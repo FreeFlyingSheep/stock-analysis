@@ -2,7 +2,7 @@
 # Run the frontend UI for the stock analysis application.
 #
 # Requirements:
-#   - Backend services are running
+#   - Valid .env file with data store credentials
 set -euo pipefail
 
 cd ui

@@ -1,7 +1,8 @@
 #!/bin/bash
 # Dump the current state of the database to data/data.sql file
-# Usage:
-#   ./scripts/dump_db.sh
+#
+# Requirements:
+#   - Valid .env file with data store credentials
 set -euo pipefail
 
 pg_dump \

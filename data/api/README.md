@@ -1,5 +1,7 @@
 # Data API Samples
 
+[English](README.md) | [中文](README.zh-CN.md)
+
 ## Purpose
 
 Store real API responses from CNInfo and Yahoo Finance for:
@@ -18,15 +20,16 @@ Provider-specific folders correspond to configuration files:
 
 Each JSON file:
 
-- Named to match the endpoint in `configs/api/`
+- Named using the endpoint id (`api.id`) from the corresponding YAML config
 - Contains the complete raw API response
 - Preserves structure to validate schema conformance
 
 ## Filename Conventions
 
-Config files use snake_case endpoint names:
+Config files use snake case filenames, while `api.id` defines the canonical endpoint id:
 
 - Config: `configs/api/cninfo/get_balance_sheets.yaml`
+- Endpoint id: `balance_sheets`
 - Data: `data/api/cninfo/balance_sheets.json`
 
 ## Response Structure

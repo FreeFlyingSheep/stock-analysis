@@ -1,5 +1,7 @@
 # Rules Directory
 
+[English](README.md) | [中文](README.zh-CN.md)
+
 This directory contains **rule definitions** used by the fundamental scoring engine.
 
 All rules are expressed in **YAML** and act as a **domain-specific language (DSL)** describing:
@@ -30,20 +32,9 @@ Rules in this directory are intended to be:
 
 ```text
 rules/
-├── scoring_rules.yaml              # Primary scoring rule set
 ├── scoring_rules_sample.yaml       # Simplified example rule set
 └── README.md
 ```
-
-### `scoring_rules.yaml`
-
-The **primary production rule set** based on the "赢家宝典" (Winners Bible) investment framework.
-
-Structure:
-
-- **Dimensions**: Objective Fundamentals (50%) + Subjective Analysis (50%)
-- **Metrics**: Specific financial indicators computed from CNInfo/Yahoo Finance data
-- **Filters**: Rules for excluding stocks that fail certain criteria
 
 ### `scoring_rules_sample.yaml`
 
@@ -93,13 +84,13 @@ ruleset:
 
 ### Fields Reference
 
-- **dimension**: Groups related metrics; each has a weight contributing to total score
-- **metric**: Computed from raw data (CNInfo balance sheets, income statements, Yahoo Finance historical data)
+- `dimension`: Groups related metrics; each has a weight contributing to total score
+- `metric`: Computed from raw data (CNInfo balance sheets, income statements, Yahoo Finance historical data)
   - `metric` field specifies computation type (e.g., `roe_weighted_average`, `gross_margin`)
   - `params` contains metric-specific configuration
   - `max_score` defines highest achievable score
   - `weight` determines metric's contribution to dimension score
-- **filter**: Screening rules to exclude stocks
+- `filter`: Screening rules to exclude stocks
   - `filter` field specifies filter type (e.g., `threshold`)
   - `params` contains filter-specific thresholds/conditions
   - Stocks failing enabled filters are marked as excluded
@@ -143,7 +134,7 @@ To add a new rule set:
    - `max_score` and `weight` for scoring calculation
    - `params` with metric-specific configuration
 5. Add `filters` for stock exclusion rules if needed
-6. Update `settings.py` `RULE_FILE_PATH` to point to new rule file
+6. Update the `RULE_FILE_PATH` environment variable in `.env` to point to the new rule file
 
 ## Available Metric Types
 

@@ -1,11 +1,13 @@
 # Reports Directory
 
-This directory contains annual report PDF files for A-share companies and their metadata.
+[English](README.md) | [中文](README.zh-CN.md)
+
+This directory contains annual report PDF files for A-share companies and their metadata. The PDFs included here are a limited sample set for testing and demo purposes.
 
 ## Files
 
-- **reports.csv**: Metadata index for all report files
-- **\*.pdf**: Annual report PDF files from companies
+- `reports.csv`: Metadata index for all report files
+- `*.pdf`: Annual report PDF files from companies
 
 ## CSV Format
 

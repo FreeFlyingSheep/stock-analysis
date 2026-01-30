@@ -3,9 +3,6 @@
 #
 # WARNING: This script will DROP all existing data in the database!
 #
-# Usage:
-#   ./scripts/init_db.sh
-#
 # Requirements:
 #   - uv package manager installed
 #   - Database server running and accessible

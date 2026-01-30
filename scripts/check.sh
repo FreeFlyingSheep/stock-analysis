@@ -8,13 +8,6 @@
 # - Unit and integration tests (pytest)
 # - Frontend code checks (npm run check in the ui directory)
 #
-# Usage:
-#   ./scripts/check.sh
-#
-# Exit codes:
-#   0: All checks passed successfully
-#   1: One or more checks failed
-#
 # Requirements:
 #   - uv package manager installed
 #   - All dependencies installed via uv
