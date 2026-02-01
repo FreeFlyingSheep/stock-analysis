@@ -12,6 +12,7 @@ from fastapi import (
     Response,  # noqa: TC002
 )
 from pgqueuer import PgQueuer  # noqa: TC002
+from redis.asyncio import Redis  # noqa: TC002
 from sqlalchemy.ext.asyncio import AsyncSession  # noqa: TC002
 
 from stock_analysis.schemas.api import (
@@ -26,6 +27,7 @@ from stock_analysis.schemas.stock import (
     StockOut,
     StockPage,
 )
+from stock_analysis.services.cache import CacheService, get_redis
 from stock_analysis.services.database import get_db
 from stock_analysis.services.pgqueuer import get_pgqueuer
 from stock_analysis.services.stock import StockService
@@ -43,6 +45,7 @@ router = APIRouter()
 @router.get("/stocks", operation_id="get_stocks")
 async def get_stocks(  # noqa: PLR0913
     db: Annotated[AsyncSession, Depends(get_db)],
+    redis: Annotated[Redis, Depends(get_redis)],
     search: str | None = None,
     classification: str | None = None,
     industry: str | None = None,
@@ -56,6 +59,7 @@ async def get_stocks(  # noqa: PLR0913
 
     Args:
         db: Database session for data queries.
+        redis: Redis client for caching.
         search: Optional search string to filter stocks by code or name.
         classification: Optional filter by classification category.
         industry: Optional filter by industry sector.
@@ -65,6 +69,26 @@ async def get_stocks(  # noqa: PLR0913
     Returns:
         StockApiResponse with paginated stocks and available filter options.
     """
+    key: str = f"stock_list:{size}:{page}"
+    ttl: int = 3600
+
+    cached_sizes: set[int] = {10, 20, 50}
+    cached_pages: int = 5
+    cache_enabled: bool = (
+        search is None
+        and classification is None
+        and industry is None
+        and size in cached_sizes
+        and page <= cached_pages
+    )
+
+    cache_service = CacheService(redis)
+
+    if cache_enabled:
+        data: str | None = await cache_service.get_data(key)
+        if data is not None:
+            return StockApiResponse.model_validate_json(data)
+
     stock_service = StockService(db)
 
     classifications: list[str] = await stock_service.get_classifications()
@@ -87,7 +111,7 @@ async def get_stocks(  # noqa: PLR0913
     )
     total_pages: int = (total_count + size - 1) // size
 
-    return StockApiResponse(
+    response_data = StockApiResponse(
         data=StockListData(
             industries=industries,
             classifications=classifications,
@@ -99,6 +123,9 @@ async def get_stocks(  # noqa: PLR0913
             ),
         ),
     )
+    if cache_enabled:
+        await cache_service.set_data(key, response_data.model_dump_json(), ttl=ttl)
+    return response_data
 
 
 @router.get("/stocks/{stock_code}", operation_id="get_stock_details")
@@ -107,6 +134,7 @@ async def get_stock_details(
     request: Request,
     stock_code: str,
     db: Annotated[AsyncSession, Depends(get_db)],
+    redis: Annotated[Redis, Depends(get_redis)],
 ) -> StockDetailApiResponse:
     """Get detailed information and API data for a specific stock.
 
@@ -118,6 +146,7 @@ async def get_stock_details(
         request: FastAPI request object for accessing app state.
         stock_code: The stock code to retrieve details for.
         db: Database session for data queries.
+        redis: Redis client for caching.
 
     Returns:
         JSONResponse with stock details and API response data.
@@ -126,6 +155,15 @@ async def get_stock_details(
         HTTPException: 404 if stock with given code not found.
         HTTPException: 500 if job queue is not initialized.
     """
+    key: str = f"stock_detail:{stock_code}"
+    ttl: int = 3600
+
+    cache_service = CacheService(redis)
+
+    data: str | None = await cache_service.get_data(key)
+    if data is not None:
+        return StockDetailApiResponse.model_validate_json(data)
+
     stock_service = StockService(db)
 
     stock: Stock | None = await stock_service.get_stock_by_code(stock_code)
@@ -150,6 +188,7 @@ async def get_stock_details(
         cninfo_data=cninfo_api_responses, yahoo_data=yahoo_api_responses
     )
     if cninfo_responses and yahoo_responses:
+        await cache_service.set_data(key, response_model.model_dump_json(), ttl=ttl)
         return response_model
 
     pgq: PgQueuer = await get_pgqueuer(request)

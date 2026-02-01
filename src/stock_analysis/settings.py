@@ -55,6 +55,13 @@ class Settings(BaseSettings):
     minio_secure: bool
     """Use secure connection for MinIO."""
 
+    redis_host: str
+    """Redis host."""
+    redis_port: int
+    """Redis port."""
+    redis_prefix: str
+    """Prefix for Redis keys."""
+
     config_dir: str
     """Directory for configuration files."""
     rule_file_path: str
@@ -129,24 +136,6 @@ class Settings(BaseSettings):
         )
 
     @cached_property
-    def api_url(self) -> str:
-        """Construct the API base URL.
-
-        Returns:
-            Base URL for the backend API.
-        """
-        return f"http://{self.backend_host}:{self.backend_port}"
-
-    @cached_property
-    def mcp_url(self) -> str:
-        """Construct the MCP server URL.
-
-        Returns:
-            URL for the MCP server.
-        """
-        return f"http://{self.mcp_host}:{self.mcp_port}/mcp"
-
-    @cached_property
     def minio_endpoint(self) -> str:
         """Construct the MinIO server endpoint.
 
@@ -172,6 +161,24 @@ class Settings(BaseSettings):
             Processed bucket name for MinIO.
         """
         return f"{self.minio_bucket_prefix}processed"
+
+    @cached_property
+    def api_url(self) -> str:
+        """Construct the API base URL.
+
+        Returns:
+            Base URL for the backend API.
+        """
+        return f"http://{self.backend_host}:{self.backend_port}"
+
+    @cached_property
+    def mcp_url(self) -> str:
+        """Construct the MCP server URL.
+
+        Returns:
+            URL for the MCP server.
+        """
+        return f"http://{self.mcp_host}:{self.mcp_port}/mcp"
 
 
 @lru_cache(maxsize=1)

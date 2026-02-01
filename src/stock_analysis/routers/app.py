@@ -64,6 +64,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     Yields:
         None during application running phase.
     """
+    app.state.redis = None
     app.state.conn = None
     app.state.pgq = None
     app.state.mc = None

@@ -7,10 +7,12 @@ from typing import TYPE_CHECKING, Any
 import pytest
 import pytest_asyncio
 from aiolimiter import AsyncLimiter
+from asgi_lifespan import LifespanManager
 from fastapi import FastAPI
 from fastmcp import FastMCP
 from fastmcp.client import Client
 from httpx import ASGITransport, AsyncClient, MockTransport, Response
+from redis.asyncio.client import Redis
 from sqlalchemy.ext.asyncio import (
     AsyncSession,  # noqa: TC002
     async_sessionmaker,
@@ -19,6 +21,7 @@ from sqlalchemy.ext.asyncio import (
 from tenacity import wait_exponential
 from testcontainers.minio import MinioContainer  # type: ignore[import-untyped]
 from testcontainers.postgres import PostgresContainer  # type: ignore[import-untyped]
+from testcontainers.redis import RedisContainer  # type: ignore[import-untyped]
 
 from stock_analysis.adapters.cninfo import CNInfoAdapter
 from stock_analysis.adapters.rule import RuleAdapter
@@ -29,6 +32,7 @@ from stock_analysis.models.stock import Stock
 from stock_analysis.models.yahoo import YahooFinanceAPIResponse  # noqa: F401
 from stock_analysis.routers.analysis import router as analysis_router
 from stock_analysis.routers.stock import router as stock_router
+from stock_analysis.services.cache import get_redis
 from stock_analysis.services.database import get_db
 
 if TYPE_CHECKING:
@@ -90,6 +94,19 @@ def minio_container() -> Generator[MinioContainer]:
 @pytest.fixture(scope="session")
 def minio_client(minio_container: MinioContainer) -> Minio:
     return minio_container.get_client()
+
+
+@pytest.fixture(scope="session")
+def redis_container() -> Generator[RedisContainer]:
+    with RedisContainer("redis:alpine3.22") as container:
+        yield container
+
+
+@pytest.fixture(scope="session")
+def redis_url(redis_container: RedisContainer) -> str:
+    host: str = redis_container.get_container_host_ip()
+    port: int = redis_container.get_exposed_port(6379)
+    return f"redis://{host}:{port}"
 
 
 @pytest_asyncio.fixture
@@ -159,6 +176,7 @@ async def analysis_data(seed_stocks: list[Stock]) -> list[Analysis]:
 @pytest_asyncio.fixture
 async def app_factory(
     async_session: AsyncSession,
+    redis_url: str,
 ) -> Callable[[list[APIRouter]], FastAPI]:
     def make_app(routers: list[APIRouter]) -> FastAPI:
         app = FastAPI()
@@ -168,7 +186,13 @@ async def app_factory(
         async def override_get_db() -> AsyncGenerator[AsyncSession]:
             yield async_session
 
+        async def override_get_redis() -> AsyncGenerator[Redis]:
+            redis: Redis = Redis.from_url(redis_url)
+            yield redis
+            redis.flushall()
+
         app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_redis] = override_get_redis
         return app
 
     return make_app
@@ -177,8 +201,9 @@ async def app_factory(
 @pytest_asyncio.fixture
 async def client_factory() -> Callable[[FastAPI], Awaitable[AsyncClient]]:
     async def make_client(app: FastAPI) -> AsyncClient:
-        transport = ASGITransport(app=app)
-        return AsyncClient(transport=transport, base_url="http://test")
+        async with LifespanManager(app):
+            transport = ASGITransport(app=app)
+            return AsyncClient(transport=transport, base_url="http://test")
 
     return make_client
 

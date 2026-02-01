@@ -12,6 +12,7 @@ from fastapi import (
     Response,  # noqa: TC002
 )
 from pgqueuer import PgQueuer  # noqa: TC002
+from redis.asyncio import Redis  # noqa: TC002
 from sqlalchemy.ext.asyncio import AsyncSession  # noqa: TC002
 
 from stock_analysis.schemas.analysis import (
@@ -21,6 +22,7 @@ from stock_analysis.schemas.analysis import (
     AnalysisPage,
 )
 from stock_analysis.schemas.api import JobPayload
+from stock_analysis.services.cache import CacheService, get_redis
 from stock_analysis.services.database import get_db
 from stock_analysis.services.pgqueuer import get_pgqueuer
 from stock_analysis.services.stock import StockService
@@ -38,6 +40,7 @@ router = APIRouter()
 @router.get("/analysis", operation_id="get_analysis")
 async def get_analysis(
     db: Annotated[AsyncSession, Depends(get_db)],
+    redis: Annotated[Redis, Depends(get_redis)],
     page: Annotated[int, Query(ge=1)] = 1,
     size: Annotated[int, Query(ge=1, le=200)] = 50,
 ) -> AnalysisApiResponse:
@@ -47,12 +50,27 @@ async def get_analysis(
 
     Args:
         db: Database session for data queries.
+        redis: Redis client for caching.
         page: Page number (1-indexed, defaults to 1, minimum 1).
         size: Items per page (defaults to 50, range 1-200).
 
     Returns:
         AnalysisApiResponse with paginated analysis results.
     """
+    key: str = f"analysis_list:{size}:{page}"
+    ttl: int = 3600
+
+    cached_sizes: set[int] = {10, 20, 50}
+    cached_pages: int = 5
+    cache_enabled: bool = size in cached_sizes and page <= cached_pages
+
+    cache_service = CacheService(redis)
+
+    if cache_enabled:
+        data: str | None = await cache_service.get_data(key)
+        if data is not None:
+            return AnalysisApiResponse.model_validate_json(data)
+
     stock_service = StockService(db)
 
     offset: int = (page - 1) * size
@@ -62,7 +80,7 @@ async def get_analysis(
     total_count: int = await stock_service.count_analysis()
     total_pages: int = (total_count + size - 1) // size
 
-    return AnalysisApiResponse(
+    response_data = AnalysisApiResponse(
         data=AnalysisPage(
             total=total_pages,
             page_num=page,
@@ -70,6 +88,9 @@ async def get_analysis(
             data=[AnalysisOut.model_validate(a) for a in analysis],
         ),
     )
+    if cache_enabled:
+        await cache_service.set_data(key, response_data.model_dump_json(), ttl=ttl)
+    return response_data
 
 
 @router.get("/analysis/{stock_code}", operation_id="get_analysis_details")
@@ -78,6 +99,7 @@ async def get_analysis_details(
     request: Request,
     stock_code: str,
     db: Annotated[AsyncSession, Depends(get_db)],
+    redis: Annotated[Redis, Depends(get_redis)],
 ) -> AnalysisDetailApiResponse:
     """Get analysis details for a specific stock.
 
@@ -86,6 +108,7 @@ async def get_analysis_details(
         request: FastAPI request object for accessing app state.
         stock_code: The stock code to retrieve analysis for.
         db: Database session for data queries.
+        redis: Redis client for caching.
 
     Returns:
         Analysis results for the specified stock.
@@ -93,6 +116,15 @@ async def get_analysis_details(
     Raises:
         HTTPException: If the stock with the given code is not found.
     """
+    key: str = f"analysis_detail:{stock_code}"
+    ttl: int = 3600
+
+    cache_service = CacheService(redis)
+
+    data: str | None = await cache_service.get_data(key)
+    if data is not None:
+        return AnalysisDetailApiResponse.model_validate_json(data)
+
     stock_service = StockService(db)
 
     stock: Stock | None = await stock_service.get_stock_by_code(stock_code)
@@ -105,6 +137,7 @@ async def get_analysis_details(
         data=[AnalysisOut.model_validate(a) for a in analysis],
     )
     if analysis:
+        await cache_service.set_data(key, response_model.model_dump_json(), ttl=ttl)
         return response_model
 
     pgq: PgQueuer = await get_pgqueuer(request)

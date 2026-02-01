@@ -39,6 +39,7 @@ This project is developed with the assistance of AI tools:
 - **Alembic** for database schema migrations and versioning
 - **MinIO** for S3-compatible object storage
 - **PgQueuer** for async job queue and background task processing
+- **Redis** for caching and fast data retrieval
 
 ### Frontend (Developed with AI Assistance)
 
@@ -53,6 +54,7 @@ This project is developed with the assistance of AI tools:
 - **Kubernetes** with Kustomize for production-ready deployment
 - **Nginx** for reverse proxy and web server configuration
 - **Minikube** for local Kubernetes development and testing
+- **GitHub Workflows** for CI/CD pipelines
 
 ### Development & Quality Tools
 
@@ -89,6 +91,7 @@ This project is developed with the assistance of AI tools:
 - **Async Database Operations**: SQLAlchemy async with PostgreSQL for high performance and persistence
 - **MCP Server**: FastMCP integration for Model Context Protocol services
 - **Chatbot Agent**: LLM-powered chatbot for stock analysis insights and explanations
+- **Cached Responses**: Redis caching for frequently accessed data
 
 ### Frontend & User Interface
 
@@ -181,7 +184,9 @@ If you want to keep existing data, dump the database first (`./scripts/dump_db.s
     ./scripts/run_minio.sh
     ```
 
-6. Run the Job Queue:
+6. Start the [Redis](https://redis.io/) server.
+
+7. Run the Job Queue:
 
     In a separate terminal, run the PgQueuer to process crawl and analysis jobs:
 
@@ -196,7 +201,7 @@ If you want to keep existing data, dump the database first (`./scripts/dump_db.s
     - Computes scores and metrics using configured rules
     - Stores results in the database
 
-7. Start the MCP server:
+8. Start the MCP server:
 
     In another terminal, run the FastMCP server:
 
@@ -206,7 +211,7 @@ If you want to keep existing data, dump the database first (`./scripts/dump_db.s
     ./scripts/run_mcp.sh
     ```
 
-8. Start the API Server:
+9. Start the API Server:
 
     ```bash
     uv run app
@@ -217,7 +222,7 @@ If you want to keep existing data, dump the database first (`./scripts/dump_db.s
     - Swagger UI: `http://127.0.0.1:8000/docs`
     - ReDoc: `http://127.0.0.1:8000/redoc`
 
-9. Start the Frontend UI:
+10. Start the Frontend UI:
 
     In another terminal, run the SvelteKit frontend:
 

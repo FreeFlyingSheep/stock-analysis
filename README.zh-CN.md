@@ -39,6 +39,7 @@
 - **Alembic** 数据库迁移
 - **MinIO** S3 兼容对象存储
 - **PgQueuer** 异步任务队列
+- **Redis** 缓存与快速数据检索
 
 ### 前端（AI 辅助生成）
 
@@ -53,6 +54,7 @@
 - **Kubernetes** + Kustomize 生产部署
 - **Nginx** 反向代理
 - **Minikube** 本地 Kubernetes 开发/测试
+- **GitHub Workflows** CI/CD 流水线
 
 ### 开发与质量
 
@@ -89,6 +91,7 @@
 - **异步数据库**：SQLAlchemy + PostgreSQL
 - **MCP 服务**：FastMCP 接入 Model Context Protocol
 - **聊天代理**：LLM 驱动的解释与问答
+- **缓存响应**：Redis 缓存频繁访问的数据
 
 ### 前端与界面
 
