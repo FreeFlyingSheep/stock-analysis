@@ -9,15 +9,28 @@ from importlib.metadata import version
 from typing import TYPE_CHECKING
 
 from fastapi import FastAPI
+from langchain_mcp_adapters.client import MultiServerMCPClient
+from langchain_mcp_adapters.sessions import StreamableHttpConnection
+from minio import Minio
+from psycopg_pool import AsyncConnectionPool
+from redis.asyncio import ConnectionPool
+from sqlalchemy.ext.asyncio import (
+    async_sessionmaker,
+    create_async_engine,
+)
 
 from stock_analysis.routers.analysis import router as analysis_router
 from stock_analysis.routers.chat import router as chat_router
 from stock_analysis.routers.stock import router as stock_router
-from stock_analysis.services.pgqueuer import close_pgqueuer
 from stock_analysis.settings import get_settings
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
+
+    from sqlalchemy.ext.asyncio import (
+        AsyncEngine,
+        AsyncSession,
+    )
 
     from stock_analysis.settings import Settings
 
@@ -60,19 +73,41 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
 
     Args:
         app: FastAPI application instance.
-
-    Yields:
-        None during application running phase.
     """
-    app.state.redis = None
-    app.state.conn = None
-    app.state.pgq = None
-    app.state.mc = None
-    app.state.mcp = None
+    engine: AsyncEngine = create_async_engine(
+        settings.database_url_with_psycopg,
+        echo=settings.debug,
+    )
+    async_session: async_sessionmaker[AsyncSession] = async_sessionmaker(
+        engine,
+        expire_on_commit=False,
+    )
+    app.state.db_session = async_session
+
+    app.state.pgq_pool = AsyncConnectionPool(
+        settings.database_url, kwargs={"autocommit": True}
+    )
+
+    app.state.redis_pool = ConnectionPool(
+        host=settings.redis_host, port=settings.redis_port, db=0
+    )
+
+    app.state.mc = Minio(
+        endpoint=settings.minio_endpoint,
+        access_key=settings.minio_user,
+        secret_key=settings.minio_password.get_secret_value(),
+        secure=settings.minio_secure,
+    )
+
+    app.state.mcp = MultiServerMCPClient(
+        {
+            "stock-analysis": StreamableHttpConnection(
+                {"transport": "streamable_http", "url": settings.mcp_url}
+            )
+        }
+    )
 
     yield
-
-    await close_pgqueuer(app)
 
 
 app = FastAPI(

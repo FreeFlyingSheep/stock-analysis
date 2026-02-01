@@ -12,7 +12,7 @@ I do **NOT** provide any financial, investment, or trading recommendations. User
 
 **Investment involves risk, including possible loss of principal.** Past performance is not indicative of future results. Use this tool at your own risk and discretion.
 
-The crawler/downloader will automatically fetch data from third-party websites like CNInfo and Yahoo Finance on Jan 1 and Jul 1; the analyzer will compute scores based on the fetched data and user-defined rules on Feb 1 and Aug 1. The limited frequency is to reduce the traffic to the target websites and avoid being blocked. They are for testing purposes only.
+The crawler/downloader will automatically fetch data from third-party websites like CNInfo and Yahoo Finance; the analyzer will compute scores based on the fetched data and user-defined rules. The limited frequency is to reduce the traffic to the target websites and avoid being blocked. They are for testing purposes only.
 
 Only ten annual reports are downloaded in `data` in advance. They are for testing RAG (Retrieval-Augmented Generation) capability only and I will not provide reports crawler for ethics and security reasons, as they may cause huge traffic to the target websites.
 

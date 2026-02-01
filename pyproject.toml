@@ -75,7 +75,6 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
-    "asgi-lifespan>=2.1.0",
     "djlint>=1.36.4",
     "langchain-qwq[typing]>=0.3.4",
     "mypy>=1.19.1",

@@ -1,46 +1,45 @@
 """Database service providing async session management and engine setup."""
 
 from collections.abc import AsyncGenerator  # noqa: TC003
+from http import HTTPStatus
 from typing import TYPE_CHECKING
 
+from fastapi import (
+    HTTPException,
+    Request,  # noqa: TC002
+)
 from sqlalchemy.ext.asyncio import (
     AsyncSession,  # noqa: TC002
-    async_sessionmaker,
-    create_async_engine,
 )
-
-from stock_analysis.settings import get_settings
 
 if TYPE_CHECKING:
-    from sqlalchemy.ext.asyncio import AsyncEngine
-
-    from stock_analysis.settings import Settings
-
-settings: Settings = get_settings()
-engine: AsyncEngine = create_async_engine(
-    settings.database_url,
-    echo=settings.debug,
-)
-async_session: async_sessionmaker[AsyncSession] = async_sessionmaker(
-    engine,
-    expire_on_commit=False,
-)
+    from sqlalchemy.ext.asyncio import (
+        async_sessionmaker,
+    )
 
 
-async def get_db() -> AsyncGenerator[AsyncSession]:
-    """Get a database session from the session maker.
+async def get_db(request: Request) -> AsyncGenerator[AsyncSession]:
+    """Get a database session.
 
-    Provides an async context manager for database sessions. The session is
-    automatically committed when exiting successfully and rolled back if an
-    exception occurs.
+    Args:
+        request: FastAPI request object for accessing app state.
 
-    Yields:
-        AsyncSession instance for database operations.
+    Returns:
+        Async generator yielding a database session.
 
     Raises:
-        Exception: Propagates any exception that occurs during session usage.
+        HTTPException: If database session is not initialized.
     """
-    async with async_session() as session:
+    db_session: async_sessionmaker[AsyncSession] | None = getattr(
+        request.app.state, "db_session", None
+    )
+    if not db_session:
+        raise HTTPException(
+            status_code=HTTPStatus.SERVICE_UNAVAILABLE,
+            detail="Database session not initialized.",
+        )
+
+    async with db_session() as session:
         try:
             yield session
             await session.commit()

@@ -4,8 +4,7 @@ import asyncio
 import logging
 from typing import TYPE_CHECKING
 
-from stock_analysis.jobs.pgqueuer import get_connection
-from stock_analysis.services.pgqueuer import create_pgqueuer_with_connection
+from stock_analysis.jobs.pgqueuer import create_pgqueuer_with_connection, get_connection
 from stock_analysis.settings import get_settings
 
 if TYPE_CHECKING:
@@ -26,7 +25,7 @@ async def main() -> None:
     logger.info("Enqueuing update_stock_data job...")
 
     conn: AsyncConnection[TupleRow] = await get_connection()
-    pgq: PgQueuer = await create_pgqueuer_with_connection(conn)
+    pgq: PgQueuer = create_pgqueuer_with_connection(conn)
 
     queries: Queries = pgq.qm.queries
     await queries.enqueue("analyze_all_stocks", None, priority=10)

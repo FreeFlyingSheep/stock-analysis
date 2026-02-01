@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Any
 import pytest
 import pytest_asyncio
 from aiolimiter import AsyncLimiter
-from asgi_lifespan import LifespanManager
 from fastapi import FastAPI
 from fastmcp import FastMCP
 from fastmcp.client import Client
@@ -201,9 +200,7 @@ async def app_factory(
 @pytest_asyncio.fixture
 async def client_factory() -> Callable[[FastAPI], Awaitable[AsyncClient]]:
     async def make_client(app: FastAPI) -> AsyncClient:
-        async with LifespanManager(app):
-            transport = ASGITransport(app=app)
-            return AsyncClient(transport=transport, base_url="http://test")
+        return AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
 
     return make_client
 

@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 def test_read_settings() -> None:
     settings: Settings = get_settings(".env.example")  # type: ignore[call-arg]
     assert (
-        settings.database_url
+        settings.database_url_with_psycopg
         == "postgresql+psycopg://postgres:password@127.0.0.1:5432/stock_analysis"
     )
     assert settings.debug is False

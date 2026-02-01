@@ -142,7 +142,7 @@ async def main() -> None:
     settings: Settings = get_settings()
     logging.basicConfig(level=settings.log_level)
     engine: AsyncEngine = create_async_engine(
-        settings.database_url,
+        settings.database_url_with_psycopg,
         echo=settings.debug,
     )
     async_session: async_sessionmaker[AsyncSession] = async_sessionmaker(

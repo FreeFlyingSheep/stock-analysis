@@ -40,7 +40,7 @@ if config.config_file_name is not None:
 else:
     logging.basicConfig(level=settings.log_level)
 
-config.set_main_option("sqlalchemy.url", settings.database_url)
+config.set_main_option("sqlalchemy.url", settings.database_url_with_psycopg)
 
 target_metadata: MetaData = Base.metadata
 

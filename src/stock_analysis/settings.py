@@ -123,7 +123,7 @@ class Settings(BaseSettings):
         return self
 
     @cached_property
-    def database_url(self) -> str:
+    def database_url_with_psycopg(self) -> str:
         """Construct the PostgreSQL database connection URL.
 
         Returns:
@@ -131,6 +131,19 @@ class Settings(BaseSettings):
         """
         return (
             f"postgresql+psycopg://{self.database_user}:"
+            f"{self.database_password.get_secret_value()}@{self.database_host}:"
+            f"{self.database_port}/{self.database_db}"
+        )
+
+    @cached_property
+    def database_url(self) -> str:
+        """Construct the database connection URL.
+
+        Returns:
+            Database connection string.
+        """
+        return (
+            f"postgresql://{self.database_user}:"
             f"{self.database_password.get_secret_value()}@{self.database_host}:"
             f"{self.database_port}/{self.database_db}"
         )

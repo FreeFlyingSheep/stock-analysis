@@ -1,33 +1,39 @@
 """Chat router definitions."""
 
 from http import HTTPStatus
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Annotated
 
 from fastapi import (
     APIRouter,
+    Depends,
     HTTPException,
-    Request,  # noqa: TC002
 )
 from fastapi.responses import StreamingResponse
+from langchain_mcp_adapters.client import MultiServerMCPClient  # noqa: TC002
 
+from stock_analysis.agent.graph import ChatAgent
 from stock_analysis.schemas.chat import ChatMessageIn  # noqa: TC001
 from stock_analysis.services.mcp import get_mcp
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
 
-    from stock_analysis.agent.graph import ChatAgent
+    from langchain_core.tools.base import BaseTool
+
 
 router = APIRouter()
 
 
 @router.post("/chat")
-async def chat(request: Request, chat_message: ChatMessageIn) -> StreamingResponse:
+async def chat(
+    chat_message: ChatMessageIn,
+    client: Annotated[MultiServerMCPClient, Depends(get_mcp)],
+) -> StreamingResponse:
     """Send a message to the chat agent and stream responses.
 
     Args:
-        request: Chat message request containing user message.
         chat_message: Chat message input schema.
+        client: MCP client dependency.
 
     Returns:
         StreamingResponse with SSE events.
@@ -35,7 +41,8 @@ async def chat(request: Request, chat_message: ChatMessageIn) -> StreamingRespon
     Raises:
         HTTPException: If the chat operation fails.
     """
-    agent: ChatAgent = await get_mcp(request)
+    tools: list[BaseTool] = await client.get_tools()
+    agent = ChatAgent(tools)
 
     async def event_generator() -> AsyncGenerator[str]:
         """Generate SSE events from agent stream."""

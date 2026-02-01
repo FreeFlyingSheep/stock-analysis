@@ -9,7 +9,6 @@ from pydantic import ValidationError
 from stock_analysis.adapters.cninfo import CNInfoAdapter
 from stock_analysis.adapters.stock import get_stock_code_with_market
 from stock_analysis.schemas.api import JobPayload
-from stock_analysis.services.database import async_session
 from stock_analysis.services.downloader import CNInfoDownloader, YahooFinanceDownloader
 from stock_analysis.services.stock import StockService
 
@@ -17,7 +16,7 @@ if TYPE_CHECKING:
     import logging
 
     from pgqueuer.models import Job
-    from sqlalchemy.ext.asyncio import AsyncSession
+    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
     from stock_analysis.adapters.cninfo import CNInfoAdapter
     from stock_analysis.adapters.yahoo import YahooFinanceAdapter
@@ -153,6 +152,7 @@ async def crawl_yahoo_finance_stock_data(
 
 async def crawl(
     job: Job,
+    db_session: async_sessionmaker[AsyncSession],
     cninfo_adapter: CNInfoAdapter,
     yahoo_finance_adapter: YahooFinanceAdapter,
     logger: logging.Logger,
@@ -164,6 +164,7 @@ async def crawl(
 
     Args:
         job: Job instance containing encoded payload.
+        db_session: Database session factory for database operations.
         cninfo_adapter: CNInfo adapter for endpoint data.
         yahoo_finance_adapter: Yahoo Finance adapter for historical data.
         logger: Logger for recording operations.
@@ -182,7 +183,7 @@ async def crawl(
         msg = f"Invalid job payload: {e.errors()}"
         raise CrawlerError(msg) from e
 
-    async with async_session() as db:
+    async with db_session() as db:
         await _crawl_cninfo_stock_data(
             db,
             payload,

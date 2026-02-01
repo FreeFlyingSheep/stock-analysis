@@ -8,14 +8,13 @@ from pydantic import ValidationError
 
 from stock_analysis.schemas.api import JobPayload
 from stock_analysis.services.analyzer import Analyzer
-from stock_analysis.services.database import async_session
 from stock_analysis.services.stock import StockService
 
 if TYPE_CHECKING:
     import logging
 
     from pgqueuer.models import Job
-    from sqlalchemy.ext.asyncio import AsyncSession
+    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
     from stock_analysis.adapters.rule import RuleAdapter
     from stock_analysis.models.analysis import Analysis
@@ -87,6 +86,7 @@ async def _analyze_stock_data(
 
 async def analyze(
     job: Job,
+    db_session: async_sessionmaker[AsyncSession],
     rule_adapter: RuleAdapter,
     logger: logging.Logger,
 ) -> None:
@@ -97,6 +97,7 @@ async def analyze(
 
     Args:
         job: Job instance containing encoded payload.
+        db_session: Database session factory for database operations.
         rule_adapter: Rule adapter for computing scores and metrics.
         logger: Logger for recording operations.
 
@@ -114,7 +115,7 @@ async def analyze(
         msg = f"Invalid job payload: {e.errors()}"
         raise AnalyzerError(msg) from e
 
-    async with async_session() as db:
+    async with db_session() as db:
         await _analyze_stock_data(
             db,
             payload,

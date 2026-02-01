@@ -1,6 +1,5 @@
 """Cache service."""
 
-from asyncio import Lock
 from http import HTTPStatus
 from typing import TYPE_CHECKING
 
@@ -8,18 +7,14 @@ from fastapi import (
     HTTPException,
     Request,  # noqa: TC002
 )
-from redis.asyncio import ConnectionPool, Redis
+from redis.asyncio import Redis
 
 from stock_analysis.settings import get_settings
 
 if TYPE_CHECKING:
+    from redis.asyncio import ConnectionPool
+
     from stock_analysis.settings import Settings
-
-
-_redis_lock = Lock()
-
-settings: Settings = get_settings()
-pool = ConnectionPool(host=settings.redis_host, port=settings.redis_port, db=0)
 
 
 class CacheService:
@@ -34,6 +29,7 @@ class CacheService:
         Args:
             redis: Redis client instance.
         """
+        settings: Settings = get_settings()
         self._redis = redis
         self._prefix: str = settings.redis_prefix
 
@@ -71,25 +67,22 @@ class CacheService:
 
 
 async def get_redis(request: Request) -> Redis:
-    """Get Redis client. Initializes if not already present.
+    """Get Redis client.
 
     Args:
         request: FastAPI request object.
+
+    Returns:
+        Redis client instance.
+
+    Raises:
+        HTTPException: If Redis service is unavailable.
     """
-    if getattr(request.app.state, "redis", None) is not None:
-        return request.app.state.redis
+    pool: ConnectionPool | None = getattr(request.app.state, "redis_pool", None)
+    if pool is None:
+        raise HTTPException(
+            status_code=HTTPStatus.SERVICE_UNAVAILABLE,
+            detail="Redis service unavailable",
+        )
 
-    async with _redis_lock:
-        if getattr(request.app.state, "redis", None) is not None:
-            return request.app.state.redis
-
-        try:
-            redis_client: Redis = Redis(connection_pool=pool)
-            request.app.state.redis = redis_client
-        except Exception as e:
-            request.app.state.redis = None
-            raise HTTPException(
-                status_code=HTTPStatus.SERVICE_UNAVAILABLE,
-                detail="Redis service unavailable",
-            ) from e
-        return redis_client
+    return Redis(connection_pool=pool)
