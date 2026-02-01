@@ -120,8 +120,8 @@ services:
       context: .
       dockerfile: configs/docker/mcp.Dockerfile
     environment:
-      - DATABASE_HOST=postgres
-      - DATABASE_PORT=5432
+      - BACKEND_HOST=api
+      - BACKEND_PORT=8000
       - MCP_HOST=0.0.0.0
       - MCP_PORT=8000
     depends_on:
