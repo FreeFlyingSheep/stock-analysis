@@ -2,6 +2,7 @@
     import ChatWindow from "$lib/components/ChatWindow.svelte";
     import { t } from "$lib/i18n";
 
+    let { stockCode = undefined } = $props<{ stockCode?: string }>();
     let isOpen = $state(false);
 </script>
 
@@ -15,7 +16,7 @@
             onkeydown={(e) => e.key === "Enter" && (isOpen = false)}
         ></div>
         <div class="chat-float" role="dialog" aria-label={$t("chat.title")}>
-            <ChatWindow floating onClose={() => (isOpen = false)} />
+            <ChatWindow floating {stockCode} onClose={() => (isOpen = false)} />
         </div>
     {/if}
 

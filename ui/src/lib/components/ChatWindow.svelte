@@ -1,62 +1,121 @@
 <script lang="ts">
+    import { onDestroy } from "svelte";
     import { t } from "$lib/i18n";
-    import { streamChatMessage } from "$lib/api";
+    import { streamChatMessage, type StreamStatus } from "$lib/api";
 
     type Message = {
         role: "user" | "assistant";
         content: string;
     };
 
-    let { floating = false, onClose = undefined } = $props<{
+    let {
+        floating = false,
+        onClose = undefined,
+        stockCode = undefined,
+        threadId = undefined,
+        threadTitle = undefined,
+        initialMessages = undefined,
+        onMessagesChange = undefined,
+        onThreadTitleChange = undefined,
+    } = $props<{
         floating?: boolean;
         onClose?: () => void;
+        stockCode?: string;
+        threadId?: string;
+        threadTitle?: string;
+        initialMessages?: Message[];
+        onMessagesChange?: (messages: Message[]) => void;
+        onThreadTitleChange?: (title: string) => void;
     }>();
 
+    const createThreadId = () =>
+        `chat_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+
+    let internalThreadId = $state(createThreadId());
     let messages = $state<Message[]>([]);
     let inputMessage = $state("");
-    let isLoading = $state(false);
+    let streamStatus = $state<StreamStatus>("stopped");
     let error = $state<string | null>(null);
+    let closeStream = $state<(() => void) | null>(null);
 
-    async function sendMessage() {
-        if (!inputMessage.trim() || isLoading) return;
+    let messageCounter = 0;
+
+    function generateMessageId(): string {
+        messageCounter++;
+        return `msg_${internalThreadId}_${messageCounter}`;
+    }
+
+    const applyMessages = (next: Message[]) => {
+        messages = next;
+        onMessagesChange?.(next);
+    };
+
+    const deriveTitle = (content: string) => {
+        const trimmed = content.trim();
+        if (!trimmed) return "";
+        return trimmed.length > 40 ? `${trimmed.slice(0, 40)}...` : trimmed;
+    };
+
+    function sendMessage() {
+        if (
+            !inputMessage.trim() ||
+            streamStatus === "starting" ||
+            streamStatus === "connecting"
+        )
+            return;
 
         const userMessage = inputMessage.trim();
         inputMessage = "";
-        messages = [...messages, { role: "user", content: userMessage }];
-        isLoading = true;
         error = null;
+        applyMessages([...messages, { role: "user", content: userMessage }]);
+        if (!threadTitle || threadTitle.trim().length === 0) {
+            const nextTitle = deriveTitle(userMessage);
+            if (nextTitle) {
+                onThreadTitleChange?.(nextTitle);
+            }
+        }
 
-        let currentAssistantMessage = "";
-        let hasStartedResponse = false;
+        let assistantContent = "";
+        let messageAdded = false;
+        const messageId = generateMessageId();
 
-        try {
-            for await (const event of streamChatMessage(userMessage)) {
-                if (event.type === "token") {
-                    if (!hasStartedResponse) {
-                        hasStartedResponse = true;
-                        messages = [
+        closeStream = streamChatMessage(
+            internalThreadId,
+            messageId,
+            userMessage,
+            {
+                onToken: (token: string) => {
+                    assistantContent += token;
+                    if (!messageAdded) {
+                        applyMessages([
                             ...messages,
-                            { role: "assistant", content: event.data },
-                        ];
+                            { role: "assistant", content: assistantContent },
+                        ]);
+                        messageAdded = true;
                     } else {
-                        currentAssistantMessage += event.data;
-                        messages = messages.map((msg, idx) =>
-                            idx === messages.length - 1
-                                ? {
-                                      ...msg,
-                                      content: msg.content + event.data,
-                                  }
-                                : msg,
+                        applyMessages(
+                            messages.map((msg, idx) =>
+                                idx === messages.length - 1
+                                    ? { ...msg, content: assistantContent }
+                                    : msg,
+                            ),
                         );
                     }
-                }
-            }
-        } catch (err) {
-            error = err instanceof Error ? err.message : $t("chatErrorMessage");
-            console.error("Chat error:", err);
-        } finally {
-            isLoading = false;
-        }
+                },
+                onDone: () => {
+                    closeStream = null;
+                },
+                onError: (err: Error) => {
+                    error = err.message;
+                    closeStream = null;
+                    console.error("Chat error:", err.message);
+                },
+                onStatus: (s) => {
+                    streamStatus = s;
+                },
+            },
+            stockCode,
+        );
     }
 
     function handleKeydown(event: KeyboardEvent) {
@@ -67,9 +126,38 @@
     }
 
     function clearChat() {
-        messages = [];
+        applyMessages([]);
         error = null;
     }
+
+    function stopStream() {
+        if (closeStream) {
+            closeStream();
+            closeStream = null;
+        }
+    }
+
+    const switchThread = (nextThreadId: string, seedMessages: Message[]) => {
+        stopStream();
+        internalThreadId = nextThreadId;
+        messageCounter = 0;
+        messages = seedMessages;
+        streamStatus = "stopped";
+        error = null;
+    };
+
+    $effect(() => {
+        const seedMessages = initialMessages ? [...initialMessages] : [];
+        if (threadId && threadId !== internalThreadId) {
+            switchThread(threadId, seedMessages);
+            return;
+        }
+        if (!threadId && messages.length === 0 && seedMessages.length > 0) {
+            messages = seedMessages;
+        }
+    });
+
+    onDestroy(() => stopStream());
 </script>
 
 <div class={`chat-window ${floating ? "floating" : ""}`}>
@@ -77,19 +165,32 @@
         <div class="chat-title">
             <span aria-hidden="true">💬</span>
             <div>
-                <p class="label">{$t("chat.title")}</p>
+                <p class="label">{threadTitle || $t("chat.title")}</p>
                 <p class="muted">{$t("chat.subtitle")}</p>
             </div>
         </div>
-        {#if onClose}
-            <button
-                class="icon-button"
-                onclick={onClose}
-                aria-label={$t("chat.close")}
-            >
-                ✕
-            </button>
-        {/if}
+        <div class="chat-actions">
+            {#if stockCode}
+                <div class="stock-pill" title={stockCode}>#{stockCode}</div>
+            {/if}
+            {#if streamStatus === "reconnecting"}
+                <div
+                    class="status-indicator reconnecting"
+                    title={$t("chat.reconnecting") ?? "Reconnecting..."}
+                >
+                    🔄
+                </div>
+            {/if}
+            {#if onClose}
+                <button
+                    class="icon-button"
+                    onclick={onClose}
+                    aria-label={$t("chat.close")}
+                >
+                    ✕
+                </button>
+            {/if}
+        </div>
     </header>
 
     <div class="messages">
@@ -141,7 +242,8 @@
                     <div class="bubble">{message.content}</div>
                 </div>
             {/each}
-            {#if isLoading}
+
+            {#if streamStatus === "starting" || streamStatus === "connecting" || streamStatus === "connected"}
                 <div class="message assistant">
                     <div class="avatar">🤖</div>
                     <div class="bubble loading">
@@ -151,10 +253,17 @@
                     </div>
                 </div>
             {/if}
+
             {#if error}
                 <div class="error-message">
                     <div class="avatar">⚠️</div>
-                    <div class="bubble error-bubble">{error}</div>
+                    <div class="bubble error-bubble">
+                        <div>{error}</div>
+                        <button
+                            class="error-dismiss"
+                            onclick={() => (error = null)}>✕</button
+                        >
+                    </div>
                 </div>
             {/if}
         {/if}
@@ -176,15 +285,27 @@
             onkeydown={handleKeydown}
             placeholder={$t("chat.placeholder")}
             rows="1"
-            disabled={isLoading}
+            disabled={streamStatus === "starting" ||
+                streamStatus === "connecting"}
         ></textarea>
-        <button
-            class="primary"
-            onclick={sendMessage}
-            disabled={!inputMessage.trim() || isLoading}
-        >
-            {$t("chat.send")}
-        </button>
+        {#if streamStatus !== "stopped" && streamStatus !== "done" && streamStatus !== "error"}
+            <button
+                class="danger"
+                onclick={stopStream}
+                title={$t("chat.stop") ?? "Stop"}
+                aria-label={$t("chat.stop") ?? "Stop"}
+            >
+                ⏹️
+            </button>
+        {:else}
+            <button
+                class="primary"
+                onclick={sendMessage}
+                disabled={!inputMessage.trim()}
+            >
+                {$t("chat.send")}
+            </button>
+        {/if}
     </div>
 </div>
 
@@ -228,6 +349,21 @@
         align-items: center;
     }
 
+    .chat-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .stock-pill {
+        border: 1px solid var(--color-border);
+        background: var(--color-surface);
+        padding: 0.25rem 0.6rem;
+        border-radius: 999px;
+        font-size: 0.85rem;
+        color: var(--color-text-secondary);
+    }
+
     .label {
         margin: 0;
         font-weight: 700;
@@ -236,6 +372,34 @@
     .muted {
         margin: 0;
         color: var(--color-text-secondary);
+    }
+
+    .status-indicator {
+        font-size: 1rem;
+        animation: pulse 1.5s infinite;
+    }
+
+    .status-indicator.reconnecting {
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        from {
+            transform: rotate(0deg);
+        }
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    @keyframes pulse {
+        0%,
+        100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.6;
+        }
     }
 
     .messages {
@@ -304,6 +468,7 @@
         display: grid;
         place-items: center;
         border: 1px solid var(--color-border);
+        flex-shrink: 0;
     }
 
     .bubble {
@@ -381,12 +546,18 @@
         border-color: var(--color-primary);
     }
 
+    textarea:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
     .icon-button {
         border: 1px solid var(--color-border);
         background: var(--color-panel);
         border-radius: 10px;
         padding: 0.5rem;
         cursor: pointer;
+        transition: border-color 0.2s;
     }
 
     .icon-button:hover {
@@ -401,11 +572,33 @@
         padding: 0.65rem 1rem;
         cursor: pointer;
         box-shadow: var(--shadow-sm);
+        font-weight: 600;
+        transition: opacity 0.2s;
+    }
+
+    .primary:hover:not(:disabled) {
+        opacity: 0.9;
     }
 
     .primary:disabled {
         opacity: 0.6;
         cursor: not-allowed;
+    }
+
+    .danger {
+        background: #ef4444;
+        color: #fff;
+        border: none;
+        border-radius: 12px;
+        padding: 0.65rem 1rem;
+        cursor: pointer;
+        box-shadow: var(--shadow-sm);
+        font-weight: 600;
+        transition: opacity 0.2s;
+    }
+
+    .danger:hover {
+        opacity: 0.9;
     }
 
     .error-message {
@@ -419,5 +612,22 @@
         background: rgba(239, 68, 68, 0.1) !important;
         border-color: #ef4444 !important;
         color: #dc2626;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .error-dismiss {
+        background: none;
+        border: none;
+        color: #dc2626;
+        cursor: pointer;
+        font-size: 1rem;
+        padding: 0;
+        flex-shrink: 0;
+    }
+
+    .error-dismiss:hover {
+        opacity: 0.7;
     }
 </style>

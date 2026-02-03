@@ -1,6 +1,7 @@
 # Local environment files
 .env
 .vscode/
+!.vscode/tasks.json
 
 # Data files
 data/data.sql

@@ -117,7 +117,6 @@ This project is developed with the assistance of AI tools:
 
 These features are planned:
 
-- Add session management for chatbot
 - Add RAG (Retrieval-Augmented Generation) capabilities
 - Add observability and monitoring with Prometheus and Grafana
 

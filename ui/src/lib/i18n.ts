@@ -51,6 +51,10 @@ const messages: Record<Locale, TranslationMap> = {
             placeholder: "Type your message...",
             send: "Send",
             clear: "Clear",
+            newChat: "New chat",
+            search: "Search chats...",
+            noHistory: "No chats yet.",
+            delete: "Delete chat",
             emptyTitle: "Welcome to Stock Chat",
             emptyLead:
                 "Ask anything about Chinese A-share stocks, market analysis, or financial data.",
@@ -59,6 +63,7 @@ const messages: Record<Locale, TranslationMap> = {
             suggestion3: "Compare stocks in the technology sector.",
             open: "Open chat",
             close: "Close chat",
+            reconnecting: "Reconnecting...",
         },
         stocks: {
             title: "Stocks",
@@ -153,6 +158,10 @@ const messages: Record<Locale, TranslationMap> = {
             placeholder: "请输入消息...",
             send: "发送",
             clear: "清空",
+            newChat: "新建聊天",
+            search: "搜索聊天...",
+            noHistory: "暂无聊天记录。",
+            delete: "删除聊天",
             emptyTitle: "欢迎使用股票聊天助手",
             emptyLead: "可以询问 A 股、市场分析或财务数据。",
             suggestion1: "表现最好的股票有哪些？",
@@ -160,6 +169,7 @@ const messages: Record<Locale, TranslationMap> = {
             suggestion3: "比较科技板块的股票。",
             open: "打开聊天",
             close: "关闭聊天",
+            reconnecting: "重连中...",
         },
         stocks: {
             title: "股票列表",

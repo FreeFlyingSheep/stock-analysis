@@ -22,10 +22,10 @@ class LLMError(Exception):
 class LLM:
     """Wrapper around the OpenAI language model."""
 
-    _llm: ChatOpenAI | Runnable[LanguageModelInput, AIMessage] | None
+    _llm: ChatOpenAI | None
     """Instance of the OpenAI language model."""
 
-    def __init__(self, tools: list[BaseTool] | None = None) -> None:
+    def __init__(self) -> None:
         """Initialize the LLM wrapper."""
         settings: Settings = get_settings()
         if (
@@ -34,14 +34,30 @@ class LLM:
             and settings.llm_api_key is not None
             and settings.llm_server_base_url is not None
         ):
-            llm = ChatOpenAI(
+            self._llm = ChatOpenAI(
                 model=settings.llm_model,
                 api_key=settings.llm_api_key,
                 base_url=settings.llm_server_base_url,
             )
-            self._llm = llm.bind_tools(tools) if tools is not None else llm
         else:
             self._llm = None
+
+    def bind_tools(
+        self, tools: list[BaseTool]
+    ) -> Runnable[LanguageModelInput, AIMessage]:
+        """Bind tools to the LLM for tool use.
+
+        Args:
+            tools: List of tools to bind.
+
+        Returns:
+            A Runnable that can use the tools with the LLM.
+        """
+        if self._llm is None:
+            msg: str = "LLM is not configured."
+            raise LLMError(msg)
+
+        return self._llm.bind_tools(tools)
 
     def invoke(self, prompt: LanguageModelInput) -> AIMessage:
         """Invoke the language model with the given prompt.

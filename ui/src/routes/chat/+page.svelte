@@ -17,4 +17,9 @@
         min-width: 320px;
         max-width: 720px;
     }
+
+    .muted {
+        margin: 0;
+        color: var(--color-text-secondary);
+    }
 </style>

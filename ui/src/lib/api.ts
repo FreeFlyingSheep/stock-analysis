@@ -3,6 +3,9 @@ import type {
     StockDetailApiResponse,
     AnalysisApiResponse,
     AnalysisDetailApiResponse,
+    ChatStartIn,
+    ChatStartOut,
+    StreamEvent,
 } from "./types";
 
 const API_BASE_URL = "/api";
@@ -66,77 +69,259 @@ export async function getAnalysisDetails(
     return fetchApi<AnalysisDetailApiResponse>(`/analysis/${stockCode}`);
 }
 
-export type StreamTokenEvent = {
-    type: "token";
-    data: string;
+export type StreamStatus =
+    | "starting"
+    | "connecting"
+    | "connected"
+    | "reconnecting"
+    | "done"
+    | "stopped"
+    | "error";
+
+export interface StreamChatOptions {
+    onToken: (token: string) => void;
+    onDone: () => void;
+    onError: (error: Error) => void;
+    onStatus?: (status: StreamStatus) => void;
 }
 
-export type StreamDoneEvent = {
-    type: "done";
-}
-
-export type StreamEvent = StreamTokenEvent | StreamDoneEvent;
-
-export async function* streamChatMessage(
+export function streamChatMessage(
+    threadId: string,
+    messageId: string,
     message: string,
-): AsyncGenerator<StreamEvent, void, unknown> {
-    const response = await fetch(`${API_BASE_URL}/chat`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            Accept: "text/event-stream",
-        },
-        body: JSON.stringify({ message }),
-    });
+    options: StreamChatOptions,
+    stockCode?: string,
+): () => void {
+    const abort = new AbortController();
+    let es: EventSource | null = null;
+    let closed = false;
+    let pingTimeout: ReturnType<typeof setTimeout> | null = null;
+    let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+    let reconnectAttempts = 0;
+    const MAX_RECONNECT_ATTEMPTS = 10;
+    const PING_TIMEOUT_MS = 45000;
 
-    if (!response.ok) {
-        throw new Error(`API error: ${response.status} ${response.statusText}`);
-    }
+    let lastStatus: StreamStatus | null = null;
+    const setStatus = (s: StreamStatus) => {
+        if (lastStatus === s) return;
+        lastStatus = s;
+        options.onStatus?.(s);
+    };
 
-    const reader = response.body?.getReader();
-    if (!reader) {
-        throw new Error("No response body");
-    }
+    const clearAllTimeouts = () => {
+        if (pingTimeout !== null) {
+            clearTimeout(pingTimeout);
+            pingTimeout = null;
+        }
+        if (reconnectTimeout !== null) {
+            clearTimeout(reconnectTimeout);
+            reconnectTimeout = null;
+        }
+    };
 
-    const decoder = new TextDecoder();
-    let buffer = "";
-
-    while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-
-        const events = buffer.split("\n\n");
-        buffer = events.pop() || "";
-
-        for (const event of events) {
-            if (!event.trim()) continue;
-
-            const lines = event.split("\n");
-            let eventType = "";
-            let data = "";
-
-            for (const line of lines) {
-                if (line.startsWith("event: ")) {
-                    eventType = line.slice(7).trim();
-                } else if (line.startsWith("data: ")) {
-                    data = line.slice(6);
-                }
+    const resetPingTimeout = () => {
+        if (pingTimeout !== null) {
+            clearTimeout(pingTimeout);
+        }
+        pingTimeout = setTimeout(() => {
+            if (!closed && lastStatus !== "done" && lastStatus !== "error") {
+                console.warn(
+                    "No keep-alive ping received - connection may be stale",
+                );
+                attemptReconnect();
             }
+        }, PING_TIMEOUT_MS);
+    };
 
-            if (eventType === "done") {
-                yield { type: "done" };
+    const parseEventPayload = (event: MessageEvent): StreamEvent | null => {
+        if (typeof event.data !== "string" || event.data.length === 0) {
+            return null;
+        }
+
+        try {
+            const parsed = JSON.parse(event.data) as StreamEvent;
+            if (parsed && typeof parsed === "object" && "data" in parsed) {
+                return parsed;
+            }
+        } catch {
+            // Fall back to raw string payloads.
+        }
+
+        return {
+            id: 0,
+            event: event.type as StreamEvent["event"],
+            data: String(event.data),
+        };
+    };
+
+    const attachEventListeners = (eventSource: EventSource) => {
+        eventSource.addEventListener("token", (event: MessageEvent) => {
+            const streamEvent = parseEventPayload(event);
+            resetPingTimeout();
+            if (streamEvent) {
+                options.onToken(streamEvent.data);
                 return;
             }
 
-            if (eventType === "token" && data) {
-                try {
-                    yield { type: "token", data: data };
-                } catch {
-                    // Skip invalid JSON
+            setStatus("error");
+            options.onError(new Error("Invalid token payload"));
+        });
+
+        eventSource.addEventListener("done", () => {
+            clearAllTimeouts();
+            setStatus("done");
+            eventSource.close();
+            es = null;
+            options.onDone();
+        });
+
+        eventSource.addEventListener("error", (event: MessageEvent) => {
+            clearAllTimeouts();
+            const streamEvent = parseEventPayload(event);
+            const errorMsg =
+                streamEvent?.data && streamEvent.data.length > 0
+                    ? streamEvent.data
+                    : "server error";
+            setStatus("error");
+            eventSource.close();
+            es = null;
+            options.onError(new Error(errorMsg));
+        });
+
+        eventSource.addEventListener("ping", () => {
+            resetPingTimeout();
+        });
+
+        eventSource.onerror = () => {
+            if (!closed && lastStatus !== "done") {
+                attemptReconnect();
+            }
+        };
+    };
+
+    const setupStream = async (streamUrl: string) => {
+        if (closed) return;
+
+        setStatus("connecting");
+        es = new EventSource(streamUrl);
+
+        es.onopen = () => {
+            setStatus("connected");
+            resetPingTimeout();
+        };
+
+        attachEventListeners(es);
+    };
+
+    const attemptReconnect = async () => {
+        if (closed || reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+            if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+                setStatus("error");
+                options.onError(
+                    new Error("Failed to reconnect: max attempts exceeded"),
+                );
+            }
+            return;
+        }
+
+        reconnectAttempts++;
+        const backoffMs = Math.min(
+            1000 * Math.pow(2, reconnectAttempts - 1),
+            30000,
+        );
+
+        console.log(
+            `Reconnecting (attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}) in ${backoffMs}ms...`,
+        );
+        setStatus("reconnecting");
+
+        reconnectTimeout = setTimeout(async () => {
+            if (closed) return;
+
+            try {
+                const res = await fetch("/api/chat/start", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        thread_id: threadId,
+                        message_id: messageId,
+                        message: message,
+                        stock_code: stockCode ?? null,
+                    } as ChatStartIn),
+                    signal: abort.signal,
+                });
+
+                if (!res.ok) {
+                    const text = await res.text().catch(() => "");
+                    throw new Error(`Start failed: ${res.status} ${text}`);
+                }
+
+                const { stream_url } = (await res.json()) as ChatStartOut;
+
+                // Close old connection
+                es?.close();
+                es = null;
+
+                // Setup new stream
+                await setupStream(stream_url);
+                reconnectAttempts = 0; // Reset on successful reconnect
+                console.log("Reconnected successfully");
+            } catch (err) {
+                console.warn(
+                    `Reconnect attempt ${reconnectAttempts} failed:`,
+                    err instanceof Error ? err.message : String(err),
+                );
+                if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS && !closed) {
+                    attemptReconnect();
+                } else {
+                    setStatus("error");
+                    options.onError(
+                        new Error("Failed to reconnect: max attempts exceeded"),
+                    );
                 }
             }
+        }, backoffMs);
+    };
+
+    (async () => {
+        try {
+            setStatus("starting");
+
+            const res = await fetch("/api/chat/start", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    thread_id: threadId,
+                    message_id: messageId,
+                    message: message,
+                    stock_code: stockCode ?? null,
+                } as ChatStartIn),
+                signal: abort.signal,
+            });
+
+            if (!res.ok) {
+                const text = await res.text().catch(() => "");
+                setStatus("error");
+                throw new Error(`Start failed: ${res.status} ${text}`);
+            }
+
+            const { stream_url } = (await res.json()) as ChatStartOut;
+
+            await setupStream(stream_url);
+        } catch (e) {
+            clearAllTimeouts();
+            if (abort.signal.aborted) return;
+            setStatus("error");
+            options.onError(e instanceof Error ? e : new Error(String(e)));
         }
-    }
+    })();
+
+    return () => {
+        closed = true;
+        clearAllTimeouts();
+        abort.abort();
+        es?.close();
+        es = null;
+        setStatus("stopped");
+    };
 }

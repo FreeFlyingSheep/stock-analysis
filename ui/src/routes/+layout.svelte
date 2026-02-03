@@ -14,6 +14,7 @@
     ];
 
     const currentPath = $derived(page.url.pathname);
+    const currentStockCode = $derived(page.params.code);
 </script>
 
 <svelte:head>
@@ -58,7 +59,7 @@
         <p>{$t("footer")}</p>
     </footer>
 
-    <FloatingChat />
+    <FloatingChat stockCode={currentStockCode} />
 </div>
 
 <style>

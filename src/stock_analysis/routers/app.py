@@ -19,6 +19,7 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
+from stock_analysis.agent.graph import ChatAgent
 from stock_analysis.routers.analysis import router as analysis_router
 from stock_analysis.routers.chat import router as chat_router
 from stock_analysis.routers.stock import router as stock_router
@@ -106,6 +107,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
             )
         }
     )
+
+    app.state.agent = await ChatAgent.create()
 
     yield
 

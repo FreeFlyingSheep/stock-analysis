@@ -4,7 +4,7 @@
 
 这是 Stock Analysis 的 SvelteKit 前端。用于浏览 A 股股票、查看财务与评分结果，并通过聊天界面获取分析。
 
-该前端主要由 Claude Opus 4.5 与 GPT-5.1-Codex-Max 辅助生成。
+该前端主要由 Claude Opus 4.5、GPT-5.1-Codex-Max 和 GPT-5.2-Codex 辅助生成。
 
 ## 功能
 
