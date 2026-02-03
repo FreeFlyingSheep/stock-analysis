@@ -1,7 +1,7 @@
 """Graph node definitions for stock analysis agent."""
 
 import operator
-from typing import TYPE_CHECKING, Annotated, NotRequired, Self
+from typing import TYPE_CHECKING, Annotated, NotRequired
 
 from langchain.messages import (
     AIMessage,
@@ -13,13 +13,11 @@ from langchain.messages import (
 )
 from langchain_core.messages.ai import AIMessageChunk
 from langchain_core.runnables.config import RunnableConfig
-from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import REMOVE_ALL_MESSAGES
 from typing_extensions import TypedDict
 
 from stock_analysis.agent.model import LLM, Embeddings
-from stock_analysis.settings import get_settings
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
@@ -27,9 +25,8 @@ if TYPE_CHECKING:
     from langchain.messages import AIMessageChunk
     from langchain.tools import BaseTool
     from langchain_core.language_models import LanguageModelInput
+    from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
     from langgraph.graph.state import CompiledStateGraph, Runnable
-
-    from stock_analysis.settings import Settings
 
 
 class MessagesState(TypedDict):
@@ -48,16 +45,15 @@ class ChatAgent:
 
     _llm: LLM
     _embeddings: Embeddings
+    _checkpointer: AsyncPostgresSaver
     _agent: CompiledStateGraph[MessagesState, None, MessagesState, MessagesState]
 
-    @classmethod
-    async def create(cls) -> Self:
+    def __init__(self, checkpointer: AsyncPostgresSaver) -> None:
         """Asynchronously create the chat agent instance."""
-        self: Self = cls()
         self._llm = LLM()
         self._embeddings = Embeddings()
-        self._agent = await self._create_agent()
-        return self
+        self._checkpointer = checkpointer
+        self._agent = self._create_agent()
 
     def _trim_messages(self, state: MessagesState) -> dict | None:
         """Keep only the last few messages to fit context window.
@@ -152,7 +148,7 @@ class ChatAgent:
             return "tool_node"
         return END
 
-    async def _create_agent(
+    def _create_agent(
         self,
     ) -> CompiledStateGraph[MessagesState, None, MessagesState, MessagesState]:
         """Create a stock analysis agent using a graph-based approach.
@@ -165,7 +161,6 @@ class ChatAgent:
         Returns:
             Compiled agent ready for use.
         """
-        settings: Settings = get_settings()
         agent_builder: StateGraph[MessagesState, None, MessagesState, MessagesState] = (
             StateGraph(MessagesState)
         )
@@ -178,14 +173,10 @@ class ChatAgent:
             "llm_call", self._should_continue, ["tool_node", END]
         )
         agent_builder.add_edge("tool_node", "llm_call")
-        async with AsyncPostgresSaver.from_conn_string(
-            settings.database_url
-        ) as checkpointer:
-            await checkpointer.setup()
-            agent: CompiledStateGraph[
-                MessagesState, None, MessagesState, MessagesState
-            ] = agent_builder.compile(checkpointer=checkpointer)
-            return agent
+        agent: CompiledStateGraph[MessagesState, None, MessagesState, MessagesState] = (
+            agent_builder.compile(checkpointer=self._checkpointer)
+        )
+        return agent
 
     def invoke(
         self, thread_id: str, message: str, tools: list[BaseTool] | None = None

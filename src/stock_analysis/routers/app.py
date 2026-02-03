@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 from fastapi import FastAPI
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_mcp_adapters.sessions import StreamableHttpConnection
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from minio import Minio
 from psycopg_pool import AsyncConnectionPool
 from redis.asyncio import ConnectionPool
@@ -108,9 +109,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
         }
     )
 
-    app.state.agent = await ChatAgent.create()
+    async with AsyncPostgresSaver.from_conn_string(
+        settings.database_url
+    ) as checkpointer:
+        await checkpointer.setup()
+        app.state.agent = ChatAgent(checkpointer)
 
-    yield
+        yield
 
 
 app = FastAPI(

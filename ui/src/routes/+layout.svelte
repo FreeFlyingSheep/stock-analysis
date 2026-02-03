@@ -42,7 +42,10 @@
                     <button
                         class:item-active={$locale === item.code}
                         onclick={() => setLocale(item.code)}
-                        aria-label={`Switch to ${item.label}`}
+                        aria-label={$t("langSwitch").replace(
+                            "{lang}",
+                            item.label,
+                        )}
                     >
                         {item.label}
                     </button>

@@ -11,6 +11,12 @@ if TYPE_CHECKING:
     from stock_analysis.settings import Settings
 
 
+FORMATTER = logging.Formatter(
+    "[%(asctime)s] %(levelname)s [%(name)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+
+
 def _create_log_dir(log_file_path: Path) -> None:
     """Create log directory and parent directories if they don't exist.
 
@@ -21,6 +27,14 @@ def _create_log_dir(log_file_path: Path) -> None:
         log_file_path.parent.mkdir(parents=True, exist_ok=True)
 
 
+def _add_console_handler(logger: logging.Logger) -> None:
+    if any(isinstance(h, logging.StreamHandler) for h in logger.handlers):
+        return
+    h = logging.StreamHandler()
+    h.setFormatter(FORMATTER)
+    logger.addHandler(h)
+
+
 def _add_file_handler(logger: logging.Logger, log_file_path: Path) -> None:
     """Add FileHandler to logger.
 
@@ -29,12 +43,7 @@ def _add_file_handler(logger: logging.Logger, log_file_path: Path) -> None:
         log_file_path: Path to the log file to handle.
     """
     file_handler = RotatingFileHandler(log_file_path, maxBytes=10**6, backupCount=5)
-    file_handler.setFormatter(
-        logging.Formatter(
-            "[%(asctime)s] %(levelname)s [%(name)s] %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S",
-        )
-    )
+    file_handler.setFormatter(FORMATTER)
     logger.addHandler(file_handler)
 
 
@@ -62,6 +71,7 @@ def get_logger(
 
     logger: logging.Logger = logging.getLogger(name)
     logger.setLevel(log_level)
+    _add_console_handler(logger)
 
     if settings.no_log_file or log_file_path is None:
         return logger

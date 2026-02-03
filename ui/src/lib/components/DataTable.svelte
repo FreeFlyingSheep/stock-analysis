@@ -30,7 +30,7 @@
             <p class="overline">{$t("data.tableFrom")}</p>
             <strong>{table.path}</strong>
         </div>
-        <span class="badge">{table.rows.length} rows</span>
+        <span class="badge">{table.rows.length} {$t("data.rows")}</span>
     </header>
 
     {#if !table.rows.length}

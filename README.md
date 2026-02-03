@@ -91,6 +91,7 @@ This project is developed with the assistance of AI tools:
 - **Async Database Operations**: SQLAlchemy async with PostgreSQL for high performance and persistence
 - **MCP Server**: FastMCP integration for Model Context Protocol services
 - **Chatbot Agent**: LLM-powered chatbot for stock analysis insights and explanations
+- **Session Management**: Thread-based chat sessions with persistent conversation history
 - **Cached Responses**: Redis caching for frequently accessed data
 
 ### Frontend & User Interface
@@ -200,17 +201,7 @@ If you want to keep existing data, dump the database first (`./scripts/dump_db.s
     - Computes scores and metrics using configured rules
     - Stores results in the database
 
-8. Start the MCP server:
-
-    In another terminal, run the FastMCP server:
-
-    ```bash
-    source .venv/bin/activate
-    export $(grep -v '^#' .env | xargs)
-    ./scripts/run_mcp.sh
-    ```
-
-9. Start the API Server:
+8. Start the API Server:
 
     ```bash
     uv run app
@@ -221,14 +212,23 @@ If you want to keep existing data, dump the database first (`./scripts/dump_db.s
     - Swagger UI: `http://127.0.0.1:8000/docs`
     - ReDoc: `http://127.0.0.1:8000/redoc`
 
+9. Start the MCP server:
+
+    In another terminal, run the FastMCP server:
+
+    ```bash
+    source .venv/bin/activate
+    export $(grep -v '^#' .env | xargs)
+    ./scripts/run_mcp.sh
+    ```
+
 10. Start the Frontend UI:
 
     In another terminal, run the SvelteKit frontend:
 
     ```bash
     export $(grep -v '^#' .env | xargs)
-    pnpm --prefix ui run dev
-    # or: npm --prefix ui run dev
+    ./scripts/run_ui.sh
     ```
 
     The UI will be available at `http://127.0.0.1:5173`.

@@ -91,6 +91,7 @@
 - **异步数据库**：SQLAlchemy + PostgreSQL
 - **MCP 服务**：FastMCP 接入 Model Context Protocol
 - **聊天代理**：LLM 驱动的解释与问答
+- **会话管理**：基于线程的聊天会话，持久化对话历史
 - **缓存响应**：Redis 缓存频繁访问的数据
 
 ### 前端与界面
@@ -208,7 +209,18 @@
     ./scripts/run_mcp.sh
     ```
 
-8. 启动 API 服务器：
+8. 启动前端 UI：
+
+    在另一个终端中运行 SvelteKit 前端：
+
+    ```bash
+    export $(grep -v '^#' .env | xargs)
+    ./scripts/run_ui.sh
+    ```
+
+    UI 将在 `http://127.0.0.1:5173` 可用。
+
+9. 启动 API 服务器：
 
     ```bash
     uv run app
@@ -218,18 +230,6 @@
     API 文档由 FastAPI 自动生成，可在以下位置访问：
     - Swagger UI：`http://127.0.0.1:8000/docs`
     - ReDoc：`http://127.0.0.1:8000/redoc`
-
-9. 启动前端 UI：
-
-    在另一个终端中运行 SvelteKit 前端：
-
-    ```bash
-    export $(grep -v '^#' .env | xargs)
-    pnpm --prefix ui run dev
-    # 或 npm --prefix ui run dev
-    ```
-
-    UI 将在 `http://127.0.0.1:5173` 可用。
 
 ### Docker Compose
 

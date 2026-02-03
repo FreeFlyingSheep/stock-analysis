@@ -36,7 +36,9 @@
                 ) || null;
         } catch (e) {
             error =
-                e instanceof Error ? e.message : "Failed to load stock details";
+                e instanceof Error
+                    ? e.message
+                    : $t("errors.failedToLoadStockDetails");
         } finally {
             loading = false;
         }

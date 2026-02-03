@@ -81,7 +81,7 @@ async def _run_generation(
 
     lock: Lock = cache_service.acquire_lock(thread_id, timeout=LOCK_TTL_SEC)
     if not await lock.acquire():
-        event = StreamEvent(id=0, event="error", data="session busy")
+        event = StreamEvent(id="0", event="error", data="session busy")
         payload: str = event.model_dump_json()
         await _update_cache(
             thread_id,
@@ -107,13 +107,13 @@ async def _run_generation(
         tools: list[BaseTool] = await client.get_tools()
         seq: int = 0
         async for token in agent.astream_events(thread_id, message, tools):
-            event = StreamEvent(id=seq, event="token", data=token)
+            event = StreamEvent(id=str(seq), event="token", data=token)
             payload = event.model_dump_json()
             await cache_service.push_to_list(buf_key, payload)
             await cache_service.publish(channel, payload)
             seq += 1
 
-        event = StreamEvent(id=seq, event="done", data="")
+        event = StreamEvent(id=str(seq), event="done", data="")
         payload = event.model_dump_json()
         await _update_cache(
             thread_id,
@@ -125,7 +125,7 @@ async def _run_generation(
     except Exception as e:
         msg: str = f"Error during generation: {e}"
         logger.exception(msg)
-        event = StreamEvent(id=0, event="error", data="Error during chat streaming")
+        event = StreamEvent(id="0", event="error", data="Error during chat streaming")
         payload = event.model_dump_json()
         await _update_cache(
             thread_id,
@@ -252,7 +252,7 @@ async def _stream_data(
             now: float = time()
             if now - last_ping >= PING_INTERVAL_SEC:
                 last_ping = now
-                event = StreamEvent(id=0, event="ping", data="")
+                event = StreamEvent(id="0", event="ping", data="")
                 yield event.model_dump()
 
             msg: dict[str, str] | None = await pubsub.get_message(

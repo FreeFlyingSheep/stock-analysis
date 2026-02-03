@@ -75,18 +75,18 @@ export interface AnalysisDetailApiResponse {
 }
 
 export interface ChatStartIn {
-    thread_id: string;
-    message_id: string;
+    threadId: string;
+    messageId: string;
     message: string;
-    stock_code?: string | null;
+    stockCode?: string | null;
 }
 
 export interface ChatStartOut {
-    stream_url: string;
+    streamUrl: string;
 }
 
 export interface StreamEvent {
-    id: number;
+    id: string;
     event: "token" | "done" | "error" | "ping";
     data: string;
 }

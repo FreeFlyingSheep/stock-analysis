@@ -115,6 +115,22 @@ const messages: Record<Locale, TranslationMap> = {
         footer: "Stock Analysis Tool - For reference and educational purposes only.",
         appTitle: "Stock Analysis",
         chatErrorMessage: "Failed to send message. Please try again.",
+        data: {
+            tableFrom: "Data from",
+            none: "No data available.",
+            rows: "rows",
+        },
+        errors: {
+            failedToLoadStocks: "Failed to load stocks",
+            failedToLoadStockDetails: "Failed to load stock details",
+            apiError: "API error: {status} {statusText}",
+            invalidTokenPayload: "Invalid token payload",
+            serverError: "Server error",
+            missingStreamUrl: "Missing stream URL",
+            reconnectFailed: "Failed to reconnect: max attempts exceeded",
+            startFailed: "Start failed: {status} {error}",
+        },
+        langSwitch: "Switch to {lang}",
     },
     zh: {
         nav: {
@@ -219,6 +235,22 @@ const messages: Record<Locale, TranslationMap> = {
         footer: "Stock Analysis 工具 - 仅供参考与学习。",
         appTitle: "股票分析",
         chatErrorMessage: "消息发送失败。请重试。",
+        data: {
+            tableFrom: "来自",
+            none: "暂无数据。",
+            rows: "条记录",
+        },
+        errors: {
+            failedToLoadStocks: "加载股票列表失败",
+            failedToLoadStockDetails: "加载股票详情失败",
+            apiError: "API 错误：{status} {statusText}",
+            invalidTokenPayload: "无效的令牌数据",
+            serverError: "服务器错误",
+            missingStreamUrl: "缺少流 URL",
+            reconnectFailed: "重连失败：超过最大尝试次数",
+            startFailed: "启动失败：{status} {error}",
+        },
+        langSwitch: "切换到 {lang}",
     },
 };
 
@@ -255,4 +287,38 @@ export function setLocale(next: Locale) {
 
 export function toggleLocale() {
     locale.update((current) => (current === "en" ? "zh" : "en"));
+}
+
+// Helper function for use in non-reactive contexts (like api.ts)
+export function translateStatic(
+    key: string,
+    replacements?: Record<string, string>,
+): string {
+    let currentLocale: Locale = "zh";
+    locale.subscribe((value) => {
+        currentLocale = value;
+    })();
+
+    const path = key.split(".");
+    const value = getFromDictionary(
+        messages[currentLocale] ?? messages.en,
+        path,
+    );
+    let result: string;
+
+    if (typeof value === "string") {
+        result = value;
+    } else {
+        const fallback = getFromDictionary(messages.en, path);
+        result = typeof fallback === "string" ? fallback : key;
+    }
+
+    // Replace placeholders
+    if (replacements) {
+        Object.entries(replacements).forEach(([placeholder, replacement]) => {
+            result = result.replace(`{${placeholder}}`, replacement);
+        });
+    }
+
+    return result;
 }

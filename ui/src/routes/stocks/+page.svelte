@@ -24,7 +24,10 @@
             if (industry) params.industry = industry;
             data = await getStocks(params);
         } catch (e) {
-            error = e instanceof Error ? e.message : "Failed to load stocks";
+            error =
+                e instanceof Error
+                    ? e.message
+                    : $t("errors.failedToLoadStocks");
         } finally {
             loading = false;
         }
@@ -65,12 +68,12 @@
         return data.data.stockPage.data.filter(
             (stock) =>
                 stock.stockCode.toLowerCase().includes(debouncedSearch) ||
-                stock.companyName.toLowerCase().includes(debouncedSearch)
+                stock.companyName.toLowerCase().includes(debouncedSearch),
         );
     });
 
     const hasActiveFilters = $derived(
-        classification !== "" || industry !== "" || searchQuery !== ""
+        classification !== "" || industry !== "" || searchQuery !== "",
     );
 
     function formatDate(dateString: string): string {

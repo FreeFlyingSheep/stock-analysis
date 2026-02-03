@@ -7,13 +7,19 @@ import type {
     ChatStartOut,
     StreamEvent,
 } from "./types";
+import { translateStatic } from "./i18n";
 
 const API_BASE_URL = "/api";
 
 async function fetchApi<T>(endpoint: string): Promise<T> {
     const response = await fetch(`${API_BASE_URL}${endpoint}`);
     if (!response.ok) {
-        throw new Error(`API error: ${response.status} ${response.statusText}`);
+        throw new Error(
+            translateStatic("errors.apiError", {
+                status: response.status.toString(),
+                statusText: response.statusText,
+            }),
+        );
     }
     return response.json();
 }
@@ -148,7 +154,7 @@ export function streamChatMessage(
         }
 
         return {
-            id: 0,
+            id: "0",
             event: event.type as StreamEvent["event"],
             data: String(event.data),
         };
@@ -164,7 +170,9 @@ export function streamChatMessage(
             }
 
             setStatus("error");
-            options.onError(new Error("Invalid token payload"));
+            options.onError(
+                new Error(translateStatic("errors.invalidTokenPayload")),
+            );
         });
 
         eventSource.addEventListener("done", () => {
@@ -181,7 +189,7 @@ export function streamChatMessage(
             const errorMsg =
                 streamEvent?.data && streamEvent.data.length > 0
                     ? streamEvent.data
-                    : "server error";
+                    : translateStatic("errors.serverError");
             setStatus("error");
             eventSource.close();
             es = null;
@@ -199,11 +207,24 @@ export function streamChatMessage(
         };
     };
 
-    const setupStream = async (streamUrl: string) => {
+    const setupStream = async (streamUrl: string | undefined | null) => {
         if (closed) return;
+        if (!streamUrl) {
+            setStatus("error");
+            options.onError(
+                new Error(translateStatic("errors.missingStreamUrl")),
+            );
+            return;
+        }
 
         setStatus("connecting");
-        es = new EventSource(streamUrl);
+        const resolvedUrl =
+            streamUrl.startsWith("http://") ||
+            streamUrl.startsWith("https://") ||
+            streamUrl.startsWith("/api/")
+                ? streamUrl
+                : `${API_BASE_URL}${streamUrl.startsWith("/") ? "" : "/"}${streamUrl}`;
+        es = new EventSource(resolvedUrl);
 
         es.onopen = () => {
             setStatus("connected");
@@ -218,7 +239,7 @@ export function streamChatMessage(
             if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
                 setStatus("error");
                 options.onError(
-                    new Error("Failed to reconnect: max attempts exceeded"),
+                    new Error(translateStatic("errors.reconnectFailed")),
                 );
             }
             return;
@@ -243,27 +264,32 @@ export function streamChatMessage(
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        thread_id: threadId,
-                        message_id: messageId,
+                        threadId: threadId,
+                        messageId: messageId,
                         message: message,
-                        stock_code: stockCode ?? null,
+                        stockCode: stockCode ?? null,
                     } as ChatStartIn),
                     signal: abort.signal,
                 });
 
                 if (!res.ok) {
                     const text = await res.text().catch(() => "");
-                    throw new Error(`Start failed: ${res.status} ${text}`);
+                    throw new Error(
+                        translateStatic("errors.startFailed", {
+                            status: res.status.toString(),
+                            error: text,
+                        }),
+                    );
                 }
 
-                const { stream_url } = (await res.json()) as ChatStartOut;
+                const { streamUrl } = (await res.json()) as ChatStartOut;
 
                 // Close old connection
                 es?.close();
                 es = null;
 
                 // Setup new stream
-                await setupStream(stream_url);
+                await setupStream(streamUrl);
                 reconnectAttempts = 0; // Reset on successful reconnect
                 console.log("Reconnected successfully");
             } catch (err) {
@@ -276,7 +302,7 @@ export function streamChatMessage(
                 } else {
                     setStatus("error");
                     options.onError(
-                        new Error("Failed to reconnect: max attempts exceeded"),
+                        new Error(translateStatic("errors.reconnectFailed")),
                     );
                 }
             }
@@ -291,10 +317,10 @@ export function streamChatMessage(
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    thread_id: threadId,
-                    message_id: messageId,
+                    threadId: threadId,
+                    messageId: messageId,
                     message: message,
-                    stock_code: stockCode ?? null,
+                    stockCode: stockCode ?? null,
                 } as ChatStartIn),
                 signal: abort.signal,
             });
@@ -302,12 +328,17 @@ export function streamChatMessage(
             if (!res.ok) {
                 const text = await res.text().catch(() => "");
                 setStatus("error");
-                throw new Error(`Start failed: ${res.status} ${text}`);
+                throw new Error(
+                    translateStatic("errors.startFailed", {
+                        status: res.status.toString(),
+                        error: text,
+                    }),
+                );
             }
 
-            const { stream_url } = (await res.json()) as ChatStartOut;
+            const { streamUrl } = (await res.json()) as ChatStartOut;
 
-            await setupStream(stream_url);
+            await setupStream(streamUrl);
         } catch (e) {
             clearAllTimeouts();
             if (abort.signal.aborted) return;

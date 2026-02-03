@@ -40,6 +40,6 @@ class StreamEvent(BaseSchema):
         data: Event data content.
     """
 
-    id: int
+    id: str
     event: Literal["token", "done", "error", "ping"]
     data: str

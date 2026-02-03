@@ -288,24 +288,16 @@
             disabled={streamStatus === "starting" ||
                 streamStatus === "connecting"}
         ></textarea>
-        {#if streamStatus !== "stopped" && streamStatus !== "done" && streamStatus !== "error"}
-            <button
-                class="danger"
-                onclick={stopStream}
-                title={$t("chat.stop") ?? "Stop"}
-                aria-label={$t("chat.stop") ?? "Stop"}
-            >
-                ⏹️
-            </button>
-        {:else}
-            <button
-                class="primary"
-                onclick={sendMessage}
-                disabled={!inputMessage.trim()}
-            >
-                {$t("chat.send")}
-            </button>
-        {/if}
+        <button
+            class="primary"
+            onclick={sendMessage}
+            disabled={!inputMessage.trim() ||
+                (streamStatus !== "stopped" &&
+                    streamStatus !== "done" &&
+                    streamStatus !== "error")}
+        >
+            {$t("chat.send")}
+        </button>
     </div>
 </div>
 

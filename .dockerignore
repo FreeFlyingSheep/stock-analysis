@@ -4,6 +4,9 @@
 
 # Local environment files
 .vscode/
+.env*
+!.env
+!.env.example
 
 # Data files
 data/data.sql
