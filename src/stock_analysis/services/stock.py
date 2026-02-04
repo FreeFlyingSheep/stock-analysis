@@ -55,7 +55,7 @@ class StockService:
             offset: Number of results to skip for pagination. Defaults to 0.
 
         Returns:
-            list[Stock]: List of Stock objects matching the criteria.
+            List of Stock objects matching the criteria.
         """
         query: Select[tuple[Stock]] = select(Stock)
 
@@ -88,7 +88,7 @@ class StockService:
             stock_code: The unique stock code to search for.
 
         Returns:
-            Stock | None: Stock object if found, None otherwise.
+            Stock object if found, None otherwise.
         """
         result: Result[tuple[Stock]] = await self.db.execute(
             select(Stock).where(Stock.stock_code == stock_code)
@@ -99,7 +99,7 @@ class StockService:
         """Get all unique classifications from stocks.
 
         Returns:
-            list[str]: Sorted list of unique classification names.
+            Sorted list of unique classification names.
         """
         result: Result[tuple[str]] = await self.db.execute(
             select(Stock.classification).distinct().order_by(Stock.classification)
@@ -113,7 +113,7 @@ class StockService:
             classification: Optional filter by classification category.
 
         Returns:
-            list[str]: Sorted list of unique industry names.
+            Sorted list of unique industry names.
         """
         query: Select[tuple[str]] = (
             select(Stock.industry).distinct().order_by(Stock.industry)
@@ -139,7 +139,7 @@ class StockService:
             industry: Optional filter by industry sector.
 
         Returns:
-            int: Total number of stocks matching the criteria.
+            Total number of stocks matching the criteria.
         """
         query: Select[tuple[int]] = select(func.count(Stock.id))
 
@@ -167,8 +167,7 @@ class StockService:
             stock_id: The ID of the stock to retrieve API responses for.
 
         Returns:
-            list[CNInfoAPIResponse]: List of CNInfoAPIResponse objects
-            associated with the stock.
+            List of CNInfoAPIResponse objects associated with the stock.
         """
         result: Result[tuple[CNInfoAPIResponse]] = await self.db.execute(
             select(CNInfoAPIResponse).where(CNInfoAPIResponse.stock_id == stock_id)
@@ -184,8 +183,7 @@ class StockService:
             stock_id: The ID of the stock to retrieve API responses for.
 
         Returns:
-            list[YahooFinanceAPIResponse]: List of YahooFinanceAPIResponse objects
-            associated with the stock.
+            List of YahooFinanceAPIResponse objects associated with the stock.
         """
         result: Result[tuple[YahooFinanceAPIResponse]] = await self.db.execute(
             select(YahooFinanceAPIResponse).where(

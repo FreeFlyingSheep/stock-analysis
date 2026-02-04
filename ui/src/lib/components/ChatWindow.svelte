@@ -17,6 +17,8 @@
         initialMessages = undefined,
         onMessagesChange = undefined,
         onThreadTitleChange = undefined,
+        onEnsureThread = undefined,
+        onNewChat = undefined,
     } = $props<{
         floating?: boolean;
         onClose?: () => void;
@@ -26,17 +28,27 @@
         initialMessages?: Message[];
         onMessagesChange?: (messages: Message[]) => void;
         onThreadTitleChange?: (title: string) => void;
+        onEnsureThread?: () => Promise<string>;
+        onNewChat?: () => void;
     }>();
 
     const createThreadId = () =>
         `chat_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 
-    let internalThreadId = $state(createThreadId());
-    let messages = $state<Message[]>([]);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const getInitialThreadId = () => threadId || createThreadId();
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const getInitialMessages = (): Message[] =>
+        initialMessages ? [...initialMessages] : [];
+
+    let internalThreadId = $state(getInitialThreadId());
+    let messages = $state<Message[]>(getInitialMessages());
     let inputMessage = $state("");
     let streamStatus = $state<StreamStatus>("stopped");
     let error = $state<string | null>(null);
     let closeStream = $state<(() => void) | null>(null);
+    let isEditingTitle = $state(false);
+    let draftTitle = $state("");
 
     let messageCounter = 0;
 
@@ -56,13 +68,26 @@
         return trimmed.length > 40 ? `${trimmed.slice(0, 40)}...` : trimmed;
     };
 
-    function sendMessage() {
+    async function sendMessage() {
         if (
             !inputMessage.trim() ||
             streamStatus === "starting" ||
             streamStatus === "connecting"
         )
             return;
+
+        if (!threadId && onEnsureThread) {
+            try {
+                const ensuredId = await onEnsureThread();
+                if (ensuredId && ensuredId !== internalThreadId) {
+                    internalThreadId = ensuredId;
+                    messageCounter = 0;
+                }
+            } catch (err) {
+                error = err instanceof Error ? err.message : String(err);
+                return;
+            }
+        }
 
         const userMessage = inputMessage.trim();
         inputMessage = "";
@@ -125,7 +150,34 @@
         }
     }
 
-    function clearChat() {
+    function startEditTitle() {
+        if (!onThreadTitleChange) return;
+        draftTitle = threadTitle ?? "";
+        isEditingTitle = true;
+    }
+
+    function commitTitle() {
+        if (!onThreadTitleChange) {
+            isEditingTitle = false;
+            return;
+        }
+        const next = draftTitle.trim();
+        if (next && next !== (threadTitle ?? "")) {
+            onThreadTitleChange(next);
+        }
+        isEditingTitle = false;
+    }
+
+    function cancelTitleEdit() {
+        draftTitle = threadTitle ?? "";
+        isEditingTitle = false;
+    }
+
+    function handlePrimaryAction() {
+        if (onNewChat) {
+            onNewChat();
+            return;
+        }
         applyMessages([]);
         error = null;
     }
@@ -157,6 +209,12 @@
         }
     });
 
+    $effect(() => {
+        if (!isEditingTitle) {
+            draftTitle = threadTitle ?? "";
+        }
+    });
+
     onDestroy(() => stopStream());
 </script>
 
@@ -165,7 +223,36 @@
         <div class="chat-title">
             <span aria-hidden="true">💬</span>
             <div>
-                <p class="label">{threadTitle || $t("chat.title")}</p>
+                <div class="title-row">
+                    {#if isEditingTitle}
+                        <input
+                            class="title-input"
+                            bind:value={draftTitle}
+                            onkeydown={(event) => {
+                                if (event.key === "Enter") {
+                                    event.preventDefault();
+                                    commitTitle();
+                                } else if (event.key === "Escape") {
+                                    event.preventDefault();
+                                    cancelTitleEdit();
+                                }
+                            }}
+                            onblur={commitTitle}
+                            aria-label={$t("chat.newChat")}
+                        />
+                    {:else}
+                        <p class="label">{threadTitle || $t("chat.title")}</p>
+                        {#if onThreadTitleChange}
+                            <button
+                                class="icon-button small"
+                                onclick={startEditTitle}
+                                aria-label={$t("chat.newChat")}
+                            >
+                                ✎
+                            </button>
+                        {/if}
+                    {/if}
+                </div>
                 <p class="muted">{$t("chat.subtitle")}</p>
             </div>
         </div>
@@ -270,16 +357,19 @@
     </div>
 
     <div class="input-row">
-        {#if messages.length > 0}
-            <button
-                class="icon-button"
-                onclick={clearChat}
-                title={$t("chat.clear")}
-                aria-label={$t("chat.clear")}
-            >
-                🗑️
-            </button>
-        {/if}
+        <button
+            class={`icon-button ${onNewChat ? "new-chat" : ""}`}
+            onclick={handlePrimaryAction}
+            title={onNewChat ? $t("chat.newChat") : $t("chat.clear")}
+            aria-label={onNewChat ? $t("chat.newChat") : $t("chat.clear")}
+            style:visibility={messages.length > 0 ? "visible" : "hidden"}
+        >
+            {#if onNewChat}
+                <span class="icon-only">+</span>
+            {:else}
+                <span class="icon-only">🗑️</span>
+            {/if}
+        </button>
         <textarea
             bind:value={inputMessage}
             onkeydown={handleKeydown}
@@ -306,17 +396,19 @@
         display: flex;
         flex-direction: column;
         background: var(--color-panel);
-        border: 1px solid var(--color-border-strong);
-        border-radius: 16px;
-        box-shadow: var(--shadow-lg);
-        width: 720px;
+        width: 100%;
+        height: 100%;
         min-height: 400px;
-        max-height: 80vh;
         flex-shrink: 0;
     }
 
     .chat-window.floating {
+        border: 1px solid var(--color-border-strong);
+        border-radius: 16px;
+        box-shadow: var(--shadow-lg);
         width: 420px;
+        max-height: 80vh;
+        height: auto;
     }
 
     @media (max-width: 768px) {
@@ -339,6 +431,22 @@
         display: flex;
         gap: 0.75rem;
         align-items: center;
+    }
+
+    .title-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .title-input {
+        font: inherit;
+        border: 1px solid var(--color-border);
+        background: var(--color-panel);
+        color: inherit;
+        border-radius: 8px;
+        padding: 0.25rem 0.5rem;
+        min-width: 160px;
     }
 
     .chat-actions {
@@ -402,6 +510,7 @@
         flex-direction: column;
         gap: 0.75rem;
         min-width: 0;
+        justify-content: flex-start;
     }
 
     .welcome {
@@ -410,6 +519,8 @@
         border: 1px dashed var(--color-border);
         border-radius: 12px;
         width: 100%;
+        margin-top: auto;
+        margin-bottom: auto;
     }
 
     .welcome-icon {
@@ -550,6 +661,33 @@
         padding: 0.5rem;
         cursor: pointer;
         transition: border-color 0.2s;
+        color: var(--color-text);
+    }
+
+    .icon-button.small {
+        padding: 0.25rem 0.4rem;
+        border-radius: 8px;
+        font-size: 0.85rem;
+    }
+
+    .icon-button.new-chat {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.45rem 0.7rem;
+        font-weight: 600;
+    }
+
+    .icon-only {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: inherit;
+        line-height: 1;
     }
 
     .icon-button:hover {

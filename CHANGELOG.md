@@ -21,5 +21,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - LLM-powered chatbot for stock analysis and explanations
 - GitHub workflows for CI/CD
 - Redis caching for frequently accessed data
+- Server-sent events (SSE) for real-time updates
 
 [Unreleased]: https://github.com/FreeFlyingSheep/stock-analysis

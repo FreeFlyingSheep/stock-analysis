@@ -26,6 +26,7 @@ from stock_analysis.adapters.cninfo import CNInfoAdapter
 from stock_analysis.adapters.rule import RuleAdapter
 from stock_analysis.models.analysis import Analysis
 from stock_analysis.models.base import Base
+from stock_analysis.models.chat import ChatThread
 from stock_analysis.models.cninfo import CNInfoAPIResponse  # noqa: F401
 from stock_analysis.models.stock import Stock
 from stock_analysis.models.yahoo import YahooFinanceAPIResponse  # noqa: F401
@@ -139,6 +140,35 @@ async def seed_stocks(async_session: AsyncSession) -> list[Stock]:
     async_session.add_all(stocks)
     await async_session.flush()
     return stocks
+
+
+@pytest_asyncio.fixture
+async def seed_chat_threads(async_session: AsyncSession) -> list[ChatThread]:
+    chat_threads: list[ChatThread] = [
+        ChatThread(
+            thread_id="thread_001",
+            title="关于000001的分析",
+            status="active",
+        ),
+        ChatThread(
+            thread_id="thread_002",
+            title="关于000002的讨论",
+            status="active",
+        ),
+        ChatThread(
+            thread_id="thread_003",
+            title="市场观点",
+            status="active",
+        ),
+        ChatThread(
+            thread_id="thread_004",
+            title="已归档的线程",
+            status="deleted",
+        ),
+    ]
+    async_session.add_all(chat_threads)
+    await async_session.flush()
+    return chat_threads
 
 
 @pytest_asyncio.fixture

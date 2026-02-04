@@ -62,7 +62,9 @@
         <p>{$t("footer")}</p>
     </footer>
 
-    <FloatingChat stockCode={currentStockCode} />
+    {#if !currentPath.startsWith("/chat")}
+        <FloatingChat stockCode={currentStockCode} />
+    {/if}
 </div>
 
 <style>
@@ -138,6 +140,7 @@
 
     main.page-shell {
         flex: 1;
+        min-height: 0;
     }
 
     .footer {

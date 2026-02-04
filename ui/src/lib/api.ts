@@ -6,6 +6,11 @@ import type {
     ChatStartIn,
     ChatStartOut,
     StreamEvent,
+    ChatThreadsResponse,
+    ChatThreadDetailResponse,
+    ChatThreadOutApi,
+    ChatThreadUpdateIn,
+    ChatThreadCreateIn,
 } from "./types";
 import { translateStatic } from "./i18n";
 
@@ -13,6 +18,27 @@ const API_BASE_URL = "/api";
 
 async function fetchApi<T>(endpoint: string): Promise<T> {
     const response = await fetch(`${API_BASE_URL}${endpoint}`);
+    if (!response.ok) {
+        throw new Error(
+            translateStatic("errors.apiError", {
+                status: response.status.toString(),
+                statusText: response.statusText,
+            }),
+        );
+    }
+    return response.json();
+}
+
+async function fetchApiJson<T>(
+    endpoint: string,
+    method: "POST" | "PATCH" | "DELETE",
+    body?: unknown,
+): Promise<T> {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        method,
+        headers: body ? { "Content-Type": "application/json" } : undefined,
+        body: body ? JSON.stringify(body) : undefined,
+    });
     if (!response.ok) {
         throw new Error(
             translateStatic("errors.apiError", {
@@ -73,6 +99,39 @@ export async function getAnalysisDetails(
     stockCode: string,
 ): Promise<AnalysisDetailApiResponse> {
     return fetchApi<AnalysisDetailApiResponse>(`/analysis/${stockCode}`);
+}
+
+export async function getChatThreads(): Promise<ChatThreadsResponse> {
+    return fetchApi<ChatThreadsResponse>("/chats");
+}
+
+export async function getChatThreadDetails(
+    threadId: string,
+): Promise<ChatThreadDetailResponse> {
+    return fetchApi<ChatThreadDetailResponse>(`/chats/${threadId}`);
+}
+
+export async function createChatThread(
+    payload: ChatThreadCreateIn,
+): Promise<ChatThreadOutApi> {
+    return fetchApiJson<ChatThreadOutApi>("/chats", "POST", payload);
+}
+
+export async function updateChatThread(
+    threadId: string,
+    payload: ChatThreadUpdateIn,
+): Promise<ChatThreadOutApi> {
+    return fetchApiJson<ChatThreadOutApi>(
+        `/chats/${threadId}`,
+        "PATCH",
+        payload,
+    );
+}
+
+export async function deleteChatThread(
+    threadId: string,
+): Promise<ChatThreadOutApi> {
+    return fetchApiJson<ChatThreadOutApi>(`/chats/${threadId}`, "DELETE");
 }
 
 export type StreamStatus =

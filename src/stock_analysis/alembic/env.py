@@ -10,6 +10,7 @@ from sqlalchemy import engine_from_config, pool
 
 from stock_analysis.models.analysis import Analysis  # noqa: F401
 from stock_analysis.models.base import Base
+from stock_analysis.models.chat import ChatThread  # noqa: F401
 from stock_analysis.models.cninfo import CNInfoAPIResponse  # noqa: F401
 from stock_analysis.models.stock import Stock  # noqa: F401
 from stock_analysis.models.yahoo import YahooFinanceAPIResponse  # noqa: F401
@@ -28,6 +29,10 @@ IGNORE_TABLES: list[str] = [
     "pgqueuer_log",
     "pgqueuer_schedules",
     "pgqueuer_statistics",
+    "checkpoint_blobs",
+    "checkpoint_migrations",
+    "checkpoint_writes",
+    "checkpoints",
 ]
 
 

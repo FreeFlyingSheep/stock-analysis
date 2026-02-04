@@ -90,3 +90,49 @@ export interface StreamEvent {
     event: "token" | "done" | "error" | "ping";
     data: string;
 }
+
+export interface ChatThreadOutApi {
+    threadId: string;
+    title: string;
+    status: "active" | "deleted";
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface ChatThreadsResponse {
+    data: ChatThreadOutApi[];
+}
+
+export interface ChatMessageOutApi {
+    role: "human" | "ai";
+    content: string;
+}
+
+export interface ChatThreadDetailResponse {
+    data: ChatMessageOutApi[];
+}
+
+export interface ChatThreadCreateIn {
+    threadId?: string;
+    title?: string;
+    status?: "active" | "deleted";
+}
+
+export interface ChatThreadUpdateIn {
+    title?: string;
+    status?: "active" | "deleted";
+}
+
+export interface ChatMessage {
+    role: "user" | "assistant";
+    content: string;
+}
+
+export interface ChatThread {
+    id: string;
+    title: string;
+    messages: ChatMessage[];
+    stockCode?: string;
+    createdAt: string;
+    updatedAt: string;
+}

@@ -1,6 +1,5 @@
 """Graph node definitions for stock analysis agent."""
 
-import operator
 from typing import TYPE_CHECKING, Annotated, NotRequired
 
 from langchain.messages import (
@@ -14,7 +13,7 @@ from langchain.messages import (
 from langchain_core.messages.ai import AIMessageChunk
 from langchain_core.runnables.config import RunnableConfig
 from langgraph.graph import END, START, StateGraph
-from langgraph.graph.message import REMOVE_ALL_MESSAGES
+from langgraph.graph.message import REMOVE_ALL_MESSAGES, add_messages
 from typing_extensions import TypedDict
 
 from stock_analysis.agent.model import LLM, Embeddings
@@ -27,12 +26,13 @@ if TYPE_CHECKING:
     from langchain_core.language_models import LanguageModelInput
     from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
     from langgraph.graph.state import CompiledStateGraph, Runnable
+    from langgraph.pregel.debug import StateSnapshot
 
 
 class MessagesState(TypedDict):
     """Message state for the chat agent."""
 
-    messages: Annotated[list[AnyMessage], operator.add]
+    messages: Annotated[list[AnyMessage], add_messages]
     """List of messages exchanged in the chat."""
     llm_calls: NotRequired[int]
     """Number of LLM calls made."""
@@ -255,3 +255,50 @@ class ChatAgent:
                             p if isinstance(p, str) else str(p) for p in content
                         ]
                         yield "".join(text_parts)
+
+    async def aget_chat_history(self, thread_id: str) -> list[dict[str, str]]:
+        """Retrieve the state history for a given thread.
+
+        Args:
+            thread_id: Identifier for the chat thread.
+
+        Returns:
+            List of message states in the thread's history.
+        """
+        config: RunnableConfig = {"configurable": {"thread_id": thread_id}}
+
+        snaps: list[StateSnapshot] = [
+            snap async for snap in self._agent.aget_state_history(config)
+        ]
+        snaps.reverse()
+
+        seen_ids: set[str] = set()
+        transcript: list[dict[str, str]] = []
+
+        for snap in snaps:
+            for m in snap.values.get("messages", []):
+                if not isinstance(m, (HumanMessage, AIMessage)):
+                    continue
+
+                mid: str | None = getattr(m, "id", None)
+                if mid and mid in seen_ids:
+                    continue
+                if mid:
+                    seen_ids.add(mid)
+
+                content: str | list[str | dict] = m.content
+                if isinstance(content, str):
+                    text: str = content
+                else:
+                    text_parts: list[str] = [
+                        p if isinstance(p, str) else str(p) for p in content
+                    ]
+                    text = "".join(text_parts)
+                text = text.strip()
+                if not text:
+                    continue
+
+                role: str = "human" if isinstance(m, HumanMessage) else "ai"
+                transcript.append({"role": role, "content": text})
+
+        return transcript

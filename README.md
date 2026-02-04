@@ -93,6 +93,7 @@ This project is developed with the assistance of AI tools:
 - **Chatbot Agent**: LLM-powered chatbot for stock analysis insights and explanations
 - **Session Management**: Thread-based chat sessions with persistent conversation history
 - **Cached Responses**: Redis caching for frequently accessed data
+- **Streaming Responses**: Real-time data streaming for long-running analysis tasks
 
 ### Frontend & User Interface
 
@@ -100,6 +101,7 @@ This project is developed with the assistance of AI tools:
 - **Advanced Filtering**: Query stocks with filtering by classification, industry, and custom criteria with pagination
 - **Internationalization (i18n) Support**: English and Chinese toggle for global accessibility
 - **Floating Chat Widget**: Integrated AI chatbot for on-demand analysis assistance
+- **Chat History Management**: Persistent chat threads with local storage and easy navigation
 
 ### Infrastructure & Deployment
 

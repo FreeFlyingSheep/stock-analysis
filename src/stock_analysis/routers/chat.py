@@ -4,6 +4,7 @@ import asyncio
 from http import HTTPStatus
 from time import time
 from typing import TYPE_CHECKING, Annotated
+from uuid import uuid4
 
 from fastapi import (
     APIRouter,
@@ -15,17 +16,26 @@ from langchain_mcp_adapters.client import MultiServerMCPClient  # noqa: TC002
 from pydantic import ValidationError
 from redis.asyncio import Redis  # noqa: TC002
 from redis.exceptions import LockError, LockNotOwnedError
+from sqlalchemy.ext.asyncio import AsyncSession  # noqa: TC002
 from sse_starlette import EventSourceResponse
 
 from stock_analysis.agent.graph import ChatAgent  # noqa: TC001
 from stock_analysis.logger import get_logger
+from stock_analysis.models.chat import ChatThread
 from stock_analysis.schemas.chat import (
     ChatStartIn,  # noqa: TC001
     ChatStartOut,
+    ChatThreadCreateIn,  # noqa: TC001
+    ChatThreadDetailResponse,
+    ChatThreadOut,
+    ChatThreadsResponse,
+    ChatThreadUpdateIn,  # noqa: TC001
     StreamEvent,
 )
 from stock_analysis.services.agent import get_agent
 from stock_analysis.services.cache import CacheService, get_redis
+from stock_analysis.services.chat import ChatService
+from stock_analysis.services.database import get_db
 from stock_analysis.services.mcp import get_mcp
 
 if TYPE_CHECKING:
@@ -35,6 +45,8 @@ if TYPE_CHECKING:
     from langchain_core.tools.base import BaseTool
     from redis.asyncio.client import PubSub
     from redis.asyncio.lock import Lock
+
+    from stock_analysis.models.chat import ChatThread
 
 
 RUN_TTL_SEC = 60 * 20
@@ -90,6 +102,7 @@ async def _run_generation(
             "error",
             cache_service,
         )
+        return
 
     stop = asyncio.Event()
 
@@ -122,9 +135,8 @@ async def _run_generation(
             "done",
             cache_service,
         )
-    except Exception as e:
-        msg: str = f"Error during generation: {e}"
-        logger.exception(msg)
+    except Exception:
+        logger.exception("Error during generation")
         event = StreamEvent(id="0", event="error", data="Error during chat streaming")
         payload = event.model_dump_json()
         await _update_cache(
@@ -150,6 +162,7 @@ async def _run_generation(
 @router.post("/chat/start")
 async def start_chat(
     start_in: ChatStartIn,
+    db: Annotated[AsyncSession, Depends(get_db)],
     redis: Annotated[Redis, Depends(get_redis)],
     client: Annotated[MultiServerMCPClient, Depends(get_mcp)],
     agent: Annotated[ChatAgent, Depends(get_agent)],
@@ -158,6 +171,7 @@ async def start_chat(
 
     Args:
         start_in: Input data for starting the chat.
+        db: Database session dependency.
         redis: Redis dependency.
         client: MCP client dependency.
         agent: Chat agent dependency.
@@ -187,15 +201,85 @@ async def start_chat(
     if created:
         task_key: str = run_key
         if task_key not in _running_tasks or _running_tasks[task_key].done():
-            _running_tasks[task_key] = asyncio.create_task(
+            task: asyncio.Task[None] = asyncio.create_task(
                 _run_generation(start_in, cache_service, client, agent)
             )
+            _running_tasks[task_key] = task
+
+            def _cleanup_task(_: asyncio.Task, key: str = task_key) -> None:
+                if _running_tasks.get(key) is task:
+                    _running_tasks.pop(key, None)
+
+            task.add_done_callback(_cleanup_task)
+
+            chat_service = ChatService(db)
+            await chat_service.get_or_create_thread(
+                thread_id=thread_id,
+                title="New Chat",
+                status="active",
+            )
+            await chat_service.touch_thread(thread_id)
 
     return ChatStartOut(
         stream_url="/chat/stream?"
         f"thread_id={start_in.thread_id}&"
         f"message_id={start_in.message_id}",
     )
+
+
+@router.post("/chats")
+async def create_chat(
+    payload: ChatThreadCreateIn,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> ChatThreadOut:
+    """Create a chat thread or return an existing one."""
+    thread_id: str = payload.thread_id or f"chat_{uuid4().hex}"
+    title: str = payload.title or "New Chat"
+    status: str = payload.status or "active"
+    chat_service = ChatService(db)
+    thread: ChatThread = await chat_service.get_or_create_thread(
+        thread_id=thread_id,
+        title=title,
+        status=status,
+    )
+    return ChatThreadOut.model_validate(thread)
+
+
+@router.patch("/chats/{thread_id}")
+async def update_chat(
+    thread_id: str,
+    payload: ChatThreadUpdateIn,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> ChatThreadOut:
+    """Update a chat thread."""
+    chat_service = ChatService(db)
+    thread: ChatThread | None = await chat_service.update_chat_thread(
+        thread_id=thread_id,
+        title=payload.title,
+        status=payload.status,
+    )
+    if thread is None:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND,
+            detail="Chat thread not found.",
+        )
+    return ChatThreadOut.model_validate(thread)
+
+
+@router.delete("/chats/{thread_id}")
+async def delete_chat(
+    thread_id: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> ChatThreadOut:
+    """Soft delete a chat thread."""
+    chat_service = ChatService(db)
+    thread: ChatThread | None = await chat_service.delete_chat_thread(thread_id)
+    if thread is None:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND,
+            detail="Chat thread not found.",
+        )
+    return ChatThreadOut.model_validate(thread)
 
 
 async def _stream_existing_data(
@@ -252,7 +336,7 @@ async def _stream_data(
             now: float = time()
             if now - last_ping >= PING_INTERVAL_SEC:
                 last_ping = now
-                event = StreamEvent(id="0", event="ping", data="")
+                event: StreamEvent = StreamEvent(id="0", event="ping", data="")
                 yield event.model_dump()
 
             msg: dict[str, str] | None = await pubsub.get_message(
@@ -311,4 +395,40 @@ async def chat(
 
     return EventSourceResponse(
         _stream_data(request, thread_id, message_id, start, cache_service)
+    )
+
+
+@router.get("/chats")
+async def get_chats(
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> ChatThreadsResponse:
+    """Get available chat threads.
+
+    Returns:
+        A dictionary of available chat threads.
+    """
+    chat_service = ChatService(db)
+    threads: list[ChatThread] = await chat_service.get_chat_threads(status="active")
+    return ChatThreadsResponse(
+        data=[ChatThreadOut.model_validate(thread) for thread in threads]
+    )
+
+
+@router.get("/chats/{thread_id}")
+async def get_chat_details(
+    thread_id: str,
+    agent: Annotated[ChatAgent, Depends(get_agent)],
+) -> ChatThreadDetailResponse:
+    """Get details of a specific chat thread.
+
+    Args:
+        thread_id: ID of the chat thread.
+        redis: Redis dependency.
+        agent: Chat agent dependency.
+
+    Returns:
+        Details of the specified chat thread.
+    """
+    return ChatThreadDetailResponse.model_validate(
+        {"data": await agent.aget_chat_history(thread_id)}
     )
