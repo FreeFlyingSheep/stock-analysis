@@ -138,4 +138,9 @@ strict = true
 convention = "google"
 
 [tool.uv.build-backend]
-source-include = ["configs/api/**", "configs/rules/**", "configs/alembic.ini"]
+source-include = [
+    "configs/api/**",
+    "configs/prompts/**",
+    "configs/rules/**",
+    "configs/alembic.ini"
+]

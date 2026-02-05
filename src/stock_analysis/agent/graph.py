@@ -63,7 +63,7 @@ class ChatAgent:
     def __init__(
         self,
         checkpointer: AsyncPostgresSaver,
-        config_dir: str | os.PathLike[str],
+        prompts_dir: str | os.PathLike[str],
         llm: LLM | None = None,
         embeddings: Embeddings | None = None,
     ) -> None:
@@ -72,7 +72,7 @@ class ChatAgent:
         self._embeddings = embeddings or Embeddings()
         self._checkpointer = checkpointer
         self._agent = self._create_agent()
-        self._prompts_dir = Path(config_dir) / "prompts"
+        self._prompts_dir = Path(prompts_dir)
         self._prompts: dict[str, str] = {}
 
     def _trim_messages(self, state: MessagesState) -> dict | None:
@@ -242,6 +242,7 @@ class ChatAgent:
         self,
         thread_id: str,
         message: str,
+        locale: str,
         page_context: str | None = None,
         tools: list[BaseTool] | None = None,
     ) -> AsyncGenerator[str]:
@@ -250,6 +251,7 @@ class ChatAgent:
         Args:
             thread_id: Identifier for the chat thread.
             message: User's input message.
+            locale: Locale for the conversation.
             page_context: Optional context related to the chat.
             tools: List of available tools.
 
@@ -267,6 +269,7 @@ class ChatAgent:
             {
                 "messages": messages,
                 "page_context": page_context,
+                "locale": locale,
             },
             config,
         ):

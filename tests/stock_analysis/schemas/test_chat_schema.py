@@ -45,6 +45,7 @@ def test_chat_start_in_validation() -> None:
         "thread_id": "thread_001",
         "message_id": "msg_001",
         "message": "你好",
+        "locale": "zh_CN",
         "stock_code": "000001",
     }
     chat_start: ChatStartIn = ChatStartIn.model_validate(payload)
@@ -60,6 +61,7 @@ def test_chat_start_in_without_stock_code() -> None:
         "thread_id": "thread_001",
         "message_id": "msg_001",
         "message": "你好",
+        "locale": "zh_CN",
     }
     chat_start: ChatStartIn = ChatStartIn.model_validate(payload)
 

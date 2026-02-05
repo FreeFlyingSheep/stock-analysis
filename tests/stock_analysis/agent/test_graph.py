@@ -28,10 +28,10 @@ async def chat_agent(
 ) -> ChatAgent:
     llm = LLM(llm=fake_chat)
     embeddings = Embeddings(embeddings=fake_embeddings)
-    config_dir: Path = Path(__file__).parents[3] / "configs"
+    prompts_dir: Path = Path(__file__).parents[3] / "configs" / "prompts"
     return ChatAgent(
         checkpointer=postgres_checkpointer,
-        config_dir=config_dir,
+        prompts_dir=prompts_dir,
         llm=llm,
         embeddings=embeddings,
     )

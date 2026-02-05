@@ -63,9 +63,11 @@ class Settings(BaseSettings):
     """Prefix for Redis keys."""
 
     config_dir: str
-    """Directory for configuration files."""
+    """Directory for CNInfo configuration files."""
     rule_file_path: str
     """Path to the rule configuration file."""
+    prompts_dir: str
+    """Directory for prompt templates."""
     debug: bool
     """Enable or disable debug mode."""
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]

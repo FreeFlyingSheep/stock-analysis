@@ -12,7 +12,8 @@ import type {
     ChatThreadUpdateIn,
     ChatThreadCreateIn,
 } from "./types";
-import { translateStatic } from "./i18n";
+import { get } from "svelte/store";
+import { locale as localeStore, translateStatic } from "./i18n";
 
 const API_BASE_URL = "/api";
 
@@ -160,6 +161,7 @@ export function streamChatMessage(
     const abort = new AbortController();
     let es: EventSource | null = null;
     let closed = false;
+    let haltReconnect = false;
     let pingTimeout: ReturnType<typeof setTimeout> | null = null;
     let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
     let reconnectAttempts = 0;
@@ -219,6 +221,11 @@ export function streamChatMessage(
         };
     };
 
+    const resolveLocale = (): string => {
+        const current = get(localeStore);
+        return current === "zh" ? "zh-CN" : "en-US";
+    };
+
     const attachEventListeners = (eventSource: EventSource) => {
         eventSource.addEventListener("token", (event: MessageEvent) => {
             const streamEvent = parseEventPayload(event);
@@ -250,6 +257,7 @@ export function streamChatMessage(
                     ? streamEvent.data
                     : translateStatic("errors.serverError");
             setStatus("error");
+            haltReconnect = true;
             eventSource.close();
             es = null;
             options.onError(new Error(errorMsg));
@@ -260,7 +268,7 @@ export function streamChatMessage(
         });
 
         eventSource.onerror = () => {
-            if (!closed && lastStatus !== "done") {
+            if (!closed && !haltReconnect && lastStatus !== "done") {
                 attemptReconnect();
             }
         };
@@ -294,7 +302,11 @@ export function streamChatMessage(
     };
 
     const attemptReconnect = async () => {
-        if (closed || reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+        if (
+            closed ||
+            haltReconnect ||
+            reconnectAttempts >= MAX_RECONNECT_ATTEMPTS
+        ) {
             if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
                 setStatus("error");
                 options.onError(
@@ -326,6 +338,7 @@ export function streamChatMessage(
                         threadId: threadId,
                         messageId: messageId,
                         message: message,
+                        locale: resolveLocale(),
                         stockCode: stockCode ?? null,
                     } as ChatStartIn),
                     signal: abort.signal,
@@ -379,6 +392,7 @@ export function streamChatMessage(
                     threadId: threadId,
                     messageId: messageId,
                     message: message,
+                    locale: resolveLocale(),
                     stockCode: stockCode ?? null,
                 } as ChatStartIn),
                 signal: abort.signal,

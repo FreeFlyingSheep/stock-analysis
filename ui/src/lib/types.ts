@@ -78,6 +78,7 @@ export interface ChatStartIn {
     threadId: string;
     messageId: string;
     message: string;
+    locale: string;
     stockCode?: string | null;
 }
 

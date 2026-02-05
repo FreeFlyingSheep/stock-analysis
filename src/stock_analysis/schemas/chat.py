@@ -67,12 +67,14 @@ class ChatStartIn(BaseSchema):
         thread_id: ID of the chat thread.
         message_id: ID of the initial message.
         message: Message content.
+        locale: Locale for the chat interaction.
         stock_code: Optional stock code related to the chat.
     """
 
     thread_id: str
     message_id: str
     message: str
+    locale: str
     stock_code: str | None = None
 
 
