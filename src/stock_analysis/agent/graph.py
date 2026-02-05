@@ -1,5 +1,6 @@
 """Graph node definitions for stock analysis agent."""
 
+from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, NotRequired
 
 from langchain.messages import (
@@ -19,6 +20,7 @@ from typing_extensions import TypedDict
 from stock_analysis.agent.model import LLM, Embeddings
 
 if TYPE_CHECKING:
+    import os
     from collections.abc import AsyncGenerator
 
     from langchain.messages import AIMessageChunk
@@ -29,11 +31,19 @@ if TYPE_CHECKING:
     from langgraph.pregel.debug import StateSnapshot
 
 
+class AgentError(RuntimeError):
+    """Custom error class for the chat agent."""
+
+
 class MessagesState(TypedDict):
     """Message state for the chat agent."""
 
     messages: Annotated[list[AnyMessage], add_messages]
     """List of messages exchanged in the chat."""
+    locale: NotRequired[str]
+    """Locale for the conversation, e.g., 'en-US'."""
+    page_context: NotRequired[str]
+    """Optional context about the current page or topic."""
     llm_calls: NotRequired[int]
     """Number of LLM calls made."""
     tool_calls: NotRequired[int]
@@ -47,13 +57,19 @@ class ChatAgent:
     _embeddings: Embeddings
     _checkpointer: AsyncPostgresSaver
     _agent: CompiledStateGraph[MessagesState, None, MessagesState, MessagesState]
+    _prompts_dir: Path
+    _prompts: dict[str, str]
 
-    def __init__(self, checkpointer: AsyncPostgresSaver) -> None:
+    def __init__(
+        self, checkpointer: AsyncPostgresSaver, config_dir: str | os.PathLike[str]
+    ) -> None:
         """Asynchronously create the chat agent instance."""
         self._llm = LLM()
         self._embeddings = Embeddings()
         self._checkpointer = checkpointer
         self._agent = self._create_agent()
+        self._prompts_dir = Path(config_dir) / "prompts"
+        self._prompts: dict[str, str] = {}
 
     def _trim_messages(self, state: MessagesState) -> dict | None:
         """Keep only the last few messages to fit context window.
@@ -74,9 +90,34 @@ class ChatAgent:
         return {"messages": [RemoveMessage(id=REMOVE_ALL_MESSAGES), *recent_messages]}
 
     def _select_tools(self, config: RunnableConfig | None) -> list[BaseTool]:
+        """Select tools based on the runnable configuration."""
         if config is None:
             return []
         return config.get("configurable", {}).get("allowed_tools") or []
+
+    def _load_prompt(self, prompt: str, locale: str) -> str:
+        """Load the prompt from a file, caching it for future use.
+
+        Args:
+            prompt: Name of the prompt to load (e.g., "chat", "user", "page").
+            locale: Locale string to determine which prompt to load.
+
+        Returns:
+            The content of the prompt file as a string.
+        """
+        if prompt in self._prompts:
+            return self._prompts[prompt]
+
+        if locale == "zh-CN":
+            prompt_path: Path = self._prompts_dir / f"{prompt}.zh-CN.md"
+        else:
+            prompt_path = self._prompts_dir / f"{prompt}.md"
+        if not prompt_path.exists():
+            msg: str = f"Prompt file not found: {prompt_path}"
+            raise AgentError(msg)
+
+        self._prompts[prompt] = prompt_path.read_text(encoding="utf-8")
+        return self._prompts[prompt]
 
     async def _llm_call(
         self, state: MessagesState, config: RunnableConfig | None
@@ -94,11 +135,26 @@ class ChatAgent:
         llm_with_tools: Runnable[LanguageModelInput, AIMessage] = self._llm.bind_tools(
             tools
         )
+        locale: str = state.get("locale", "en-US")
         messages: list[AnyMessage] = [
-            SystemMessage(content="You are a helpful assistant."),
+            SystemMessage(content=self._load_prompt("chat", locale))
         ]
+
+        previous_messages: list[AnyMessage] = state["messages"][:-1]
+        messages.extend(previous_messages)
+
+        last_message: AnyMessage = state["messages"][-1]
+        user: str = self._load_prompt("user", locale).format(query=last_message.content)
+        page_context: str | None = state.get("page_context")
+        if page_context:
+            page: str = self._load_prompt("page", locale).format(context=page_context)
+            messages.append(HumanMessage(content=f"{page}\n\n{user}"))
+        else:
+            messages.append(HumanMessage(content=user))
+
         return {
-            "messages": [await llm_with_tools.ainvoke(messages + state["messages"])],
+            "messages": [await llm_with_tools.ainvoke(messages)],
+            "locale": locale,
             "llm_calls": state.get("llm_calls", 0) + 1,
         }
 
@@ -178,58 +234,19 @@ class ChatAgent:
         )
         return agent
 
-    def invoke(
-        self, thread_id: str, message: str, tools: list[BaseTool] | None = None
-    ) -> dict:
-        """Invoke the chat agent with a user message.
-
-        Args:
-            thread_id: Identifier for the chat thread.
-            message: User's input message.
-            tools: List of available tools.
-
-        Returns:
-            Resulting state after processing the message.
-        """
-        config = RunnableConfig(
-            configurable={
-                "thread_id": thread_id,
-                "allowed_tools": tools,
-            }
-        )
-        messages: list[AnyMessage] = [HumanMessage(content=message)]
-        return self._agent.invoke({"messages": messages}, config)
-
-    async def ainvoke(
-        self, thread_id: str, message: str, tools: list[BaseTool] | None = None
-    ) -> dict:
-        """Asynchronously invoke the chat agent with a user message.
-
-        Args:
-            thread_id: Identifier for the chat thread.
-            message: User's input message.
-            tools: List of available tools.
-
-        Returns:
-            Resulting state after processing the message.
-        """
-        config = RunnableConfig(
-            configurable={
-                "thread_id": thread_id,
-                "allowed_tools": tools,
-            }
-        )
-        messages: list[AnyMessage] = [HumanMessage(content=message)]
-        return await self._agent.ainvoke({"messages": messages}, config)
-
     async def astream_events(
-        self, thread_id: str, message: str, tools: list[BaseTool] | None = None
+        self,
+        thread_id: str,
+        message: str,
+        page_context: str | None = None,
+        tools: list[BaseTool] | None = None,
     ) -> AsyncGenerator[str]:
         """Stream token-by-token events from the chat agent.
 
         Args:
             thread_id: Identifier for the chat thread.
             message: User's input message.
+            page_context: Optional context related to the chat.
             tools: List of available tools.
 
         Yields:
@@ -242,7 +259,13 @@ class ChatAgent:
             }
         )
         messages: list[AnyMessage] = [HumanMessage(content=message)]
-        async for event in self._agent.astream_events({"messages": messages}, config):
+        async for event in self._agent.astream_events(
+            {
+                "messages": messages,
+                "page_context": page_context,
+            },
+            config,
+        ):
             kind: str = event.get("event", "")
             if kind == "on_chat_model_stream":
                 chunk: AIMessageChunk | None = event.get("data", {}).get("chunk")

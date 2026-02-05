@@ -88,6 +88,7 @@ async def _run_generation(
     thread_id: str = start_in.thread_id
     message_id: str = start_in.message_id
     message: str = start_in.message
+    stock_code: str | None = start_in.stock_code
     buf_key: str = f"buf:{thread_id}:{message_id}"
     channel: str = f"channel:{thread_id}:{message_id}"
 
@@ -119,7 +120,7 @@ async def _run_generation(
     try:
         tools: list[BaseTool] = await client.get_tools()
         seq: int = 0
-        async for token in agent.astream_events(thread_id, message, tools):
+        async for token in agent.astream_events(thread_id, message, stock_code, tools):
             event = StreamEvent(id=str(seq), event="token", data=token)
             payload = event.model_dump_json()
             await cache_service.push_to_list(buf_key, payload)

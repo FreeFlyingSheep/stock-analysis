@@ -113,7 +113,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
         settings.database_url
     ) as checkpointer:
         await checkpointer.setup()
-        app.state.agent = ChatAgent(checkpointer)
+        app.state.agent = ChatAgent(checkpointer, settings.config_dir)
 
         yield
 
