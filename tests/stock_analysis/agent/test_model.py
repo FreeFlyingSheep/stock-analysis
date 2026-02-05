@@ -1,35 +1,32 @@
+"""Tests for LLM and Embeddings wrappers."""
+
 from typing import TYPE_CHECKING
 
 import pytest
 
 from stock_analysis.agent.model import LLM, Embeddings
-from stock_analysis.settings import get_settings
 
 if TYPE_CHECKING:
     from langchain.messages import AIMessage
-
-
-pytestmark: pytest.MarkDecorator = pytest.mark.skipif(
-    not get_settings().use_llm, reason="Requires LLM configuration"
-)
-
-
-def test_llm_models() -> None:
-    llm: LLM = LLM()
-    response: AIMessage = llm.invoke("Hello!")
-    assert len(response.content) > 0
-
-    embeddings: Embeddings = Embeddings()
-    vector: list[float] = embeddings.query("Hello!")
-    assert len(vector) > 0
+    from langchain_community.chat_models.fake import FakeListChatModel
+    from langchain_community.embeddings.fake import FakeEmbeddings
 
 
 @pytest.mark.asyncio
-async def test_llm_models_async() -> None:
-    llm: LLM = LLM()
-    response: AIMessage = await llm.ainvoke("Hello!")
-    assert len(response.content) > 0
+async def test_llm(fake_chat: FakeListChatModel) -> None:
+    llm = LLM(llm=fake_chat)
+    result: AIMessage = llm.invoke("Query 1")
+    assert result.content == fake_chat.responses[0]
 
-    embeddings: Embeddings = Embeddings()
-    vector: list[float] = await embeddings.aquery("Hello!")
-    assert len(vector) > 0
+    result = await llm.ainvoke("Query 2")
+    assert result.content == fake_chat.responses[1]
+
+
+@pytest.mark.asyncio
+async def test_embeddings(fake_embeddings: FakeEmbeddings) -> None:
+    embeddings = Embeddings(embeddings=fake_embeddings)
+    result: list[float] = embeddings.query("Query 1")
+    assert len(result) == fake_embeddings.size
+
+    result = await embeddings.aquery("Query 2")
+    assert len(result) == fake_embeddings.size

@@ -9,7 +9,8 @@ from stock_analysis.settings import get_settings
 if TYPE_CHECKING:
     from langchain.messages import AIMessage
     from langchain.tools import BaseTool
-    from langchain_core.language_models import LanguageModelInput
+    from langchain_core.embeddings import Embeddings as BaseEmbeddings
+    from langchain_core.language_models import BaseChatModel, LanguageModelInput
     from langgraph.graph.state import Runnable
 
     from stock_analysis.settings import Settings
@@ -22,11 +23,19 @@ class LLMError(Exception):
 class LLM:
     """Wrapper around the OpenAI language model."""
 
-    _llm: ChatOpenAI | None
+    _llm: BaseChatModel | None
     """Instance of the OpenAI language model."""
 
-    def __init__(self) -> None:
-        """Initialize the LLM wrapper."""
+    def __init__(self, llm: BaseChatModel | None = None) -> None:
+        """Initialize the LLM wrapper.
+
+        Args:
+            llm: Optional instance of ChatOpenAI to use.
+        """
+        if llm is not None:
+            self._llm = llm
+            return
+
         settings: Settings = get_settings()
         if (
             settings.use_llm
@@ -99,11 +108,19 @@ class LLM:
 class Embeddings:
     """Wrapper around the OpenAI embeddings model."""
 
-    _embeddings: OpenAIEmbeddings | None
+    _embeddings: BaseEmbeddings | None
     """Instance of the OpenAI embeddings model."""
 
-    def __init__(self) -> None:
-        """Initialize the LLM embeddings wrapper."""
+    def __init__(self, embeddings: BaseEmbeddings | None = None) -> None:
+        """Initialize the LLM embeddings wrapper.
+
+        Args:
+            embeddings: Optional instance of OpenAIEmbeddings to use.
+        """
+        if embeddings is not None:
+            self._embeddings = embeddings
+            return
+
         settings: Settings = get_settings()
         if (
             settings.use_llm

@@ -61,11 +61,15 @@ class ChatAgent:
     _prompts: dict[str, str]
 
     def __init__(
-        self, checkpointer: AsyncPostgresSaver, config_dir: str | os.PathLike[str]
+        self,
+        checkpointer: AsyncPostgresSaver,
+        config_dir: str | os.PathLike[str],
+        llm: LLM | None = None,
+        embeddings: Embeddings | None = None,
     ) -> None:
         """Asynchronously create the chat agent instance."""
-        self._llm = LLM()
-        self._embeddings = Embeddings()
+        self._llm = llm or LLM()
+        self._embeddings = embeddings or Embeddings()
         self._checkpointer = checkpointer
         self._agent = self._create_agent()
         self._prompts_dir = Path(config_dir) / "prompts"

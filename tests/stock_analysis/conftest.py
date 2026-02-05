@@ -11,6 +11,9 @@ from fastapi import FastAPI
 from fastmcp import FastMCP
 from fastmcp.client import Client
 from httpx import ASGITransport, AsyncClient, MockTransport, Response
+from langchain_community.chat_models import FakeListChatModel
+from langchain_community.embeddings import FakeEmbeddings
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from redis.asyncio.client import Redis
 from sqlalchemy.ext.asyncio import (
     AsyncSession,  # noqa: TC002
@@ -369,3 +372,27 @@ async def mcp_client(
     mcp: FastMCPOpenAPI = FastMCP.from_fastapi(app=app)
     async with Client(mcp) as client:
         yield client
+
+
+@pytest_asyncio.fixture(scope="session")
+async def postgres_checkpointer(
+    postgres_container: PostgresContainer,
+) -> AsyncGenerator[AsyncPostgresSaver]:
+    url: str = postgres_container.get_connection_url().replace(
+        "postgresql+psycopg", "postgresql"
+    )
+    async with AsyncPostgresSaver.from_conn_string(url) as checkpointer:
+        await checkpointer.setup()
+        yield checkpointer
+
+
+@pytest_asyncio.fixture
+async def fake_chat() -> FakeListChatModel:
+    return FakeListChatModel(
+        responses=["This is a test response.", "Another test response."],
+    )
+
+
+@pytest_asyncio.fixture
+async def fake_embeddings() -> FakeEmbeddings:
+    return FakeEmbeddings(size=1536)
