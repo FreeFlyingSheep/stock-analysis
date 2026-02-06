@@ -240,7 +240,15 @@ async def create_chat(
     payload: ChatThreadCreateIn,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> ChatThreadOut:
-    """Create a chat thread or return an existing one."""
+    """Create a chat thread or return an existing one.
+
+    Args:
+        payload: Payload containing thread creation data.
+        db: Database session dependency.
+
+    Returns:
+        Created or existing chat thread.
+    """
     thread_id: str = payload.thread_id or f"chat_{uuid4().hex}"
     title: str = payload.title or "New Chat"
     status: str = payload.status or "active"
@@ -259,7 +267,19 @@ async def update_chat(
     payload: ChatThreadUpdateIn,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> ChatThreadOut:
-    """Update a chat thread."""
+    """Update a chat thread.
+
+    Args:
+        thread_id: Thread identifier to update.
+        payload: Payload containing updated thread fields.
+        db: Database session dependency.
+
+    Returns:
+        Updated chat thread.
+
+    Raises:
+        HTTPException: If the chat thread does not exist.
+    """
     chat_service = ChatService(db)
     thread: ChatThread | None = await chat_service.update_chat_thread(
         thread_id=thread_id,
@@ -279,7 +299,18 @@ async def delete_chat(
     thread_id: str,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> ChatThreadOut:
-    """Soft delete a chat thread."""
+    """Soft delete a chat thread.
+
+    Args:
+        thread_id: Thread identifier to delete.
+        db: Database session dependency.
+
+    Returns:
+        Soft-deleted chat thread.
+
+    Raises:
+        HTTPException: If the chat thread does not exist.
+    """
     chat_service = ChatService(db)
     thread: ChatThread | None = await chat_service.delete_chat_thread(thread_id)
     if thread is None:
@@ -412,6 +443,9 @@ async def get_chats(
 ) -> ChatThreadsResponse:
     """Get available chat threads.
 
+    Args:
+        db: Database session dependency.
+
     Returns:
         A dictionary of available chat threads.
     """
@@ -431,7 +465,6 @@ async def get_chat_details(
 
     Args:
         thread_id: ID of the chat thread.
-        redis: Redis dependency.
         agent: Chat agent dependency.
 
     Returns:

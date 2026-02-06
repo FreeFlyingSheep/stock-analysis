@@ -42,14 +42,22 @@ class RequestSpec(BaseSchema):
 
     @property
     def fixed_params(self) -> dict[str, int | float | str]:
-        """Return dictionary mapping parameter labels to fixed values."""
+        """Return dictionary mapping parameter labels to fixed values.
+
+        Returns:
+            Mapping of parameter labels to fixed values.
+        """
         return {
             p.label: p.value for p in self.params if p.fixed and p.value is not None
         }
 
     @property
     def required_params(self) -> frozenset[str]:
-        """Return set of parameter labels that require runtime values."""
+        """Return set of parameter labels that require runtime values.
+
+        Returns:
+            Set of parameter labels requiring runtime values.
+        """
         return frozenset(p.label for p in self.params if not p.fixed)
 
 

@@ -36,7 +36,14 @@ mcp: FastMCPOpenAPI = FastMCP.from_openapi(
 
 @mcp.custom_route("/health", methods=["GET"])
 async def health_check(_request: Request) -> JSONResponse:
-    """Health check endpoint for MCP server."""
+    """Health check endpoint for MCP server.
+
+    Args:
+        _request: FastAPI request object (unused).
+
+    Returns:
+        JSON response with service health status.
+    """
     return JSONResponse({"status": "healthy", "service": "mcp-server"})
 
 
@@ -45,5 +52,15 @@ async def health_check(_request: Request) -> JSONResponse:
     description="Fetch financial report for a given stock code.",
 )
 async def get_financial_report(stock_code: str) -> str:
-    """Tool to fetch financial report for a given stock code."""
+    """Tool to fetch financial report for a given stock code.
+
+    Args:
+        stock_code: Stock code to retrieve the report for.
+
+    Returns:
+        Financial report content for the specified stock code.
+
+    Raises:
+        NotImplementedError: Always raised until implemented.
+    """
     raise NotImplementedError

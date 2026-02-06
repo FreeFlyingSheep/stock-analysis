@@ -415,6 +415,9 @@ class RuleAdapter:
 
         Returns:
             The score for the metric.
+
+        Raises:
+            RuleError: If the metric is not supported.
         """
         if metric.id in self._scores:
             return self._scores[metric.id]
@@ -450,6 +453,9 @@ class RuleAdapter:
 
         Returns:
             The threshold value.
+
+        Raises:
+            RuleError: If the filter does not define a threshold parameter.
         """
         if metric_filter.params is None or "threshold" not in metric_filter.params:
             msg: str = f"Filter '{metric_filter.id}' missing 'threshold' parameter."
@@ -465,6 +471,9 @@ class RuleAdapter:
 
         Returns:
             The metric value.
+
+        Raises:
+            RuleError: If the metric value is unavailable for the filter.
         """
         metric_value: float | None = self._scores.get(metric_filter.metric)
         if metric_value is None:
@@ -506,6 +515,9 @@ class RuleAdapter:
 
         Returns:
             True if the stock passes the filter, False otherwise.
+
+        Raises:
+            RuleError: If the filter type is not supported.
         """
         filters: dict[str, Callable[[RuleFilter], bool]] = {
             "less_than_threshold": self._less_than_threshold,
@@ -531,6 +543,9 @@ class RuleAdapter:
 
         Returns:
             The total score for the stock.
+
+        Raises:
+            RuleError: If no data is loaded for scoring.
         """
         if not self._data:
             msg: str = "No data loaded for scoring."

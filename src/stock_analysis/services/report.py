@@ -117,6 +117,9 @@ class ReportService:
             ranked_lists: A list of ranked lists of ReportChunk instances.
             limit: The number of top results to return after fusion.
             rrf_k: The RRF parameter to control the influence of rank positions.
+
+        Returns:
+            Fused list of report chunks ordered by RRF score.
         """
         score_by_id: dict[str, float] = {}
         obj_by_id: dict[str, ReportChunk] = {}

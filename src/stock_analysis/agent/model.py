@@ -61,6 +61,9 @@ class LLM:
 
         Returns:
             A Runnable that can use the tools with the LLM.
+
+        Raises:
+            LLMError: If the LLM is not configured.
         """
         if self._llm is None:
             msg: str = "LLM is not configured."

@@ -26,13 +26,14 @@ class ReportChunk(Base):
         fiscal_year: Fiscal year of the report.
         report_type: Type of the report (e.g., annual, quarterly).
         content_type: Mime type of the report content (e.g., application/pdf).
-        title: Title of the report chunk.
-        file_url: URL to the original report file.
+        doc_id: Document identifier for the source report.
+        doc_version: Version label for the source report.
         chunk_no: Chunk number for the report.
         content: Text content of the report chunk.
         embedding: Vector embedding for the report chunk.
-        created_at: Timestamp when the chunk was created.
         updated_at: Timestamp when the chunk was last updated.
+        created_at: Timestamp when the chunk was created.
+        stock: Stock model associated with the report chunk.
     """
 
     __tablename__: str = "report_chunks"

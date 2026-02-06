@@ -10,7 +10,7 @@ class Ingestor:
         Args:
             data: The input data to be ingested.
 
-        Returns:
-            None
+        Raises:
+            NotImplementedError: Always raised by the base class.
         """
         raise NotImplementedError

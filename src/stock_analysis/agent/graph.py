@@ -67,7 +67,14 @@ class ChatAgent:
         llm: LLM | None = None,
         embeddings: Embeddings | None = None,
     ) -> None:
-        """Asynchronously create the chat agent instance."""
+        """Initialize the chat agent instance.
+
+        Args:
+            checkpointer: Checkpointer used for persisting agent state.
+            prompts_dir: Directory containing prompt templates.
+            llm: Optional language model wrapper.
+            embeddings: Optional embeddings wrapper.
+        """
         self._llm = llm or LLM()
         self._embeddings = embeddings or Embeddings()
         self._checkpointer = checkpointer
@@ -94,7 +101,14 @@ class ChatAgent:
         return {"messages": [RemoveMessage(id=REMOVE_ALL_MESSAGES), *recent_messages]}
 
     def _select_tools(self, config: RunnableConfig | None) -> list[BaseTool]:
-        """Select tools based on the runnable configuration."""
+        """Select tools based on the runnable configuration.
+
+        Args:
+            config: Runnable configuration with allowed tools.
+
+        Returns:
+            List of tools allowed for the current run.
+        """
         if config is None:
             return []
         return config.get("configurable", {}).get("allowed_tools") or []
@@ -108,6 +122,9 @@ class ChatAgent:
 
         Returns:
             The content of the prompt file as a string.
+
+        Raises:
+            AgentError: If the prompt file does not exist.
         """
         if prompt in self._prompts:
             return self._prompts[prompt]

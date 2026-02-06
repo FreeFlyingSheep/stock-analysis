@@ -77,16 +77,10 @@ def include_object(
 
 
 def run_migrations_offline() -> None:
-    """Run migrations in 'offline' mode.
+    """Run migrations in offline mode.
 
-    This configures the context with just a URL
-    and not an Engine, though an Engine is acceptable
-    here as well.  By skipping the Engine creation
-    we don't even need a DBAPI to be available.
-
-    Calls to context.execute() here emit the given string to the
-    script output.
-
+    Configures the context with a URL only so no Engine or DBAPI is required.
+    Calls to ``context.execute()`` emit SQL to the script output.
     """
     url: str | None = config.get_main_option("sqlalchemy.url")
     context.configure(
@@ -102,11 +96,9 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    """Run migrations in 'online' mode.
+    """Run migrations in online mode.
 
-    In this scenario we need to create an Engine
-    and associate a connection with the context.
-
+    Creates an Engine and associates a live connection with the context.
     """
     connectable: Engine = engine_from_config(
         config.get_section(config.config_ini_section, {}),

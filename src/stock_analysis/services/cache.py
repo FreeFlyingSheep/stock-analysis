@@ -123,6 +123,9 @@ class CacheService:
         Args:
             name: List name.
             value: Value to push.
+
+        Returns:
+            Length of the list after the push.
         """
         result: Awaitable[int] | int = self._redis.rpush(self._make_key(name), value)
         return await result if isinstance(result, Awaitable) else result

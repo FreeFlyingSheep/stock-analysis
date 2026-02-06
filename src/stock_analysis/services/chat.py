@@ -114,7 +114,11 @@ class ChatService:
         )
 
     async def touch_thread(self, thread_id: str) -> None:
-        """Update the thread's updated_at timestamp."""
+        """Update the thread's updated_at timestamp.
+
+        Args:
+            thread_id: The thread identifier to update.
+        """
         await self.db.execute(
             update(ChatThread)
             .where(ChatThread.thread_id == thread_id)

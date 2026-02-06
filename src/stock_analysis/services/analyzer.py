@@ -51,7 +51,7 @@ class Analyzer:
             stock_id: ID of the stock to analyze.
 
         Returns:
-            List containing the ID of the created Analysis record.
+            List of created Analysis record IDs.
 
         Raises:
             AnalyzerError: If analysis data validation fails.
