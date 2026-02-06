@@ -3,8 +3,6 @@
 from typing import TYPE_CHECKING
 
 from sqlalchemy import func, select
-from sqlalchemy.engine.result import Result
-from sqlalchemy.sql.selectable import Select
 
 from stock_analysis.models.analysis import Analysis
 from stock_analysis.models.cninfo import CNInfoAPIResponse
@@ -17,14 +15,7 @@ if TYPE_CHECKING:
 
 
 class StockService:
-    """Service for database operations on stock and related data.
-
-    Provides methods for querying stocks with filtering and pagination,
-    retrieving API responses and analysis results.
-
-    Attributes:
-        db: AsyncSession instance for database operations.
-    """
+    """Service for database operations on stock and related data."""
 
     db: AsyncSession
     """Database session for all operations."""

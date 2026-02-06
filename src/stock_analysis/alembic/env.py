@@ -12,6 +12,7 @@ from stock_analysis.models.analysis import Analysis  # noqa: F401
 from stock_analysis.models.base import Base
 from stock_analysis.models.chat import ChatThread  # noqa: F401
 from stock_analysis.models.cninfo import CNInfoAPIResponse  # noqa: F401
+from stock_analysis.models.report import ReportChunk  # noqa: F401
 from stock_analysis.models.stock import Stock  # noqa: F401
 from stock_analysis.models.yahoo import YahooFinanceAPIResponse  # noqa: F401
 from stock_analysis.settings import get_settings

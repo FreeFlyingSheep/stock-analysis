@@ -162,7 +162,7 @@
     export $(grep -v '^#' .env | xargs)
     ```
 
-4. 初始化数据库（先安装 [PostgreSQL 18+](https://www.postgresql.org/) 和 [pgvector](https://github.com/pgvector/pgvector)）：
+4. 初始化数据库（先安装 [PostgreSQL 18+](https://www.postgresql.org/)、[pgvector](https://github.com/pgvector/pgvector) 和 [pg_textsearch](https://github.com/timescale/pg_textsearch)）：
 
     ```bash
     ./scripts/init_db.sh
@@ -171,7 +171,7 @@
     此脚本将：
     - 删除任何现有数据库
     - 创建新的数据库
-    - 启用 pgvector 扩展
+    - 启用 pgvector 和 pg_textsearch 扩展
     - 运行 Alembic 迁移以创建表
     - 从 `data/stocks.csv` 导入初始股票数据
     - 初始化 PgQueuer 任务队列
@@ -186,7 +186,9 @@
     ./scripts/run_minio.sh
     ```
 
-6. 运行任务队列：
+6. 启动 [Redis](https://redis.io/) 服务器。
+
+7. 运行任务队列：
 
     在单独的终端中运行 PgQueuer 以处理爬虫和分析任务：
 
@@ -201,7 +203,18 @@
     - 使用配置的规则计算评分和指标
     - 将结果存储在数据库中
 
-7. 启动 MCP 服务器：
+8. 启动 API 服务器：
+
+    ```bash
+    uv run app
+    ```
+
+    默认情况下，API 将在 `http://127.0.0.1:8000` 可用。
+    API 文档由 FastAPI 自动生成，可在以下位置访问：
+    - Swagger UI：`http://127.0.0.1:8000/docs`
+    - ReDoc：`http://127.0.0.1:8000/redoc`
+
+9. 启动 MCP 服务器：
 
     在另一个终端中运行 FastMCP 服务器：
 
@@ -211,7 +224,7 @@
     ./scripts/run_mcp.sh
     ```
 
-8. 启动前端 UI：
+10. 启动前端 UI：
 
     在另一个终端中运行 SvelteKit 前端：
 
@@ -222,16 +235,19 @@
 
     UI 将在 `http://127.0.0.1:5173` 可用。
 
-9. 启动 API 服务器：
+11. 要运行测试，请确保已安装并运行 Docker。
+
+    然后构建 postgres 容器镜像：
 
     ```bash
-    uv run app
+    docker build -t stock-analysis-postgres:0.1 -f configs/docker/postgres.Dockerfile .
     ```
 
-    默认情况下，API 将在 `http://127.0.0.1:8000` 可用。
-    API 文档由 FastAPI 自动生成，可在以下位置访问：
-    - Swagger UI：`http://127.0.0.1:8000/docs`
-    - ReDoc：`http://127.0.0.1:8000/redoc`
+12. 最后，运行检查脚本：
+
+    ```bash
+    ./scripts/check.sh
+    ```
 
 ### Docker Compose
 

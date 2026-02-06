@@ -29,6 +29,7 @@ mcp: FastMCPOpenAPI = FastMCP.from_openapi(
     name="Stock Analysis MCP Server",
     route_maps=[
         RouteMap(tags={"chat"}, mcp_type=MCPType.EXCLUDE),
+        RouteMap(tags={"reports"}, mcp_type=MCPType.EXCLUDE),
     ],
 )
 
@@ -37,3 +38,12 @@ mcp: FastMCPOpenAPI = FastMCP.from_openapi(
 async def health_check(_request: Request) -> JSONResponse:
     """Health check endpoint for MCP server."""
     return JSONResponse({"status": "healthy", "service": "mcp-server"})
+
+
+@mcp.tool(
+    name="get_financial_report",
+    description="Fetch financial report for a given stock code.",
+)
+async def get_financial_report(stock_code: str) -> str:
+    """Tool to fetch financial report for a given stock code."""
+    raise NotImplementedError

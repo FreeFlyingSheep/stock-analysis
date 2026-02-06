@@ -42,5 +42,8 @@ jobs:
       - name: Copy env file
         run: cp .env.example .env
 
+      - name: Build test postgres image
+        run: docker build -t stock-analysis-postgres:0.1 -f configs/docker/postgres.Dockerfile .
+
       - name: Run check script
         run: ./scripts/check.sh

@@ -42,6 +42,7 @@ def create_database(settings: Settings) -> None:
                 )
             )
             cur.execute(sql.SQL("CREATE EXTENSION IF NOT EXISTS vector"))
+            cur.execute(sql.SQL("CREATE EXTENSION IF NOT EXISTS pg_textsearch"))
             logger.info("Created database: %s", settings.database_db)
         else:
             logger.info("Database already exists: %s", settings.database_db)

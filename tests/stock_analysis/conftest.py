@@ -15,11 +15,13 @@ from langchain_community.chat_models import FakeListChatModel
 from langchain_community.embeddings import FakeEmbeddings
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from redis.asyncio.client import Redis
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
     AsyncSession,  # noqa: TC002
     async_sessionmaker,
     create_async_engine,
 )
+from sqlalchemy.ext.asyncio.engine import AsyncEngine
 from tenacity import wait_exponential
 from testcontainers.minio import MinioContainer  # type: ignore[import-untyped]
 from testcontainers.postgres import PostgresContainer  # type: ignore[import-untyped]
@@ -31,6 +33,7 @@ from stock_analysis.models.analysis import Analysis
 from stock_analysis.models.base import Base
 from stock_analysis.models.chat import ChatThread
 from stock_analysis.models.cninfo import CNInfoAPIResponse  # noqa: F401
+from stock_analysis.models.report import ReportChunk  # noqa: F401
 from stock_analysis.models.stock import Stock
 from stock_analysis.models.yahoo import YahooFinanceAPIResponse  # noqa: F401
 from stock_analysis.routers.analysis import router as analysis_router
@@ -56,7 +59,15 @@ def anyio_backend() -> str:
 
 @pytest_asyncio.fixture(scope="session")
 async def postgres_container() -> AsyncGenerator[PostgresContainer]:
-    with PostgresContainer("pgvector/pgvector:pg18", driver="psycopg") as container:
+    with PostgresContainer(
+        "stock-analysis-postgres:0.1", driver="psycopg"
+    ) as container:
+        connection_url: str = container.get_connection_url()
+        engine: AsyncEngine = create_async_engine(connection_url)
+        async with engine.begin() as conn:
+            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_textsearch"))
+        await engine.dispose()
         yield container
 
 

@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING
 
 import pandas as pd
 from minio import Minio
+from minio.commonconfig import ENABLED
+from minio.versioningconfig import VersioningConfig
 
 from stock_analysis.settings import get_settings
 
@@ -27,6 +29,7 @@ def create_bucket_if_not_exists(client: Minio, bucket_name: str) -> None:
         logger.info("Created MinIO bucket: %s", bucket_name)
     else:
         logger.info("MinIO bucket already exists: %s", bucket_name)
+    client.set_bucket_versioning(bucket_name, VersioningConfig(ENABLED))
 
 
 def read_csv(csv_path: Path) -> pd.DataFrame:

@@ -162,7 +162,7 @@ If you want to keep existing data, dump the database first (`./scripts/dump_db.s
     export $(grep -v '^#' .env | xargs)
     ```
 
-4. Initialize the database (install [PostgreSQL 18+](https://www.postgresql.org/) and [pgvector](https://github.com/pgvector/pgvector) first):
+4. Initialize the database (install [PostgreSQL 18+](https://www.postgresql.org/), [pgvector](https://github.com/pgvector/pgvector), and [pg_textsearch](https://github.com/timescale/pg_textsearch) first):
 
     ```bash
     ./scripts/init_db.sh
@@ -171,7 +171,7 @@ If you want to keep existing data, dump the database first (`./scripts/dump_db.s
     This script will:
     - Drop any existing database
     - Create a fresh database
-    - Enable the pgvector extension
+    - Enable the pgvector and pg_textsearch extensions
     - Run Alembic migrations to create tables
     - Import initial stock data from `data/stocks.csv`
     - Initialize the PgQueuer job queue
@@ -234,6 +234,20 @@ If you want to keep existing data, dump the database first (`./scripts/dump_db.s
     ```
 
     The UI will be available at `http://127.0.0.1:5173`.
+
+11. To run the tests, ensure Docker is installed and running.
+
+    Then build the postgres container image:
+
+    ```bash
+    docker build -t stock-analysis-postgres:0.1 -f configs/docker/postgres.Dockerfile .
+    ```
+
+12. Finally, run the check script:
+
+    ```bash
+    ./scripts/check.sh
+    ```
 
 ### Docker Compose Setup
 

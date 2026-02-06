@@ -15,24 +15,19 @@ from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from minio import Minio
 from psycopg_pool import AsyncConnectionPool
 from redis.asyncio import ConnectionPool
-from sqlalchemy.ext.asyncio import (
-    async_sessionmaker,
-    create_async_engine,
-)
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from stock_analysis.agent.graph import ChatAgent
 from stock_analysis.routers.analysis import router as analysis_router
 from stock_analysis.routers.chat import router as chat_router
+from stock_analysis.routers.report import router as report_router
 from stock_analysis.routers.stock import router as stock_router
 from stock_analysis.settings import get_settings
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
 
-    from sqlalchemy.ext.asyncio import (
-        AsyncEngine,
-        AsyncSession,
-    )
+    from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
     from stock_analysis.settings import Settings
 
@@ -61,6 +56,10 @@ tags: list[dict[str, str]] = [
     {
         "name": "chat",
         "description": "Chat with the stock analysis agent for insights and data.",
+    },
+    {
+        "name": "reports",
+        "description": "Operations for managing and retrieving financial reports.",
     },
 ]
 
@@ -129,6 +128,7 @@ app = FastAPI(
 app.include_router(stock_router, tags=["stocks"])
 app.include_router(analysis_router, tags=["analysis"])
 app.include_router(chat_router, tags=["chat"])
+app.include_router(report_router, tags=["reports"])
 
 
 @app.get("/")

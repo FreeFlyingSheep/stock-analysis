@@ -11,6 +11,7 @@ from stock_analysis.models.base import Base
 if TYPE_CHECKING:
     from stock_analysis.models.analysis import Analysis
     from stock_analysis.models.cninfo import CNInfoAPIResponse
+    from stock_analysis.models.report import ReportChunk
     from stock_analysis.models.yahoo import YahooFinanceAPIResponse
 
 
@@ -31,6 +32,7 @@ class Stock(Base):
         cninfo_api_responses: Relationship to CNInfo API responses.
         yahoo_finance_api_responses: Relationship to Yahoo Finance API responses.
         analysis: Relationship to analysis records.
+        reports: Relationship to report chunks.
     """
 
     __tablename__: str = "stocks"
@@ -63,6 +65,11 @@ class Stock(Base):
         passive_deletes=True,
     )
     analysis: Mapped[list["Analysis"]] = relationship(
+        back_populates="stock",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    report_chunks: Mapped[list["ReportChunk"]] = relationship(
         back_populates="stock",
         cascade="all, delete-orphan",
         passive_deletes=True,

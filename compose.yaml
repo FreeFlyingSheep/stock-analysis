@@ -12,7 +12,9 @@ services:
         condition: service_healthy
 
   postgres:
-    image: pgvector/pgvector:pg18-trixie
+    build:
+      context: .
+      dockerfile: configs/docker/postgres.Dockerfile
     environment:
       - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
       - POSTGRES_USER=${DATABASE_USER}
