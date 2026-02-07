@@ -9,7 +9,7 @@ router = APIRouter()
 async def retrieve_reports() -> str:
     """Endpoint to retrieve financial reports.
 
-    Raises:
-        NotImplementedError: Always raised until implemented.
+    Returns:
+        A string containing the retrieved financial reports.
     """
     raise NotImplementedError

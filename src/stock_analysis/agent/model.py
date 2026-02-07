@@ -130,9 +130,11 @@ class Embeddings:
             and settings.llm_embedding_model is not None
             and settings.llm_api_key is not None
             and settings.llm_server_base_url is not None
+            and settings.llm_embedding_dimension is not None
         ):
             self._embeddings = OpenAIEmbeddings(
                 model=settings.llm_embedding_model,
+                dimensions=settings.llm_embedding_dimension,
                 api_key=settings.llm_api_key,
                 base_url=settings.llm_server_base_url,
             )

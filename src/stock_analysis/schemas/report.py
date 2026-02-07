@@ -41,3 +41,27 @@ class ReportChunkOut(ReportChunkIn):
     id: int
     updated_at: datetime
     created_at: datetime
+
+
+class RawChunk(BaseSchema):
+    """Schema for intermediate chunk extracted from PDF parsing.
+
+    Attributes:
+        chunk_id: Stable SHA-1 identifier for the chunk.
+        doc_id: Document identifier derived from object key and etag.
+        source_key: MinIO object key of the source PDF.
+        source_version: Version of the source PDF.
+        page: One-based page number of the chunk source.
+        heading: Section heading associated with the chunk.
+        chunk_index: Sequential index of the chunk within the document.
+        content: Text content of the chunk.
+    """
+
+    chunk_id: str
+    doc_id: str
+    source_key: str
+    source_version: str
+    page: int
+    heading: str
+    chunk_index: int
+    content: str

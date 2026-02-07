@@ -1,33 +1,48 @@
 """MinIO data store bucket service."""
 
 import io
-from http import HTTPStatus
 from typing import TYPE_CHECKING
 
-from fastapi import (
-    HTTPException,
-    Request,  # noqa: TC002
-)
+from minio import Minio
+
+from stock_analysis.settings import get_settings
 
 if TYPE_CHECKING:
-    from minio import Minio
+    from collections.abc import Iterator
+
+    from minio.datatypes import Object as MinioObject
     from minio.helpers import ObjectWriteResult
     from urllib3 import BaseHTTPResponse
 
+    from stock_analysis.settings import Settings
+
 
 class MinioBucketService:
-    """MinIO bucket service for managing data storage."""
+    """MinIO bucket service for managing data storage.
 
-    _client: Minio
-    """MinIO client instance."""
+    Attributes:
+        _mc: MinIO client instance.
+    """
 
-    def __init__(self, client: Minio) -> None:
+    _mc: Minio
+
+    def __init__(self, mc: Minio | None = None) -> None:
         """Initialize the MinIO bucket service.
 
         Args:
-            client: MinIO client instance.
+            mc: MinIO client instance.
         """
-        self._client = client
+        if mc is not None:
+            self._mc = mc
+            return
+
+        settings: Settings = get_settings()
+        self._mc = Minio(
+            endpoint=settings.minio_endpoint,
+            access_key=settings.minio_user,
+            secret_key=settings.minio_password.get_secret_value(),
+            secure=settings.minio_secure,
+        )
 
     def get_object(self, bucket_name: str, object_name: str) -> bytes:
         """Retrieve an object from a MinIO bucket.
@@ -41,7 +56,7 @@ class MinioBucketService:
         """
         response: BaseHTTPResponse | None = None
         try:
-            response = self._client.get_object(bucket_name, object_name)
+            response = self._mc.get_object(bucket_name, object_name)
             data: bytes = response.read()
         finally:
             if response is not None:
@@ -62,7 +77,7 @@ class MinioBucketService:
         Returns:
             Result of the object write operation.
         """
-        result: ObjectWriteResult = self._client.put_object(
+        result: ObjectWriteResult = self._mc.put_object(
             bucket_name,
             object_name,
             io.BytesIO(data),
@@ -71,24 +86,13 @@ class MinioBucketService:
         )
         return result
 
-
-async def get_minio(request: Request) -> Minio:
-    """Get MinIO client.
-
-    Args:
-        request: FastAPI request object for accessing app state.
-
-    Returns:
-        MinIO client instance.
-
-    Raises:
-        HTTPException: If MinIO client is not available.
-    """
-    bucket: Minio | None = getattr(request.app.state, "mc", None)
-    if bucket is None:
-        raise HTTPException(
-            status_code=HTTPStatus.SERVICE_UNAVAILABLE,
-            detail="Data store unavailable",
+    def list_objects(
+        self, bucket_name: str, prefix: str | None = None
+    ) -> Iterator[MinioObject]:
+        """List objects from a MinIO bucket."""
+        return self._mc.list_objects(
+            bucket_name=bucket_name,
+            prefix=prefix,
+            recursive=True,
+            include_version=True,
         )
-
-    return bucket

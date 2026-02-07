@@ -8,13 +8,10 @@ from sqlalchemy import DateTime, ForeignKey, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from stock_analysis.models.base import Base
+from stock_analysis.settings import get_settings
 
 if TYPE_CHECKING:
     from stock_analysis.models.stock import Stock
-
-
-EMBEDDING_DIMENSION = 768
-"""Embedding dimension for the embeddings model."""
 
 
 class ReportChunk(Base):
@@ -55,11 +52,11 @@ class ReportChunk(Base):
     chunk_no: Mapped[int] = mapped_column(nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     embedding: Mapped[list[float]] = mapped_column(
-        VECTOR(dim=EMBEDDING_DIMENSION), nullable=False
+        VECTOR(dim=get_settings().llm_embedding_dimension), nullable=False
     )
 
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), onupdate=func.now(), nullable=False
+        DateTime(timezone=True), server_default=func.now(), nullable=False
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

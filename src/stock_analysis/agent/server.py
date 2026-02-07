@@ -59,8 +59,5 @@ async def get_financial_report(stock_code: str) -> str:
 
     Returns:
         Financial report content for the specified stock code.
-
-    Raises:
-        NotImplementedError: Always raised until implemented.
     """
     raise NotImplementedError

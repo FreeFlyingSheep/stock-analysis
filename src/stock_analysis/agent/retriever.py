@@ -12,8 +12,5 @@ class Retriever:
 
         Returns:
             A string containing the retrieved information.
-
-        Raises:
-            NotImplementedError: Always raised by the base class.
         """
         raise NotImplementedError

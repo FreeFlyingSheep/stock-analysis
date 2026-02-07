@@ -98,6 +98,8 @@ class Settings(BaseSettings):
     """LLM model name."""
     llm_embedding_model: str | None = None
     """LLM embedding model name."""
+    llm_embedding_dimension: int | None = None
+    """LLM embedding dimension."""
 
     mcp_host: str
     """Host address for the MCP server."""
@@ -114,6 +116,7 @@ class Settings(BaseSettings):
                     "llm_server_base_url",
                     "llm_model",
                     "llm_embedding_model",
+                    "llm_embedding_dimension",
                     "mcp_host",
                     "mcp_port",
                 )

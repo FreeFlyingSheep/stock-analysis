@@ -40,6 +40,7 @@ from stock_analysis.routers.analysis import router as analysis_router
 from stock_analysis.routers.stock import router as stock_router
 from stock_analysis.services.cache import get_redis
 from stock_analysis.services.database import get_db
+from stock_analysis.settings import get_settings
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable, Generator
@@ -406,4 +407,4 @@ async def fake_chat() -> FakeListChatModel:
 
 @pytest_asyncio.fixture
 async def fake_embeddings() -> FakeEmbeddings:
-    return FakeEmbeddings(size=1536)
+    return FakeEmbeddings(size=get_settings().llm_embedding_dimension or 768)

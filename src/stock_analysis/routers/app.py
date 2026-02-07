@@ -12,7 +12,6 @@ from fastapi import FastAPI
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_mcp_adapters.sessions import StreamableHttpConnection
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
-from minio import Minio
 from psycopg_pool import AsyncConnectionPool
 from redis.asyncio import ConnectionPool
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
@@ -91,13 +90,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
 
     app.state.redis_pool = ConnectionPool(
         host=settings.redis_host, port=settings.redis_port, db=0
-    )
-
-    app.state.mc = Minio(
-        endpoint=settings.minio_endpoint,
-        access_key=settings.minio_user,
-        secret_key=settings.minio_password.get_secret_value(),
-        secure=settings.minio_secure,
     )
 
     app.state.mcp = MultiServerMCPClient(
