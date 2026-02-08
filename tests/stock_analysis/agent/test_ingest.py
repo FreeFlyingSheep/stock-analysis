@@ -31,7 +31,11 @@ def tiny_pdf_bytes() -> bytes:
 
 
 @pytest.fixture
-def bucket_service(minio_client: Minio, tiny_pdf_bytes: bytes) -> MinioBucketService:
+def bucket_service(
+    minio_client: Minio,
+    tiny_pdf_bytes: bytes,
+    seed_stocks: list[Stock],
+) -> MinioBucketService:
     settings: Settings = get_settings()
     minio_client.make_bucket(settings.minio_bucket_raw)
     minio_client.set_bucket_versioning(
@@ -40,7 +44,7 @@ def bucket_service(minio_client: Minio, tiny_pdf_bytes: bytes) -> MinioBucketSer
     minio_client.make_bucket(settings.minio_bucket_processed)
     minio_client.put_object(
         settings.minio_bucket_raw,
-        "test.pdf",
+        f"reports/2025/annual_report/{seed_stocks[0].stock_code}.pdf",
         io.BytesIO(tiny_pdf_bytes),
         len(tiny_pdf_bytes),
         content_type="application/pdf",
@@ -60,19 +64,17 @@ async def test_ingest(
     async_session: AsyncSession,
     embeddings: Embeddings,
 ) -> None:
+    stock_code: str = seed_stocks[0].stock_code
     ingestor = Ingestor(
         db=async_session,
         bucket_service=bucket_service,
         embeddings=embeddings,
     )
-    count: int = await ingestor.ingest(
-        stock_id=seed_stocks[0].id, fiscal_year=2024, report_type="annual"
-    )
-    assert count == 1
+    await ingestor.ingest(f"reports/2025/annual_report/{stock_code}.pdf")
 
     manifest_bytes: bytes = bucket_service.get_object(
         bucket_name=get_settings().minio_bucket_processed,
-        object_name="test/manifest.json",
+        object_name=f"reports/2025/annual_report/{stock_code}/manifest.json",
     )
     manifest: dict = json.loads(manifest_bytes.decode("utf-8"))
     assert manifest is not None

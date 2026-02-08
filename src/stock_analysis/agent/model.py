@@ -2,6 +2,7 @@
 
 from typing import TYPE_CHECKING
 
+from aiolimiter import AsyncLimiter
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 from stock_analysis.settings import get_settings
@@ -25,6 +26,10 @@ class LLM:
 
     _llm: BaseChatModel | None
     """Instance of the OpenAI language model."""
+    _rpm_limiter: AsyncLimiter
+    """Rate limiter for RPM (requests per minute) - 1000 RPM for chat."""
+    _tpm_limiter: AsyncLimiter
+    """Rate limiter for TPM (tokens per minute) - 50000 TPM for chat."""
 
     def __init__(self, llm: BaseChatModel | None = None) -> None:
         """Initialize the LLM wrapper.
@@ -32,6 +37,9 @@ class LLM:
         Args:
             llm: Optional instance of ChatOpenAI to use.
         """
+        self._rpm_limiter = AsyncLimiter(max_rate=1000, time_period=60)
+        self._tpm_limiter = AsyncLimiter(max_rate=50000, time_period=60)
+
         if llm is not None:
             self._llm = llm
             return
@@ -105,7 +113,8 @@ class LLM:
             msg: str = "LLM is not configured."
             raise LLMError(msg)
 
-        return await self._llm.ainvoke(prompt)
+        async with self._rpm_limiter, self._tpm_limiter:
+            return await self._llm.ainvoke(prompt)
 
 
 class Embeddings:
@@ -113,6 +122,10 @@ class Embeddings:
 
     _embeddings: BaseEmbeddings | None
     """Instance of the OpenAI embeddings model."""
+    _rpm_limiter: AsyncLimiter
+    """Rate limiter for RPM (requests per minute) - 2000 RPM for embeddings."""
+    _tpm_limiter: AsyncLimiter
+    """Rate limiter for TPM (tokens per minute) - 500000 TPM for embeddings."""
 
     def __init__(self, embeddings: BaseEmbeddings | None = None) -> None:
         """Initialize the LLM embeddings wrapper.
@@ -120,6 +133,9 @@ class Embeddings:
         Args:
             embeddings: Optional instance of OpenAIEmbeddings to use.
         """
+        self._rpm_limiter = AsyncLimiter(max_rate=2000, time_period=60)
+        self._tpm_limiter = AsyncLimiter(max_rate=500000, time_period=60)
+
         if embeddings is not None:
             self._embeddings = embeddings
             return
@@ -175,4 +191,5 @@ class Embeddings:
             msg: str = "LLM embeddings model is not configured."
             raise LLMError(msg)
 
-        return await self._embeddings.aembed_query(text)
+        async with self._rpm_limiter, self._tpm_limiter:
+            return await self._embeddings.aembed_query(text)

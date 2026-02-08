@@ -84,6 +84,7 @@ This project is developed with the assistance of AI tools:
 - **Stock Filtering**: Filter stocks based on configurable scoring rules
 - **CSV Import/Export**: Bulk import and export stock data from/to CSV files
 - **Job Queue**: PgQueuer for async job processing (data crawling, analysis, and scoring)
+- **RAG Capabilities**: Text extraction, chunking, embedding, and vector storage for PDF reports
 
 ### API & Backend Services
 
@@ -176,7 +177,7 @@ If you want to keep existing data, dump the database first (`./scripts/dump_db.s
     - Import initial stock data from `data/stocks.csv`
     - Initialize the PgQueuer job queue
 
-5. Start the MinIO data store:
+5. Start the MinIO data store and initialize the data:
 
     In a separate terminal, run MinIO for object storage:
 
@@ -184,6 +185,8 @@ If you want to keep existing data, dump the database first (`./scripts/dump_db.s
     source .venv/bin/activate
     export $(grep -v '^#' .env | xargs)
     ./scripts/run_minio.sh
+    uv run scripts/import_reports.py
+    uv run scripts/ingest_reports.py
     ```
 
 6. Start the [Redis](https://redis.io/) server.

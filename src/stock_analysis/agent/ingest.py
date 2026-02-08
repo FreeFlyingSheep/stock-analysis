@@ -10,25 +10,31 @@ from typing import TYPE_CHECKING, Any
 
 import pymupdf  # type: ignore[import-untyped]
 from minio.error import MinioException
+from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 
 from stock_analysis.agent.model import Embeddings
+from stock_analysis.logger import get_logger
 from stock_analysis.models.report import ReportChunk
+from stock_analysis.models.stock import Stock
 from stock_analysis.schemas.report import RawChunk, ReportChunkIn
 from stock_analysis.services.bucket import MinioBucketService
 from stock_analysis.settings import get_settings
 
 if TYPE_CHECKING:
+    import logging
+
     from minio.datatypes import Object as MinioObject
+    from sqlalchemy import Result
     from sqlalchemy.dialects.postgresql import Insert
     from sqlalchemy.ext.asyncio import AsyncSession
 
     from stock_analysis.settings import Settings
 
 
-PIPELINE_VERSION: str = "v1.0.0"
-CHUNK_MAX_CHARS: int = 900
-CHUNK_OVERLAP: int = 120
+PIPELINE_VERSION: str = "v1.1.0"
+CHUNK_MAX_CHARS: int = 300
+CHUNK_OVERLAP: int = 50
 CHUNK_HEADING_RULE: str = "rule_v1"
 MAX_HEADING_LEN: int = 40
 MAX_HEADING_WORDS: int = 10
@@ -37,6 +43,17 @@ CHUNK_CONF: dict[str, Any] = {
     "overlap": CHUNK_OVERLAP,
     "heading_rule": CHUNK_HEADING_RULE,
 }
+
+
+logger: logging.Logger = get_logger(__name__)
+
+_header_pattern: re.Pattern = re.compile(r"^\d+(\.\d+)*[\)\.]?\s+\S+")
+_section_pattern: re.Pattern = re.compile(
+    r"^(第[一二三四五六七八九十百]+[章节]|Chapter|Part)\b", flags=re.IGNORECASE
+)
+_path_pattern: re.Pattern = re.compile(
+    r"^reports/(?P<year>\d{4})/(?P<report_type>[^/]+)/(?P<stock_code>[^/]+)\.pdf$"
+)
 
 
 def _now_iso() -> str:
@@ -100,13 +117,9 @@ def _is_heading(line: str) -> bool:
     t: str = line.strip()
     if not t:
         return False
-    if re.match(r"^\d+(\.\d+)*[\)\.]?\s+\S+", t):
+    if _header_pattern.match(t):
         return True
-    if re.match(
-        r"^(第[一二三四五六七八九十百]+[章节]|Chapter|Part)\b",
-        t,
-        flags=re.IGNORECASE,
-    ):
+    if _section_pattern.match(t):
         return True
     return (
         len(t) <= MAX_HEADING_LEN
@@ -304,23 +317,6 @@ class Ingestor:
         self._raw_bucket = settings.minio_bucket_raw
         self._processed_bucket = settings.minio_bucket_processed
 
-    def _list_raw_pdfs(self, prefix: str | None = None) -> list[MinioObject]:
-        """List PDF objects in the raw bucket.
-
-        Args:
-            prefix: Optional key prefix filter.
-
-        Returns:
-            List of MinIO objects whose keys end with ".pdf".
-        """
-        return [
-            obj
-            for obj in self._bucket_service.list_objects(
-                self._raw_bucket, prefix=prefix
-            )
-            if obj.object_name and obj.object_name.lower().endswith(".pdf")
-        ]
-
     def _download_to_tempfile(self, object_key: str) -> str:
         """Download an object from the raw bucket to a temporary file.
 
@@ -470,17 +466,16 @@ class Ingestor:
             },
         )
         await self._db.execute(stmt)
-        await self._db.flush()
+        await self._db.commit()
         return len(chunk_inputs)
 
-    async def _process_one(  # noqa: PLR0913
+    async def _process_pdf(
         self,
         object_key: str,
         source_version: str,
         stock_id: int,
         fiscal_year: int,
         report_type: str,
-        content_type: str = "application/pdf",
     ) -> None:
         """Process a single PDF from the raw bucket.
 
@@ -550,7 +545,7 @@ class Ingestor:
                 stock_id=stock_id,
                 fiscal_year=fiscal_year,
                 report_type=report_type,
-                content_type=content_type,
+                content_type="application/pdf",
                 doc_version=doc_version,
             )
 
@@ -597,39 +592,51 @@ class Ingestor:
                 if tmp_pdf_path.exists():
                     tmp_pdf_path.unlink()
 
-    async def ingest(
-        self,
-        stock_id: int,
-        fiscal_year: int,
-        report_type: str,
-        content_type: str = "application/pdf",
-        prefix: str | None = None,
-    ) -> int:
+    async def ingest(self, object_key: str) -> None:
         """Ingest all PDF reports from the raw bucket.
 
         Args:
-            stock_id: Stock ID for the reports.
-            fiscal_year: Fiscal year of the reports.
-            report_type: Report type label.
-            content_type: MIME type of the source documents.
-            prefix: Optional MinIO key prefix to filter objects.
-
-        Returns:
-            Number of PDFs processed (including skipped).
+            object_key: MinIO object key for the PDF to ingest.
         """
-        objects: list[MinioObject] = self._list_raw_pdfs(prefix=prefix)
-        count: int = 0
-        for obj in objects:
-            if obj.object_name is None or obj.version_id is None:
-                continue
-            object_key: str = obj.object_name
-            await self._process_one(
-                object_key,
-                obj.version_id,
-                stock_id,
-                fiscal_year,
-                report_type,
-                content_type,
+        obj: MinioObject = self._bucket_service.get_object_info(
+            self._raw_bucket, object_key
+        )
+
+        if obj.version_id is None:
+            logger.warning("Object version ID is missing: %s", object_key)
+            return
+
+        if obj.content_type != "application/pdf":
+            logger.warning("Skipping object with invalid content type: %s", object_key)
+            return
+
+        matched: re.Match | None = _path_pattern.match(object_key)
+        if not matched:
+            logger.warning("Skipping object with invalid key format: %s", object_key)
+            return
+
+        try:
+            fiscal_year = int(matched.group("year"))
+            report_type: str = matched.group("report_type").replace("_", " ")
+            stock_code: str = matched.group("stock_code")
+        except (IndexError, ValueError):
+            logger.exception(
+                "Invalid key format for extracting metadata: %s", object_key
             )
-            count += 1
-        return count
+            return
+
+        stock_result: Result[tuple[int]] = await self._db.execute(
+            select(Stock.id).where(Stock.stock_code == stock_code)
+        )
+        stock_id: int | None = stock_result.scalar_one_or_none()
+        if stock_id is None:
+            logger.warning("Stock code not found: %s", stock_code)
+            return
+
+        await self._process_pdf(
+            object_key,
+            obj.version_id,
+            stock_id,
+            fiscal_year,
+            report_type,
+        )

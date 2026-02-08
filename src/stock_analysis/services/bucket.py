@@ -44,6 +44,18 @@ class MinioBucketService:
             secure=settings.minio_secure,
         )
 
+    def get_object_info(self, bucket_name: str, object_name: str) -> MinioObject:
+        """Get metadata for an object in a MinIO bucket.
+
+        Args:
+            bucket_name: Name of the MinIO bucket.
+            object_name: Name of the object to retrieve metadata for.
+
+        Returns:
+            Metadata for the requested object.
+        """
+        return self._mc.stat_object(bucket_name, object_name)
+
     def get_object(self, bucket_name: str, object_name: str) -> bytes:
         """Retrieve an object from a MinIO bucket.
 
@@ -89,7 +101,15 @@ class MinioBucketService:
     def list_objects(
         self, bucket_name: str, prefix: str | None = None
     ) -> Iterator[MinioObject]:
-        """List objects from a MinIO bucket."""
+        """List objects from a MinIO bucket.
+
+        Args:
+            bucket_name: Name of the MinIO bucket.
+            prefix: Optional object key prefix filter.
+
+        Returns:
+            An iterator of objects in the specified bucket.
+        """
         return self._mc.list_objects(
             bucket_name=bucket_name,
             prefix=prefix,

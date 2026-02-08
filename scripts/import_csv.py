@@ -21,10 +21,7 @@ if TYPE_CHECKING:
     import os
 
     from sqlalchemy.dialects.postgresql import Insert
-    from sqlalchemy.ext.asyncio import (
-        AsyncEngine,
-        AsyncSession,
-    )
+    from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
     from stock_analysis.settings import Settings
 
@@ -133,14 +130,10 @@ async def import_stocks_from_csv(db: AsyncSession, csv_path: str | os.PathLike) 
 
 
 async def main() -> None:
-    """Import stocks from CSV into the database.
-
-    Entry point for the CSV import script. Initializes settings, creates
-    database engine and session, then imports stock data from the default
-    CSV file location.
-    """
+    """Import stocks from CSV into the database."""
     settings: Settings = get_settings()
     logging.basicConfig(level=settings.log_level)
+
     engine: AsyncEngine = create_async_engine(
         settings.database_url_with_psycopg,
         echo=settings.debug,

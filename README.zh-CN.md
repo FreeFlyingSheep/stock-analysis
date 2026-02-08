@@ -84,6 +84,7 @@
 - **股票筛选**：按评分规则过滤
 - **CSV 导入/导出**：批量导入与导出
 - **任务队列**：PgQueuer 处理抓取与分析任务
+- **RAG 功能**: PDF 报告的文本提取、分块、嵌入和向量存储的 RAG 功能
 
 ### API 与服务
 
@@ -176,7 +177,7 @@
     - 从 `data/stocks.csv` 导入初始股票数据
     - 初始化 PgQueuer 任务队列
 
-5. 启动 MinIO 数据存储：
+5. 启动 MinIO 数据存储并初始化数据：
 
     在单独的终端中运行 MinIO 以进行对象存储：
 
@@ -184,6 +185,8 @@
     source .venv/bin/activate
     export $(grep -v '^#' .env | xargs)
     ./scripts/run_minio.sh
+    uv run scripts/import_reports.py
+    uv run scripts/ingest_reports.py
     ```
 
 6. 启动 [Redis](https://redis.io/) 服务器。
