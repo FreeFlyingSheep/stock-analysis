@@ -67,8 +67,7 @@ async def test_should_continue(chat_agent: ChatAgent) -> None:
 @pytest.mark.asyncio
 async def test_load_prompt(chat_agent: ChatAgent) -> None:
     prompt1: str = chat_agent._load_prompt("chat", "zh-CN")
-    assert isinstance(prompt1, str)
     assert len(prompt1) > 0
 
     prompt2: str = chat_agent._load_prompt("chat", "en-US")
-    assert prompt1 == prompt2
+    assert prompt2 != prompt1

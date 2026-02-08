@@ -16,6 +16,7 @@ from psycopg_pool import AsyncConnectionPool
 from redis.asyncio import ConnectionPool
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
+from stock_analysis import models  # noqa: F401
 from stock_analysis.agent.graph import ChatAgent
 from stock_analysis.routers.analysis import router as analysis_router
 from stock_analysis.routers.chat import router as chat_router

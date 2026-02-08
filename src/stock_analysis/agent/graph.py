@@ -58,7 +58,7 @@ class ChatAgent:
     _checkpointer: AsyncPostgresSaver
     _agent: CompiledStateGraph[MessagesState, None, MessagesState, MessagesState]
     _prompts_dir: Path
-    _prompts: dict[str, str]
+    _prompts: dict[tuple[str, str], str]
 
     def __init__(
         self,
@@ -80,7 +80,7 @@ class ChatAgent:
         self._checkpointer = checkpointer
         self._agent = self._create_agent()
         self._prompts_dir = Path(prompts_dir)
-        self._prompts: dict[str, str] = {}
+        self._prompts: dict[tuple[str, str], str] = {}
 
     def _trim_messages(self, state: MessagesState) -> dict | None:
         """Keep only the last few messages to fit context window.
@@ -126,8 +126,9 @@ class ChatAgent:
         Raises:
             AgentError: If the prompt file does not exist.
         """
-        if prompt in self._prompts:
-            return self._prompts[prompt]
+        cache_key: tuple[str, str] = (prompt, locale)
+        if cache_key in self._prompts:
+            return self._prompts[cache_key]
 
         if locale == "zh-CN":
             prompt_path: Path = self._prompts_dir / f"{prompt}.zh-CN.md"
@@ -137,8 +138,8 @@ class ChatAgent:
             msg: str = f"Prompt file not found: {prompt_path}"
             raise AgentError(msg)
 
-        self._prompts[prompt] = prompt_path.read_text(encoding="utf-8")
-        return self._prompts[prompt]
+        self._prompts[cache_key] = prompt_path.read_text(encoding="utf-8")
+        return self._prompts[cache_key]
 
     async def _llm_call(
         self, state: MessagesState, config: RunnableConfig | None
