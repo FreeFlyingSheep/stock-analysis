@@ -43,6 +43,16 @@ def create_database(settings: Settings) -> None:
             )
             cur.execute(sql.SQL("CREATE EXTENSION IF NOT EXISTS vector"))
             cur.execute(sql.SQL("CREATE EXTENSION IF NOT EXISTS pg_textsearch"))
+            cur.execute(sql.SQL("CREATE EXTENSION IF NOT EXISTS zhparser"))
+            cur.execute(
+                sql.SQL("CREATE TEXT SEARCH CONFIGURATION chinese (parser = zhparser)")
+            )
+            cur.execute(
+                sql.SQL(
+                    "ALTER TEXT SEARCH CONFIGURATION chinese "
+                    "ADD MAPPING FOR n,v,a,i,e,l WITH simple"
+                )
+            )
             logger.info("Created database: %s", settings.database_db)
         else:
             logger.info("Database already exists: %s", settings.database_db)

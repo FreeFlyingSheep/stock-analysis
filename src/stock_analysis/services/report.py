@@ -2,7 +2,7 @@
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from stock_analysis.models.report import ReportChunk
 
@@ -89,7 +89,11 @@ class ReportService:
         """
         query: Select = (
             select(ReportChunk)
-            .where(ReportChunk.content.op("<@>")(query_str))
+            .order_by(
+                ReportChunk.content.op("<@>")(
+                    func.to_bm25query(query_str, "idx_report_chunks_bm25")
+                )
+            )
             .limit(limit)
         )
 

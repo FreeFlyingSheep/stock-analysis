@@ -68,6 +68,16 @@ async def postgres_container() -> AsyncGenerator[PostgresContainer]:
         async with engine.begin() as conn:
             await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
             await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_textsearch"))
+            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS zhparser"))
+            await conn.execute(
+                text("CREATE TEXT SEARCH CONFIGURATION chinese (parser = zhparser)")
+            )
+            await conn.execute(
+                text(
+                    "ALTER TEXT SEARCH CONFIGURATION chinese "
+                    "ADD MAPPING FOR n,v,a,i,e,l WITH simple"
+                )
+            )
         await engine.dispose()
         yield container
 

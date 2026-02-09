@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from pgvector.sqlalchemy import VECTOR  # type: ignore[import-untyped]
-from sqlalchemy import DateTime, ForeignKey, String, Text, func
+from sqlalchemy import DateTime, ForeignKey, Index, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from stock_analysis.models.base import Base
@@ -34,6 +34,14 @@ class ReportChunk(Base):
     """
 
     __tablename__: str = "report_chunks"
+    __table_args__: tuple = (
+        Index(
+            "idx_report_chunks_bm25",
+            "content",
+            postgresql_using="bm25",
+            postgresql_with={"text_config": "public.chinese"},
+        ),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     stock_id: Mapped[int] = mapped_column(
