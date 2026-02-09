@@ -70,6 +70,9 @@ async def postgres_container() -> AsyncGenerator[PostgresContainer]:
             await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_textsearch"))
             await conn.execute(text("CREATE EXTENSION IF NOT EXISTS zhparser"))
             await conn.execute(
+                text("DROP TEXT SEARCH CONFIGURATION IF EXISTS chinese CASCADE")
+            )
+            await conn.execute(
                 text("CREATE TEXT SEARCH CONFIGURATION chinese (parser = zhparser)")
             )
             await conn.execute(

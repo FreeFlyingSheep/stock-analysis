@@ -45,6 +45,9 @@ def create_database(settings: Settings) -> None:
             cur.execute(sql.SQL("CREATE EXTENSION IF NOT EXISTS pg_textsearch"))
             cur.execute(sql.SQL("CREATE EXTENSION IF NOT EXISTS zhparser"))
             cur.execute(
+                sql.SQL("DROP TEXT SEARCH CONFIGURATION IF EXISTS chinese CASCADE")
+            )
+            cur.execute(
                 sql.SQL("CREATE TEXT SEARCH CONFIGURATION chinese (parser = zhparser)")
             )
             cur.execute(
