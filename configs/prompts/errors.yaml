@@ -1,0 +1,38 @@
+# Error Prompts
+# Error messages and fallback texts for the agent
+
+metadata:
+  version: "1.0.0"
+  description: "Error messages and agent limit notifications"
+  last_updated: "2026-02-10"
+
+prompts:
+  error_max_steps_specific:
+    description: "Error text when step limit is reached"
+    en-US: "I've reached the maximum number of processing steps. Please try a more specific question."
+    zh-CN: "我已达到本轮最大处理步数，请尝试更具体的问题。"
+
+  error_max_steps_best_effort:
+    description: "Fallback text for final best-effort answer"
+    en-US: "I've reached the maximum number of processing steps. Here is my best answer based on the information gathered so far."
+    zh-CN: "我已达到本轮最大处理步数。以下是基于当前信息的最佳回答。"
+
+  error_tool_not_found:
+    description: "Error text for missing tool names"
+    en-US: "Error: Tool '{name}' not found."
+    zh-CN: "错误：未找到工具\"{name}\"。"
+
+  error_tool_failed:
+    description: "Error text for tool execution failures"
+    en-US: "Error: Tool '{name}' failed: {error}"
+    zh-CN: "错误：工具\"{name}\"执行失败：{error}"
+
+  error_tool_call_limit_reached:
+    description: "Error text for tool-call budget hit"
+    en-US: "Tool call limit reached; skipped remaining tool calls."
+    zh-CN: "已达到工具调用上限，剩余工具调用已跳过。"
+
+  error_retrieve_call_limit_reached:
+    description: "Error text for retrieve-call budget hit"
+    en-US: "Retrieve call limit reached; skipped remaining retrieve calls."
+    zh-CN: "已达到检索调用上限，剩余检索调用已跳过。"

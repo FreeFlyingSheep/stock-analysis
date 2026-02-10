@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from langchain_core.embeddings import Embeddings as BaseEmbeddings
     from langchain_core.language_models import BaseChatModel, LanguageModelInput
     from langgraph.graph.state import Runnable
+    from pydantic import BaseModel
 
     from stock_analysis.settings import Settings
 
@@ -78,6 +79,23 @@ class LLM:
             raise LLMError(msg)
 
         return self._llm.bind_tools(tools)
+
+    def with_structured_output(
+        self, schema: dict | type[BaseModel]
+    ) -> Runnable[LanguageModelInput, dict | BaseModel]:
+        """Bind a structured output schema to the LLM.
+
+        Args:
+            schema: The schema to bind, either as a dict or a Pydantic model.
+
+        Returns:
+            A Runnable that will return output conforming to the schema.
+        """
+        if self._llm is None:
+            msg: str = "LLM is not configured."
+            raise LLMError(msg)
+
+        return self._llm.with_structured_output(schema)
 
     def invoke(self, prompt: LanguageModelInput) -> AIMessage:
         """Invoke the language model with the given prompt.

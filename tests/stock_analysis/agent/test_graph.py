@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from langchain_community.embeddings import FakeEmbeddings
     from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 
-    from stock_analysis.agent.graph import MessagesState
+    from stock_analysis.agent.graph import State
 
 
 @pytest_asyncio.fixture
@@ -41,7 +41,7 @@ async def chat_agent(
 async def test_trim_messages(chat_agent: ChatAgent) -> None:
     length: int = 30 + 1
     messages: list[AnyMessage] = [HumanMessage(content=f"Test {i}") for i in range(40)]
-    state: MessagesState = {"messages": messages}
+    state: State = {"messages": messages}
     result: dict | None = chat_agent._trim_messages(state)
     assert result is not None
     assert "messages" in result
@@ -54,7 +54,7 @@ async def test_should_continue(chat_agent: ChatAgent) -> None:
         content="Test response with tool call",
         tool_calls=[{"name": "test_tool", "args": {}, "id": "1"}],
     )
-    state: MessagesState = {"messages": [ai_message]}
+    state: State = {"messages": [ai_message]}
     result: str = chat_agent._should_continue(state)
     assert result == "tool_node"
 

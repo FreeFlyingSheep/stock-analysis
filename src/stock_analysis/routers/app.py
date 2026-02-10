@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from stock_analysis import models  # noqa: F401
 from stock_analysis.agent.graph import ChatAgent
+from stock_analysis.agent.model import LLM, Embeddings
 from stock_analysis.routers.analysis import router as analysis_router
 from stock_analysis.routers.chat import router as chat_router
 from stock_analysis.routers.report import router as report_router
@@ -105,7 +106,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
         settings.database_url
     ) as checkpointer:
         await checkpointer.setup()
-        app.state.agent = ChatAgent(checkpointer, settings.prompts_dir)
+        llm = LLM()
+        embeddings = Embeddings()
+        app.state.agent = ChatAgent(checkpointer, settings.prompts_dir, llm, embeddings)
 
         yield
 

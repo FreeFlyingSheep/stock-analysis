@@ -10,6 +10,7 @@ from fastmcp.server.openapi import MCPType, RouteMap
 from fastmcp.server.openapi.server import FastMCPOpenAPI
 from httpx import AsyncClient
 
+from stock_analysis.schemas.report import ReportRetrieverBody, ReportRetrieverResponse
 from stock_analysis.settings import get_settings
 
 if TYPE_CHECKING:
@@ -50,14 +51,21 @@ async def health_check(_request: Request) -> JSONResponse:
 @mcp.tool(
     name="get_financial_report",
     description="Fetch financial report for a given stock code.",
+    tags={"retrieve"},
 )
-async def get_financial_report(stock_code: str) -> str:
-    """Tool to fetch financial report for a given stock code.
+async def get_financial_report(query: str, stock_code: str) -> ReportRetrieverResponse:
+    """Get financial report for a given stock code by calling the upstream API.
 
     Args:
-        stock_code: Stock code to retrieve the report for.
+        query: The query to use for retrieving the financial report.
+        stock_code: The stock code to retrieve the financial report for.
 
     Returns:
-        Financial report content for the specified stock code.
+        A ReportRetrieverResponse containing the retrieved financial report.
     """
-    raise NotImplementedError
+    body = ReportRetrieverBody(query=query, stock_code=stock_code)
+    response: httpx.Response = await client.post(
+        "/reports/retrieve", json=body.model_dump()
+    )
+    response.raise_for_status()
+    return ReportRetrieverResponse.model_validate(response.json())

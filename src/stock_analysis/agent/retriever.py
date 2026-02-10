@@ -97,9 +97,6 @@ class Retriever:
     ) -> str:
         """Retrieve relevant report chunks for a query using BM25 keyword search.
 
-        Embeds the query and performs vector similarity search to find the
-        most relevant report chunks.
-
         Args:
             query: Natural-language query string.
             limit: Maximum number of chunks to return.
@@ -129,12 +126,11 @@ class Retriever:
         stock_id: int | None = None,
         fiscal_year: int | None = None,
         report_type: str | None = None,
+        semantic_top_n: int = 40,
+        bm25_top_n: int = 40,
+        rrf_k: int = 60,
     ) -> str:
         """Retrieve relevant report chunks using hybrid search.
-
-        Combines vector similarity and BM25 keyword search with reciprocal
-        rank fusion.  Requires the ``pg_textsearch`` extension and a
-        corresponding index on the ``report_chunks`` table.
 
         Args:
             query: Natural-language query string.
@@ -143,6 +139,9 @@ class Retriever:
             stock_id: Optional stock ID filter.
             fiscal_year: Optional fiscal year filter.
             report_type: Optional report type filter.
+            semantic_top_n: Number of top semantic results to consider for fusion.
+            bm25_top_n: Number of top BM25 results to consider for fusion.
+            rrf_k: Parameter to control influence of rank positions in fusion.
 
         Returns:
             A formatted string containing the retrieved chunks.
@@ -156,5 +155,8 @@ class Retriever:
             stock_id=stock_id,
             fiscal_year=fiscal_year,
             report_type=report_type,
+            semantic_top_n=semantic_top_n,
+            bm25_top_n=bm25_top_n,
+            rrf_k=rrf_k,
         )
         return self._format_chunks(chunks)

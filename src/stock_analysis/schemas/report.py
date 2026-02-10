@@ -65,3 +65,39 @@ class RawChunk(BaseSchema):
     heading: str
     chunk_index: int
     content: str
+
+
+class ReportRetrieverBody(BaseSchema):
+    """Schema for the request body of the report retrieval endpoint.
+
+    Attributes:
+        query: Natural language query to retrieve relevant reports.
+        limit: Maximum number of report chunks to return.
+        doc_id: Optional document ID to filter report chunks.
+        stock_code: Optional stock code to filter report chunks.
+        fiscal_year: Optional fiscal year to filter report chunks.
+        report_type: Optional report type to filter report chunks.
+        semantic_top_n: Number of top semantic results to consider for fusion.
+        bm25_top_n: Number of top BM25 results to consider for fusion.
+        rrf_k: Parameter to control influence of rank positions in fusion.
+    """
+
+    query: str
+    limit: int = 5
+    doc_id: str | None = None
+    stock_code: str | None = None
+    fiscal_year: int | None = None
+    report_type: str | None = None
+    semantic_top_n: int = 40
+    bm25_top_n: int = 40
+    rrf_k: int = 60
+
+
+class ReportRetrieverResponse(BaseSchema):
+    """Schema for the response of the report retrieval endpoint.
+
+    Attributes:
+        data: A string containing the retrieved financial reports.
+    """
+
+    data: str

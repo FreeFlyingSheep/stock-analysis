@@ -10,25 +10,24 @@ from typing import TYPE_CHECKING, Any
 
 import pymupdf  # type: ignore[import-untyped]
 from minio.error import MinioException
-from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 
 from stock_analysis.agent.model import Embeddings
 from stock_analysis.logger import get_logger
 from stock_analysis.models.report import ReportChunk
-from stock_analysis.models.stock import Stock
 from stock_analysis.schemas.report import RawChunk, ReportChunkIn
 from stock_analysis.services.bucket import MinioBucketService
+from stock_analysis.services.stock import StockService
 from stock_analysis.settings import get_settings
 
 if TYPE_CHECKING:
     import logging
 
     from minio.datatypes import Object as MinioObject
-    from sqlalchemy import Result
     from sqlalchemy.dialects.postgresql import Insert
     from sqlalchemy.ext.asyncio import AsyncSession
 
+    from stock_analysis.models.stock import Stock
     from stock_analysis.settings import Settings
 
 
@@ -625,18 +624,16 @@ class Ingestor:
             )
             return
 
-        stock_result: Result[tuple[int]] = await self._db.execute(
-            select(Stock.id).where(Stock.stock_code == stock_code)
-        )
-        stock_id: int | None = stock_result.scalar_one_or_none()
-        if stock_id is None:
+        stock_service = StockService(self._db)
+        stock: Stock | None = await stock_service.get_stock_by_code(stock_code)
+        if stock is None:
             logger.warning("Stock code not found: %s", stock_code)
             return
 
         await self._process_pdf(
             object_key,
             obj.version_id,
-            stock_id,
+            stock.id,
             fiscal_year,
             report_type,
         )
