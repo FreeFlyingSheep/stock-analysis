@@ -24,6 +24,7 @@ def main() -> None:
         host=settings.backend_host,
         port=settings.backend_port,
         reload=True,
+        reload_excludes=["logs/*", "*/logs/*", "*.log"],
     )
 
 
