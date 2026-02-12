@@ -2965,6 +2965,7 @@ source = { editable = "." }
 dependencies = [
     { name = "aiolimiter" },
     { name = "alembic" },
+    { name = "anyio" },
     { name = "fastapi", extra = ["standard-no-fastapi-cloud-cli"] },
     { name = "fastmcp" },
     { name = "langchain" },
@@ -3018,6 +3019,7 @@ dev = [
 requires-dist = [
     { name = "aiolimiter", specifier = ">=1.2.1" },
     { name = "alembic", specifier = ">=1.17.2" },
+    { name = "anyio", specifier = ">=4.12.1" },
     { name = "fastapi", extras = ["standard-no-fastapi-cloud-cli"], specifier = ">=0.124.4" },
     { name = "fastmcp", specifier = ">=2.14.4" },
     { name = "langchain", specifier = ">=1.1.3" },

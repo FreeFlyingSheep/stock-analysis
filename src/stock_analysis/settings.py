@@ -19,6 +19,45 @@ class Settings(BaseSettings):
 
     This class contains all configuration settings for the stock analysis
     application including database connection details and server configuration.
+
+    Attributes:
+        no_log_file: Flag to disable logging to a file.
+        database_user: Database user.
+        database_password: Database password.
+        database_host: Database host.
+        database_port: Database port.
+        database_db: Database name.
+        minio_host: MinIO host.
+        minio_port: MinIO port.
+        minio_user: MinIO root user.
+        minio_password: MinIO root password.
+        minio_bucket_prefix: Prefix for MinIO buckets.
+        minio_secure: Use secure connection for MinIO.
+        redis_host: Redis host.
+        redis_port: Redis port.
+        redis_prefix: Prefix for Redis keys.
+        config_dir: Directory for CNInfo configuration files.
+        rule_file_path: Path to the rule configuration file.
+        prompts_dir: Directory for prompt templates.
+        debug: Enable or disable debug mode.
+        log_level: Logging level for the backend.
+        log_file: File path for the log file.
+        backend_host: Host address to run the backend on.
+        backend_port: Port to run the backend on.
+        worker_log_level: Logging level for worker processes.
+        worker_log_file: File path for the worker log file.
+        batch_size: Batch size for processing data.
+        max_concurrent_tasks: Maximum number of concurrent tasks.
+        use_llm: Flag to enable or disable the use of online LLM for LLM tasks.
+        llm_api_key: API key for the online LLM service.
+        llm_server_base_url: Base URL for the online LLM server.
+        llm_model: LLM model name.
+        llm_embedding_model: LLM embedding model name.
+        llm_embedding_dimension: LLM embedding dimension.
+        mcp_host: Host address for the MCP server.
+        mcp_port: Port for the MCP server.
+        monitoring_host: Host address for the monitoring server.
+        monitoring_port: Port for the monitoring server.
     """
 
     model_config = SettingsConfigDict(
@@ -29,82 +68,50 @@ class Settings(BaseSettings):
     )
 
     no_log_file: bool = False
-    """Flag to disable logging to a file."""
 
     database_user: str
-    """Database user."""
     database_password: SecretStr
-    """Database password."""
     database_host: str
-    """Database host."""
     database_port: int
-    """Database port."""
     database_db: str
-    """Database name."""
 
     minio_host: str
-    """MinIO host."""
     minio_port: int
-    """MinIO port."""
     minio_user: str
-    """MinIO root user."""
     minio_password: SecretStr
-    """MinIO root password."""
     minio_bucket_prefix: str
-    """Prefix for MinIO buckets."""
     minio_secure: bool
-    """Use secure connection for MinIO."""
 
     redis_host: str
-    """Redis host."""
     redis_port: int
-    """Redis port."""
     redis_prefix: str
-    """Prefix for Redis keys."""
 
     config_dir: str
-    """Directory for CNInfo configuration files."""
     rule_file_path: str
-    """Path to the rule configuration file."""
     prompts_dir: str
-    """Directory for prompt templates."""
     debug: bool
-    """Enable or disable debug mode."""
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
-    """Logging level for the backend."""
     log_file: str | None
-    """File path for the log file."""
     backend_host: str
-    """Host address to run the backend on."""
     backend_port: int
-    """Port to run the backend on."""
 
     worker_log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
-    """Logging level for worker processes."""
     worker_log_file: str | None
-    """File path for the worker log file."""
     batch_size: int
-    """Batch size for processing data."""
     max_concurrent_tasks: int
-    """Maximum number of concurrent tasks."""
 
     use_llm: bool
-    """Flag to enable or disable the use of online LLM for LLM tasks."""
     llm_api_key: SecretStr | None = None
-    """API key for the online LLM service."""
     llm_server_base_url: str | None = None
-    """Base URL for the online LLM server."""
     llm_model: str | None = None
-    """LLM model name."""
     llm_embedding_model: str | None = None
-    """LLM embedding model name."""
     llm_embedding_dimension: int | None = None
-    """LLM embedding dimension."""
 
     mcp_host: str
-    """Host address for the MCP server."""
     mcp_port: int
-    """Port for the MCP server."""
+
+    monitoring_host: str
+    monitoring_port: int
 
     @model_validator(mode="after")
     def _check_llm_fields(self) -> Self:

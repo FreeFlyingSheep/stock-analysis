@@ -136,7 +136,7 @@ These features are under consideration for future development:
 If you want to keep existing data, dump the database first (`./scripts/dump_db.sh`) or ensure the database schema is up to date by running Alembic migrations manually.
 
 [Docker Compose setup](#docker-compose-setup) is **recommended** for most users due to its simplicity and ease of use.
-[Local development setup](#local-development-setup) is only intended for development and testing.
+[Local development setup](#local-development-setup) is only intended for development and testing, and monitoring features are not included in this setup.
 [Kubernetes setup](#kubernetes-setup) is for production deployment scenarios, but due to hardware limitations, only partial modules are supported and tested.
 
 ### Local Development Setup
@@ -227,13 +227,14 @@ If you want to keep existing data, dump the database first (`./scripts/dump_db.s
     ./scripts/run_mcp.sh
     ```
 
-10. Start the Frontend UI:
+10. Ensure [pnpm](https://pnpm.io/) is installed and start the Frontend UI:
 
     In another terminal, run the SvelteKit frontend:
 
     ```bash
     export $(grep -v '^#' .env | xargs)
-    ./scripts/run_ui.sh
+    pnpm --prefix ui install
+    pnpm --prefix ui run dev
     ```
 
     The UI will be available at `http://127.0.0.1:5173`.

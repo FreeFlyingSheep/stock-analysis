@@ -2,10 +2,10 @@
 
 import asyncio
 import logging
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pandas as pd
+from anyio import Path
 from pydantic import ValidationError
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import (

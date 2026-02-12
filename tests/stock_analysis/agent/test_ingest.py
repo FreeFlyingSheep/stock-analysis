@@ -1,6 +1,6 @@
 import io
 import json
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pymupdf  # type: ignore[import-untyped]
 import pytest
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 def tiny_pdf_bytes() -> bytes:
     """Create a minimal single-page PDF and return its bytes."""
     doc: pymupdf.Document = pymupdf.open()
-    page: pymupdf.Page = doc.new_page()
+    page: Any = doc.new_page()
     page.insert_text((50, 50), "Test content for PDF")
     return doc.write()
 

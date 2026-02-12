@@ -136,7 +136,7 @@
 如果要保留现有数据，请先导出数据库（`./scripts/dump_db.sh`），或通过手动运行 Alembic 迁移来确保数据库架构最新。
 
 对于大多数用户，[Docker Compose](#docker-compose)是**推荐**的，因为它简单易用。
-[本地开发](#本地开发)仅用于开发和测试。
+[本地开发](#本地开发)仅用于开发和测试，监控功能不包含在此设置中。
 [Kubernetes](#kubernetes)用于生产部署场景，但由于硬件限制，仅支持和测试部分模块。
 
 ### 本地开发
@@ -227,13 +227,14 @@
     ./scripts/run_mcp.sh
     ```
 
-10. 启动前端 UI：
+10. 确保已安装 [pnpm](https://pnpm.io/) 并启动前端 UI：
 
     在另一个终端中运行 SvelteKit 前端：
 
     ```bash
     export $(grep -v '^#' .env | xargs)
-    ./scripts/run_ui.sh
+    pnpm --prefix ui install
+    pnpm --prefix ui run dev
     ```
 
     UI 将在 `http://127.0.0.1:5173` 可用。

@@ -5,10 +5,10 @@ import json
 import re
 import tempfile
 from datetime import UTC, datetime
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import pymupdf  # type: ignore[import-untyped]
+from anyio import Path
 from minio.error import MinioException
 from sqlalchemy.dialects.postgresql import insert
 
@@ -252,7 +252,8 @@ def _parse_pdf(
     chunk_idx: int = 0
 
     for page_no in range(len(doc)):
-        text = str(doc[page_no].get_text("text"))
+        page: Any = doc.load_page(page_no)
+        text = str(page.get_text("text"))
         units: list[tuple[str, str]] = _split_by_heading_paragraph(text)
         for heading, paragraph in units:
             pieces: list[str] = _enforce_chunk_size(
@@ -368,7 +369,7 @@ class Ingestor:
         try:
             data: bytes = self._bucket_service.get_object(self._processed_bucket, key)
             return json.loads(data.decode("utf-8"))
-        except (MinioException, UnicodeDecodeError, json.JSONDecodeError):
+        except MinioException, UnicodeDecodeError, json.JSONDecodeError:
             return None
 
     def _manifest_fields(
@@ -589,7 +590,7 @@ class Ingestor:
             if tmp_pdf:
                 tmp_pdf_path: Path = Path(tmp_pdf)
                 if tmp_pdf_path.exists():
-                    tmp_pdf_path.unlink()
+                    await tmp_pdf_path.unlink()
 
     async def ingest(self, object_key: str) -> None:
         """Ingest all PDF reports from the raw bucket.
@@ -618,7 +619,7 @@ class Ingestor:
             fiscal_year = int(matched.group("year"))
             report_type: str = matched.group("report_type").replace("_", " ")
             stock_code: str = matched.group("stock_code")
-        except (IndexError, ValueError):
+        except IndexError, ValueError:
             logger.exception(
                 "Invalid key format for extracting metadata: %s", object_key
             )

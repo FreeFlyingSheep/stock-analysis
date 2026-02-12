@@ -163,7 +163,7 @@ async def _run_generation(
             logger.debug("Failed to cancel renew task")
         try:
             await lock.release()
-        except (LockError, LockNotOwnedError):
+        except LockError, LockNotOwnedError:
             logger.exception("Failed to release lock")
 
 
