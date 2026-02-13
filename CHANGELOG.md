@@ -23,5 +23,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Redis caching for frequently accessed data
 - Server-sent events (SSE) for real-time updates
 - RAG capabilities: text extraction, chunking, embedding, and vector storage for PDF reports
+- Telemetry with OpenTelemetry (OTel): tracing, metrics, and logging
 
 [Unreleased]: https://github.com/FreeFlyingSheep/stock-analysis

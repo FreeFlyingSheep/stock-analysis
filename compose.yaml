@@ -10,15 +10,21 @@ services:
         condition: service_healthy
       api:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   postgres:
     build:
       context: .
       dockerfile: configs/docker/postgres.Dockerfile
     environment:
-      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
-      - POSTGRES_USER=${DATABASE_USER}
-      - POSTGRES_DB=${DATABASE_DB}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_DB: ${DATABASE_DB}
     volumes:
       - pgdata:/var/lib/postgresql
     healthcheck:
@@ -43,13 +49,14 @@ services:
   minio:
     image: minio/minio:RELEASE.2025-09-07T16-13-09Z
     environment:
-      - MINIO_ROOT_USER=${MINIO_USER}
-      - MINIO_ROOT_PASSWORD=${MINIO_PASSWORD}
-    command: server --console-address ":9001" /data
+      MINIO_ROOT_USER: ${MINIO_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD}
+    command: ["server", "--console-address", ":9001", "/data"]
     volumes:
       - minio_data:/data
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
+      interval: 30s
       timeout: 5s
       retries: 5
       start_period: 10s
@@ -59,15 +66,15 @@ services:
       context: .
       dockerfile: configs/docker/migrate.Dockerfile
     environment:
-      - DATABASE_HOST=postgres
-      - DATABASE_PORT=5432
-      - DATABASE_USER=${DATABASE_USER}
-      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
-      - DATABASE_DB=${DATABASE_DB}
-      - MINIO_HOST=minio
-      - MINIO_PORT=9000
-      - MINIO_USER=${MINIO_USER}
-      - MINIO_PASSWORD=${MINIO_PASSWORD}
+      DATABASE_HOST: postgres
+      DATABASE_PORT: "5432"
+      DATABASE_USER: ${DATABASE_USER}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      DATABASE_DB: ${DATABASE_DB}
+      MINIO_HOST: minio
+      MINIO_PORT: "9000"
+      MINIO_USER: ${MINIO_USER}
+      MINIO_PASSWORD: ${MINIO_PASSWORD}
     depends_on:
       postgres:
         condition: service_healthy
@@ -80,12 +87,17 @@ services:
       context: .
       dockerfile: configs/docker/api.Dockerfile
     environment:
-      - DATABASE_HOST=postgres
-      - DATABASE_PORT=5432
-      - BACKEND_HOST=0.0.0.0
-      - BACKEND_PORT=8000
-      - MCP_HOST=mcp
-      - MCP_PORT=8000
+      DATABASE_HOST: postgres
+      DATABASE_PORT: "5432"
+      BACKEND_HOST: 0.0.0.0
+      BACKEND_PORT: "8000"
+      MCP_HOST: mcp
+      MCP_PORT: "8000"
+      MONITORING_HOST: alloy
+      MONITORING_PORT: "4317"
+    depends_on:
+      alloy-probe:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
       interval: 30s
@@ -98,17 +110,21 @@ services:
       context: .
       dockerfile: configs/docker/worker.Dockerfile
     environment:
-      - DATABASE_HOST=postgres
-      - DATABASE_PORT=5432
-      - DATABASE_USER=${DATABASE_USER}
-      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
-      - DATABASE_DB=${DATABASE_DB}
-      - BATCH_SIZE=${BATCH_SIZE}
-      - MAX_CONCURRENT_TASKS=${MAX_CONCURRENT_TASKS}
+      DATABASE_HOST: postgres
+      DATABASE_PORT: "5432"
+      DATABASE_USER: ${DATABASE_USER}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      DATABASE_DB: ${DATABASE_DB}
+      BATCH_SIZE: ${BATCH_SIZE}
+      MAX_CONCURRENT_TASKS: ${MAX_CONCURRENT_TASKS}
+      MONITORING_HOST: alloy
+      MONITORING_PORT: "4317"
     depends_on:
       migrate:
         condition: service_completed_successfully
       mcp:
+        condition: service_healthy
+      alloy-probe:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "./scripts/check_pgq.sh"]
@@ -122,13 +138,24 @@ services:
       context: .
       dockerfile: configs/docker/mcp.Dockerfile
     environment:
-      - BACKEND_HOST=api
-      - BACKEND_PORT=8000
-      - MCP_HOST=0.0.0.0
-      - MCP_PORT=8000
+      BACKEND_HOST: api
+      BACKEND_PORT: "8000"
+      MCP_HOST: 0.0.0.0
+      MCP_PORT: "8000"
+      MONITORING_HOST: alloy
+      MONITORING_PORT: "4317"
+      OTEL_SERVICE_NAME: stock-analysis-mcp
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4317
+      OTEL_EXPORTER_OTLP_INSECURE: "true"
     depends_on:
       migrate:
         condition: service_completed_successfully
+      api:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
       interval: 30s
@@ -141,10 +168,10 @@ services:
       context: .
       dockerfile: configs/docker/web.Dockerfile
     environment:
-      - HOST=0.0.0.0
-      - PORT=3000
-      - BACKEND_HOST=${BACKEND_HOST}
-      - BACKEND_PORT=${BACKEND_PORT}
+      HOST: 0.0.0.0
+      PORT: "3000"
+      BACKEND_HOST: ${BACKEND_HOST}
+      BACKEND_PORT: ${BACKEND_PORT}
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:3000/health"]
       interval: 30s
@@ -152,6 +179,133 @@ services:
       retries: 5
       start_period: 10s
 
+  grafana:
+    image: grafana/grafana:main-ubuntu
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./configs/docker/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      prometheus-probe:
+        condition: service_healthy
+      loki-probe:
+        condition: service_healthy
+      tempo-probe:
+        condition: service_healthy
+
+  grafana-probe:
+    image: curlimages/curl:8.18.0
+    command: ["sh", "-c", "sleep infinity"]
+    depends_on:
+      grafana:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://grafana:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  prometheus:
+    image: prom/prometheus:main-distroless
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yaml"
+      - "--web.enable-remote-write-receiver"
+    volumes:
+      - ./configs/docker/prometheus.yaml:/etc/prometheus/prometheus.yaml:ro
+      - prometheus_data:/prometheus
+
+  prometheus-probe:
+    image: curlimages/curl:8.18.0
+    command: ["sh", "-c", "sleep infinity"]
+    depends_on:
+      prometheus:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://prometheus:9090/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  loki:
+    image: grafana/loki:main-b9a0a15
+    command: ["-config.file=/etc/loki/loki.yaml"]
+    volumes:
+      - ./configs/docker/loki.yaml:/etc/loki/loki.yaml:ro
+      - loki_data:/loki
+
+  loki-probe:
+    image: curlimages/curl:8.18.0
+    command: ["sh", "-c", "sleep infinity"]
+    depends_on:
+      loki:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://loki:3100/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  tempo-init:
+    image: busybox:stable-musl
+    user: "0:0"
+    command: ["chown", "-R", "10001:10001", "/tmp/tempo"]
+    volumes:
+      - tempo_data:/tmp/tempo
+    restart: "no"
+
+  tempo:
+    image: grafana/tempo:main-c216472-${ARCH}
+    command: ["-config.file=/etc/tempo/tempo.yaml"]
+    volumes:
+      - ./configs/docker/tempo.yaml:/etc/tempo/tempo.yaml:ro
+      - tempo_data:/tmp/tempo
+    depends_on:
+      tempo-init:
+        condition: service_completed_successfully
+
+  tempo-probe:
+    image: curlimages/curl:8.18.0
+    command: ["sh", "-c", "sleep infinity"]
+    depends_on:
+      tempo:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://tempo:3200/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  alloy:
+    image: grafana/alloy:v1.13.0
+    command: ["run", "/etc/alloy/config.alloy"]
+    volumes:
+      - ./configs/docker/config.alloy:/etc/alloy/config.alloy:ro
+    depends_on:
+      loki-probe:
+        condition: service_healthy
+      prometheus-probe:
+        condition: service_healthy
+      tempo-probe:
+        condition: service_healthy
+
+  alloy-probe:
+    image: curlimages/curl:8.18.0
+    command: ["sh", "-c", "sleep infinity"]
+    depends_on:
+      alloy:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://alloy:12345/-/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
 volumes:
   pgdata:
   minio_data:
+  grafana_data:
+  prometheus_data:
+  loki_data:
+  tempo_data:

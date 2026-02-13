@@ -12,7 +12,9 @@ if TYPE_CHECKING:
 
 
 FORMATTER = logging.Formatter(
-    "[%(asctime)s] %(levelname)s [%(name)s] %(message)s",
+    "[%(asctime)s] %(levelname)s [%(name)s]"
+    " [trace_id=%(otelTraceID)s span_id=%(otelSpanID)s]"
+    " %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 

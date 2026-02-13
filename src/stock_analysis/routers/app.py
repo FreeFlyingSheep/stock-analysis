@@ -24,6 +24,13 @@ from stock_analysis.routers.chat import router as chat_router
 from stock_analysis.routers.report import router as report_router
 from stock_analysis.routers.stock import router as stock_router
 from stock_analysis.settings import get_settings
+from stock_analysis.telemetry import (
+    instrument_app,
+    instrument_db_engine,
+    setup_telemetry,
+    shutdown_telemetry,
+    start_metrics_server,
+)
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
@@ -76,10 +83,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     Args:
         app: FastAPI application instance.
     """
+    setup_telemetry()
+    start_metrics_server()
+
     engine: AsyncEngine = create_async_engine(
         settings.database_url_with_psycopg,
         echo=settings.debug,
     )
+    instrument_db_engine(engine)
+
     async_session: async_sessionmaker[AsyncSession] = async_sessionmaker(
         engine,
         expire_on_commit=False,
@@ -112,6 +124,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
 
         yield
 
+    shutdown_telemetry()
+
 
 app = FastAPI(
     debug=settings.debug,
@@ -125,6 +139,7 @@ app.include_router(stock_router, tags=["stocks"])
 app.include_router(analysis_router, tags=["analysis"])
 app.include_router(chat_router, tags=["chat"])
 app.include_router(report_router, tags=["reports"])
+instrument_app(app)
 
 
 @app.get("/")

@@ -55,6 +55,12 @@ This project is developed with the assistance of AI tools:
 - **Nginx** for reverse proxy and web server configuration
 - **Minikube** for local Kubernetes development and testing
 - **GitHub Workflows** for CI/CD pipelines
+- **OpenTelemetry (OTel)** for distributed tracing and observability
+- **Prometheus** for metrics collection and monitoring
+- **Grafana** for metrics visualization and dashboards
+- **Loki** for log aggregation and analysis
+- **Tempo** for distributed tracing
+- **Alloy** for observability data collection and forwarding
 
 ### Development & Quality Tools
 
@@ -110,6 +116,15 @@ This project is developed with the assistance of AI tools:
 - **Database Migrations**: Alembic-based schema versioning for seamless database updates
 - **Vector Storage**: pgvector support for semantic search and RAG capabilities
 
+### Observability & Monitoring
+
+- **Distributed Tracing**: OpenTelemetry integration for end-to-end request tracing across services
+- **Metrics Collection**: Prometheus-compatible metrics for monitoring API performance, database queries, and job processing
+- **Log Aggregation**: Loki for centralized log collection and querying across all services
+- **Visualization**: Grafana dashboards for real-time monitoring of system health and performance
+- **Trace Visualization**: Tempo for visualizing distributed traces and identifying performance bottlenecks
+- **Data Forwarding**: Alloy as a flexible agent for collecting and forwarding observability data
+
 ### Code Quality & Developer Experience
 
 - **Type Safety**: Full type hints with Pylance validation across the codebase
@@ -119,13 +134,10 @@ This project is developed with the assistance of AI tools:
 
 ## Features Roadmap
 
-These features are planned:
-
-- Add RAG (Retrieval-Augmented Generation) capabilities
-- Add observability and monitoring with Prometheus and Grafana
-
 These features are under consideration for future development:
 
+- Use LLM to score stocks
+- Evaluate agent
 - Avoid duplicate jobs in PgQueuer
 - Refine frontend UI/UX design
 
@@ -269,6 +281,7 @@ The configurations are set in `.env` and overridden in `compose.yaml`. If you ne
 3. Configure environment variables:
 
     ```bash
+    export ARCH=$(docker version --format '{{.Server.Arch}}')
     cp .env.example .env
     # Edit .env with your database credentials and settings
     ```
@@ -287,6 +300,7 @@ The configurations are set in `.env` and overridden in `compose.yaml`. If you ne
     ```
 
     You can access the services at `http://127.0.0.1:8080`.
+    You can access the Grafana dashboard at `http://127.0.0.1:8080/grafana`.
 
 5. Remove all local images after shutting down:
 

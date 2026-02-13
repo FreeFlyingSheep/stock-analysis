@@ -1,0 +1,94 @@
+logging {
+	level  = "info"
+	format = "logfmt"
+}
+
+// OTLP receiver: app -> alloy
+otelcol.receiver.otlp "ingest" {
+	grpc {
+		endpoint = "0.0.0.0:4317"
+	}
+
+	http {
+		endpoint = "0.0.0.0:4318"
+	}
+
+	output {
+		traces  = [otelcol.processor.memory_limiter.default.input]
+		logs    = [otelcol.processor.memory_limiter.default.input]
+		metrics = [otelcol.processor.memory_limiter.default.input]
+	}
+}
+
+// Common processor
+otelcol.processor.memory_limiter "default" {
+	check_interval = "1s"
+	limit          = "512MiB"
+	spike_limit    = "128MiB"
+
+	output {
+		traces  = [otelcol.processor.batch.traces.input]
+		logs    = [otelcol.processor.batch.logs.input]
+		metrics = [otelcol.processor.batch.metrics.input]
+	}
+}
+
+// Traces -> Tempo
+otelcol.processor.batch "traces" {
+	timeout         = "1s"
+	send_batch_size = 1024
+
+	output {
+		traces = [otelcol.exporter.otlp.tempo.input]
+	}
+}
+
+otelcol.exporter.otlp "tempo" {
+	client {
+		endpoint = "tempo:4317"
+
+		tls {
+			insecure = true
+		}
+	}
+}
+
+// Logs -> Loki
+loki.write "default" {
+	endpoint {
+		url = "http://loki:3100/loki/api/v1/push"
+	}
+}
+
+otelcol.processor.batch "logs" {
+	timeout         = "1s"
+	send_batch_size = 1024
+
+	output {
+		logs = [otelcol.exporter.loki.default.input]
+	}
+}
+
+otelcol.exporter.loki "default" {
+	forward_to = [loki.write.default.receiver]
+}
+
+// Metrics -> Prometheus remote write
+otelcol.processor.batch "metrics" {
+	timeout         = "5s"
+	send_batch_size = 2048
+
+	output {
+		metrics = [otelcol.exporter.prometheus.default.input]
+	}
+}
+
+otelcol.exporter.prometheus "default" {
+	forward_to = [prometheus.remote_write.default.receiver]
+}
+
+prometheus.remote_write "default" {
+	endpoint {
+		url = "http://prometheus:9090/api/v1/write"
+	}
+}
