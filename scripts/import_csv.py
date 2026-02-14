@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 logger: logging.Logger = logging.getLogger(__name__)
 
 
-def read_csv(csv_path: str | os.PathLike) -> pd.DataFrame:
+async def read_csv(csv_path: str | os.PathLike) -> pd.DataFrame:
     """Read CSV file into DataFrame.
 
     Args:
@@ -42,11 +42,13 @@ def read_csv(csv_path: str | os.PathLike) -> pd.DataFrame:
         ValueError: If CSV format is invalid or headers don't match expected format.
     """
     csv_file = Path(csv_path)
-    if not csv_file.exists():
+    if not await csv_file.exists():
         msg: str = f"CSV file not found: {csv_path}"
         raise FileNotFoundError(msg)
 
-    df: pd.DataFrame = pd.read_csv(csv_file, encoding="utf-8", dtype=str)
+    df: pd.DataFrame = await asyncio.to_thread(
+        pd.read_csv, csv_file, encoding="utf-8", dtype=str
+    )
 
     expected_headers: list[str] = [
         "上市公司代码",
@@ -93,11 +95,11 @@ async def import_stocks_from_csv(db: AsyncSession, csv_path: str | os.PathLike) 
         ValueError: If CSV format is invalid or headers don't match expected format.
     """
     csv_file = Path(csv_path)
-    if not csv_file.exists():
+    if not await csv_file.exists():
         msg: str = f"CSV file not found: {csv_path}"
         raise FileNotFoundError(msg)
 
-    df: pd.DataFrame = await asyncio.to_thread(read_csv, csv_file)
+    df: pd.DataFrame = await read_csv(csv_file)
     valid_records: list[dict[str, str]] = []
     for r in df.to_dict(orient="records"):
         try:

@@ -589,7 +589,7 @@ class Ingestor:
         finally:
             if tmp_pdf:
                 tmp_pdf_path: Path = Path(tmp_pdf)
-                if tmp_pdf_path.exists():
+                if await tmp_pdf_path.exists():
                     await tmp_pdf_path.unlink()
 
     async def ingest(self, object_key: str) -> None:

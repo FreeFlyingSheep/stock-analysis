@@ -41,24 +41,41 @@ def create_database(settings: Settings) -> None:
                     sql.Identifier(settings.database_db)
                 )
             )
-            cur.execute(sql.SQL("CREATE EXTENSION IF NOT EXISTS vector"))
-            cur.execute(sql.SQL("CREATE EXTENSION IF NOT EXISTS pg_textsearch"))
-            cur.execute(sql.SQL("CREATE EXTENSION IF NOT EXISTS zhparser"))
-            cur.execute(
-                sql.SQL("DROP TEXT SEARCH CONFIGURATION IF EXISTS chinese CASCADE")
-            )
-            cur.execute(
-                sql.SQL("CREATE TEXT SEARCH CONFIGURATION chinese (parser = zhparser)")
-            )
-            cur.execute(
-                sql.SQL(
-                    "ALTER TEXT SEARCH CONFIGURATION chinese "
-                    "ADD MAPPING FOR n,v,a,i,e,l WITH simple"
-                )
-            )
             logger.info("Created database: %s", settings.database_db)
         else:
             logger.info("Database already exists: %s", settings.database_db)
+
+
+def enable_extensions(settings: Settings) -> None:
+    """Enable the pgvector extension in the database.
+
+    Args:
+        settings: Application settings containing database connection details.
+    """
+    with (
+        psycopg.connect(
+            dbname=settings.database_db,
+            user=settings.database_user,
+            password=settings.database_password.get_secret_value(),
+            host=settings.database_host,
+            port=settings.database_port,
+            autocommit=True,
+        ) as conn,
+        conn.cursor() as cur,
+    ):
+        cur.execute(sql.SQL("CREATE EXTENSION IF NOT EXISTS vector"))
+        cur.execute(sql.SQL("CREATE EXTENSION IF NOT EXISTS pg_textsearch"))
+        cur.execute(sql.SQL("CREATE EXTENSION IF NOT EXISTS zhparser"))
+        cur.execute(sql.SQL("DROP TEXT SEARCH CONFIGURATION IF EXISTS chinese CASCADE"))
+        cur.execute(
+            sql.SQL("CREATE TEXT SEARCH CONFIGURATION chinese (parser = zhparser)")
+        )
+        cur.execute(
+            sql.SQL(
+                "ALTER TEXT SEARCH CONFIGURATION chinese "
+                "ADD MAPPING FOR n,v,a,i,e,l WITH simple"
+            )
+        )
 
 
 def main() -> None:
@@ -70,6 +87,7 @@ def main() -> None:
     settings: Settings = get_settings()
     logging.basicConfig(level=settings.log_level)
     create_database(settings)
+    enable_extensions(settings)
 
 
 if __name__ == "__main__":
