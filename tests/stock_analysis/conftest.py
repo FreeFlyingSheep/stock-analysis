@@ -126,7 +126,7 @@ def minio_client(minio_container: MinioContainer) -> Minio:
 
 @pytest.fixture(scope="session")
 def redis_container() -> Generator[RedisContainer]:
-    with RedisContainer("redis:alpine3.22") as container:
+    with RedisContainer("redis:8.2.4-alpine3.22") as container:
         yield container
 
 

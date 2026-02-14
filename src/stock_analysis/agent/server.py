@@ -1,5 +1,7 @@
 """MCP server and tool definitions for stock analysis agent."""
 
+import signal
+from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING
 
 import httpx
@@ -12,8 +14,15 @@ from httpx import AsyncClient
 
 from stock_analysis.schemas.report import ReportRetrieverBody, ReportRetrieverResponse
 from stock_analysis.settings import get_settings
+from stock_analysis.telemetry import (
+    setup_telemetry,
+    shutdown_telemetry,
+    start_metrics_server,
+)
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+    from types import FrameType
     from typing import Any
 
     from fastmcp.server.openapi import FastMCPOpenAPI
@@ -24,6 +33,41 @@ if TYPE_CHECKING:
 settings: Settings = get_settings()
 client = AsyncClient(base_url=settings.api_url)
 openapi_spec: dict[str, Any] = httpx.get(f"{settings.api_url}/openapi.json").json()
+
+
+@asynccontextmanager
+async def lifespan(_app: object) -> AsyncIterator[None]:
+    """Manage MCP server lifespan.
+
+    Setup telemetry on startup and clean shutdown on exit.
+
+    Args:
+        _app: FastAPI application instance (unused).
+
+    Yields:
+        None
+    """
+    setup_telemetry("stock-analysis-mcp")
+    start_metrics_server()
+
+    def handle_shutdown(_signum: int, _frame: FrameType | None) -> None:
+        """Handle shutdown signals.
+
+        Args:
+            _signum: Signal number (unused).
+            _frame: Current stack frame (unused).
+        """
+        shutdown_telemetry()
+
+    signal.signal(signal.SIGTERM, handle_shutdown)
+    signal.signal(signal.SIGINT, handle_shutdown)
+
+    yield
+
+    shutdown_telemetry()
+    await client.aclose()
+
+
 mcp: FastMCPOpenAPI = FastMCP.from_openapi(
     openapi_spec=openapi_spec,
     client=client,
@@ -32,6 +76,7 @@ mcp: FastMCPOpenAPI = FastMCP.from_openapi(
         RouteMap(tags={"chat"}, mcp_type=MCPType.EXCLUDE),
         RouteMap(tags={"reports"}, mcp_type=MCPType.EXCLUDE),
     ],
+    lifespan=lifespan,
 )
 
 

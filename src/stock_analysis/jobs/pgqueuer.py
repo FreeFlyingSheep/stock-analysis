@@ -1,5 +1,7 @@
 """Build and configure PgQueuer for stock analysis jobs."""
 
+import atexit
+import signal
 from datetime import timedelta
 from typing import TYPE_CHECKING, Any
 
@@ -19,9 +21,16 @@ from stock_analysis.logger import get_logger
 from stock_analysis.schemas.api import JobPayload
 from stock_analysis.services.stock import StockService
 from stock_analysis.settings import get_settings
+from stock_analysis.telemetry import (
+    instrument_db_engine,
+    setup_telemetry,
+    shutdown_telemetry,
+    start_metrics_server,
+)
 
 if TYPE_CHECKING:
     import logging
+    from types import FrameType
 
     from pgqueuer.models import Context, Job
     from pgqueuer.queries import Queries
@@ -53,7 +62,7 @@ async def get_connection() -> AsyncConnection[TupleRow]:
     )
 
 
-async def create_pgqueuer() -> PgQueuer:
+async def create_pgqueuer() -> PgQueuer:  # noqa: PLR0915
     """Build and configure a PgQueuer with a new database connection.
 
     Creates a new database connection and initializes a PgQueuer instance
@@ -63,12 +72,30 @@ async def create_pgqueuer() -> PgQueuer:
         Configured PgQueuer instance ready for job queueing and processing.
     """
     connection: AsyncConnection = await get_connection()
+    setup_telemetry("stock-analysis-worker")
+    start_metrics_server()
+
+    def handle_shutdown(
+        _signum: int | None = None, _frame: FrameType | None = None
+    ) -> None:
+        """Handle shutdown signals and cleanup.
+
+        Args:
+            _signum: Signal number (unused).
+            _frame: Current stack frame (unused).
+        """
+        shutdown_telemetry()
+
+    signal.signal(signal.SIGTERM, handle_shutdown)
+    signal.signal(signal.SIGINT, handle_shutdown)
+    atexit.register(handle_shutdown)
 
     settings: Settings = get_settings()
     engine: AsyncEngine = create_async_engine(
         settings.database_url_with_psycopg,
         echo=settings.debug,
     )
+    instrument_db_engine(engine)
     db_session: async_sessionmaker[AsyncSession] = async_sessionmaker(
         engine,
         expire_on_commit=False,

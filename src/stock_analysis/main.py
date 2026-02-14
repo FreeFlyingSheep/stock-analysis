@@ -19,12 +19,13 @@ def main() -> None:
     """
     get_logger()
     settings: Settings = get_settings()
+    reload_enabled: bool = settings.debug
     uvicorn.run(
         "stock_analysis.routers.app:app",
         host=settings.backend_host,
         port=settings.backend_port,
-        reload=True,
-        reload_excludes=["logs/*", "*/logs/*", "*.log"],
+        reload=reload_enabled,
+        reload_dirs=["src"] if reload_enabled else None,
     )
 
 

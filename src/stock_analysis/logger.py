@@ -11,7 +11,26 @@ if TYPE_CHECKING:
     from stock_analysis.settings import Settings
 
 
-FORMATTER = logging.Formatter(
+class OTelFormatter(logging.Formatter):
+    """Formatter that tolerates non-OTel log records."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        """Format the log record, ensuring OTel fields are present.
+
+        Args:
+            record: The log record to format.
+
+        Returns:
+            The formatted log message as a string.
+        """
+        if not hasattr(record, "otelTraceID"):
+            record.otelTraceID = "-"
+        if not hasattr(record, "otelSpanID"):
+            record.otelSpanID = "-"
+        return super().format(record)
+
+
+FORMATTER = OTelFormatter(
     "[%(asctime)s] %(levelname)s [%(name)s]"
     " [trace_id=%(otelTraceID)s span_id=%(otelSpanID)s]"
     " %(message)s",
@@ -33,7 +52,7 @@ def _add_console_handler(logger: logging.Logger) -> None:
     if any(isinstance(h, logging.StreamHandler) for h in logger.handlers):
         return
     h = logging.StreamHandler()
-    h.setFormatter(FORMATTER)
+    h.setFormatter(OTelFormatter())
     logger.addHandler(h)
 
 
@@ -45,7 +64,7 @@ def _add_file_handler(logger: logging.Logger, log_file_path: Path) -> None:
         log_file_path: Path to the log file to handle.
     """
     file_handler = RotatingFileHandler(log_file_path, maxBytes=10**6, backupCount=5)
-    file_handler.setFormatter(FORMATTER)
+    file_handler.setFormatter(OTelFormatter())
     logger.addHandler(file_handler)
 
 

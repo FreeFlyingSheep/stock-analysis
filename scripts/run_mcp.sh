@@ -5,8 +5,7 @@
 #   - Valid .env file with database credentials
 set -euo pipefail
 
-opentelemetry-instrument \
-    fastmcp \
+fastmcp \
     run src/stock_analysis/agent/server.py:mcp \
     --transport http \
     --host ${MCP_HOST} \

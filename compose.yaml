@@ -13,7 +13,7 @@ services:
       grafana-probe:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost/"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
       interval: 30s
       timeout: 5s
       retries: 5
@@ -63,6 +63,18 @@ services:
       retries: 5
       start_period: 10s
 
+  redis:
+    image: redis:8.2.4-alpine3.22
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   migrate:
     build:
       context: .
@@ -97,8 +109,12 @@ services:
       MCP_PORT: "8000"
       MONITORING_HOST: alloy
       MONITORING_PORT: "4317"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
     depends_on:
       alloy-probe:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
@@ -121,12 +137,16 @@ services:
       MAX_CONCURRENT_TASKS: ${MAX_CONCURRENT_TASKS}
       MONITORING_HOST: alloy
       MONITORING_PORT: "4317"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
     depends_on:
       migrate:
         condition: service_completed_successfully
       mcp:
         condition: service_healthy
       alloy-probe:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "./scripts/check_pgq.sh"]
@@ -153,10 +173,16 @@ services:
       OTEL_EXPORTER_OTLP_PROTOCOL: grpc
       OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4317
       OTEL_EXPORTER_OTLP_INSECURE: "true"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
     depends_on:
       migrate:
         condition: service_completed_successfully
       api:
+        condition: service_healthy
+      alloy-probe:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
@@ -186,6 +212,8 @@ services:
     environment:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_SERVER_ROOT_URL: "%(protocol)s://%(domain)s:8080/grafana/"
+      GF_SERVER_SERVE_FROM_SUB_PATH: "true"
     volumes:
       - grafana_data:/var/lib/grafana
       - ./configs/docker/provisioning:/etc/grafana/provisioning:ro
@@ -217,6 +245,28 @@ services:
     volumes:
       - ./configs/docker/prometheus.yaml:/etc/prometheus/prometheus.yaml:ro
       - prometheus_data:/prometheus
+    depends_on:
+      blackbox-probe:
+        condition: service_healthy
+
+  blackbox:
+    image: prom/blackbox-exporter:master
+    command:
+      - "--config.file=/etc/blackbox/blackbox.yaml"
+    volumes:
+      - ./configs/docker/blackbox.yaml:/etc/blackbox/blackbox.yaml:ro
+
+  blackbox-probe:
+    image: curlimages/curl:8.18.0
+    command: ["sh", "-c", "sleep infinity"]
+    depends_on:
+      blackbox:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://blackbox:9115/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
 
   prometheus-probe:
     image: curlimages/curl:8.18.0
@@ -281,7 +331,7 @@ services:
 
   alloy:
     image: grafana/alloy:v1.13.0
-    command: ["run", "/etc/alloy/config.alloy"]
+    command: ["run", "--server.http.listen-addr=0.0.0.0:12345", "/etc/alloy/config.alloy"]
     volumes:
       - ./configs/docker/config.alloy:/etc/alloy/config.alloy:ro
     depends_on:
@@ -307,6 +357,7 @@ services:
 volumes:
   pgdata:
   minio_data:
+  redis_data:
   grafana_data:
   prometheus_data:
   loki_data:

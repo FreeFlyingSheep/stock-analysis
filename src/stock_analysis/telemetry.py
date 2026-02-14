@@ -1,8 +1,10 @@
 """OpenTelemetry instrumentation for Stock Analysis application."""
 
+import logging
 from typing import TYPE_CHECKING
 
 from opentelemetry import trace
+from opentelemetry._logs import set_logger_provider
 from opentelemetry.exporter.otlp.proto.grpc._log_exporter import OTLPLogExporter
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
@@ -13,7 +15,7 @@ from opentelemetry.instrumentation.psycopg import PsycopgInstrumentor
 from opentelemetry.instrumentation.redis import RedisInstrumentor
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
 from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
-from opentelemetry.sdk._logs import LoggerProvider
+from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
 from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
@@ -36,6 +38,7 @@ class _Providers:
     tracer: TracerProvider | None = None
     meter: MeterProvider | None = None
     logger: LoggerProvider | None = None
+    log_handler: LoggingHandler | None = None
 
 
 _providers = _Providers()
@@ -56,7 +59,7 @@ def setup_telemetry(service_name: str = "stock-analysis-api") -> None:
         service_name: Logical service name used in telemetry data.
     """
     settings: Settings = get_settings()
-    otlp_endpoint: str = f"{settings.monitoring_host}:{settings.monitoring_port}"
+    otlp_endpoint: str = f"http://{settings.monitoring_host}:{settings.monitoring_port}"
     resource: Resource = _build_resource(service_name)
 
     _providers.tracer = TracerProvider(resource=resource)
@@ -73,6 +76,14 @@ def setup_telemetry(service_name: str = "stock-analysis-api") -> None:
             OTLPLogExporter(endpoint=otlp_endpoint, insecure=True),
         )
     )
+    set_logger_provider(_providers.logger)
+
+    if _providers.log_handler is None:
+        _providers.log_handler = LoggingHandler(
+            logger_provider=_providers.logger,
+            level=logging.INFO,
+        )
+        logging.getLogger().addHandler(_providers.log_handler)
 
     LoggingInstrumentor().instrument(set_logging_format=True)
     HTTPXClientInstrumentor().instrument()
@@ -116,6 +127,10 @@ def start_metrics_server(port: int = 9464) -> None:
 
 def shutdown_telemetry() -> None:
     """Flush and shut down all OTel providers gracefully."""
+    if _providers.log_handler is not None:
+        logging.getLogger().removeHandler(_providers.log_handler)
+        _providers.log_handler = None
+
     if _providers.tracer is not None:
         _providers.tracer.shutdown()
     if _providers.meter is not None:
