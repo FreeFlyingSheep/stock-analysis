@@ -61,6 +61,7 @@ This project is developed with the assistance of AI tools:
 - **Loki** for log aggregation and analysis
 - **Tempo** for distributed tracing
 - **Alloy** for observability data collection and forwarding
+- **Langfuse** for agent trace analysis
 
 ### Development & Quality Tools
 
@@ -124,6 +125,7 @@ This project is developed with the assistance of AI tools:
 - **Visualization**: Grafana dashboards for real-time monitoring of system health and performance
 - **Trace Visualization**: Tempo for visualizing distributed traces and identifying performance bottlenecks
 - **Data Forwarding**: Alloy as a flexible agent for collecting and forwarding observability data
+- **Langfuse Tracing**: Alloy can forward agent OTel traces to Langfuse
 
 ### Code Quality & Developer Experience
 

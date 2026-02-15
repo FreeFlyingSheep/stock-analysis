@@ -15,6 +15,7 @@ from langchain_core.runnables.config import RunnableConfig
 from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.graph.message import REMOVE_ALL_MESSAGES
 from langgraph.graph.state import CompiledStateGraph
+from opentelemetry import trace
 from pydantic import BaseModel, Field
 
 from stock_analysis.agent.model import LLM, Embeddings
@@ -32,9 +33,11 @@ if TYPE_CHECKING:
     from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
     from langgraph.graph.state import CompiledStateGraph
     from langgraph.pregel.debug import StateSnapshot
+    from opentelemetry.trace import Span, Tracer
 
 
 logger: logging.Logger = get_logger(__name__)
+tracer: Tracer = trace.get_tracer(__name__)
 
 
 class AgentError(RuntimeError):
@@ -109,19 +112,13 @@ class ChatAgent:
             llm: Optional language model wrapper.
             embeddings: Optional embeddings wrapper.
         """
-        logger.info("[__init__] Initializing ChatAgent")
-        self._llm = llm or LLM()
-        logger.debug("[__init__] LLM initialized")
-        self._embeddings = embeddings or Embeddings()
-        logger.debug("[__init__] Embeddings initialized")
-        self._checkpointer = checkpointer
-        logger.debug("[__init__] Checkpointer configured")
-        self._prompt_manager = PromptManager(prompts_dir)
-        logger.info(
-            "[__init__] Prompt manager initialized with directory: %s", prompts_dir
-        )
-        self._agent = self._create_agent()
-        logger.info("[__init__] ChatAgent initialized successfully")
+        with tracer.start_as_current_span("chat_agent.init") as span:
+            span.set_attribute("prompts_dir", str(prompts_dir))
+            self._llm = llm or LLM()
+            self._embeddings = embeddings or Embeddings()
+            self._checkpointer = checkpointer
+            self._prompt_manager = PromptManager(prompts_dir)
+            self._agent = self._create_agent()
 
     def get_embeddings(self) -> Embeddings:
         """Get the embeddings instance."""
@@ -143,25 +140,19 @@ class ChatAgent:
         length: int = 30
         messages: list[AnyMessage] = state["messages"]
 
-        logger.info("[trim_messages] Total messages count: %d", len(messages))
+        with tracer.start_as_current_span("chat_agent.trim_messages") as span:
+            span.set_attribute("message.count", len(messages))
 
-        if len(messages) <= length:
-            logger.debug(
-                "[trim_messages] Message count %d <= %d, no trimming needed",
-                len(messages),
-                length,
-            )
-            return None
+            if len(messages) <= length:
+                span.set_attribute("message.trimmed", value=False)
+                return None
 
-        recent_messages: list[AnyMessage] = messages[-length:]
-        logger.info(
-            "[trim_messages] Trimmed to last %d messages from %d",
-            len(recent_messages),
-            len(messages),
-        )
-        return {
-            "messages": [RemoveMessage(id=REMOVE_ALL_MESSAGES), *recent_messages],
-        }
+            recent_messages: list[AnyMessage] = messages[-length:]
+            span.set_attribute("message.trimmed", value=True)
+            span.set_attribute("message.trimmed_to", len(recent_messages))
+            return {
+                "messages": [RemoveMessage(id=REMOVE_ALL_MESSAGES), *recent_messages],
+            }
 
     def _select_tools(
         self,
@@ -285,29 +276,21 @@ class ChatAgent:
         normalized: str = " ".join(text.split())
         return normalized[:max_len]
 
-    def _log_llm_response(self, node: str, message: AnyMessage) -> None:
-        """Log LLM response summary including tool calls and content preview."""
+    def _set_llm_response_attrs(self, span: Span, message: AnyMessage) -> None:
+        """Record LLM response metadata as span attributes."""
         if not isinstance(message, AIMessage):
-            logger.info("[%s] LLM response type=%s", node, type(message).__name__)
+            span.set_attribute("llm.response_type", type(message).__name__)
             return
 
         preview: str = self._content_preview(message.content)
         tool_calls: list[dict[str, str]] = getattr(message, "tool_calls", [])
+        span.set_attribute("llm.tool_call_count", len(tool_calls))
         if tool_calls:
-            tool_names: list[str] = [tc.get("name", "<unknown>") for tc in tool_calls]
-            logger.info(
-                "[%s] LLM response tool_calls=%s names=%s content_preview=%s",
-                node,
-                len(tool_calls),
-                tool_names,
-                preview,
+            span.set_attribute(
+                "llm.tool_names",
+                [tc.get("name", "<unknown>") for tc in tool_calls],
             )
-        else:
-            logger.info(
-                "[%s] LLM response tool_calls=0 content_preview=%s",
-                node,
-                preview,
-            )
+        span.set_attribute("llm.content_preview", preview)
 
     async def _build_prompt(
         self,
@@ -370,12 +353,6 @@ class ChatAgent:
 
         result.extend(state_messages[last_human_idx + 1 :])
 
-        logger.debug(
-            "[build_prompt] prompt=%s locale=%s total_messages=%s",
-            prompt,
-            locale,
-            len(result),
-        )
         return result
 
     async def _route_query(self, state: State, config: RunnableConfig | None) -> dict:
@@ -392,78 +369,62 @@ class ChatAgent:
         Returns:
             Updated state with the LLM response.
         """
-        logger.info("[route_query] Starting query routing")
-        locale: str = state.get("locale", "en-US")
-        llm_calls: int = state.get("llm_calls", 0)
-        retrieve_calls: int = state.get("retrieve_calls", 0)
-        logger.debug(
-            "[route_query] Current calls - LLM: %s, Retrieve: %s",
-            llm_calls,
-            retrieve_calls,
-        )
+        with tracer.start_as_current_span("chat_agent.route_query") as span:
+            locale: str = state.get("locale", "en-US")
+            llm_calls: int = state.get("llm_calls", 0)
+            retrieve_calls: int = state.get("retrieve_calls", 0)
+            span.set_attribute("llm_calls", llm_calls)
+            span.set_attribute("retrieve_calls", retrieve_calls)
 
-        if self._llm_limit_reached(state):
-            max_llm: int = state.get("max_llm_calls", self.MAX_LLM_CALLS)
-            logger.warning(
-                "[route_query] LLM call limit reached (%s/%s)", llm_calls, max_llm
+            if self._llm_limit_reached(state):
+                span.set_attribute("limit_reached", "llm")
+                return {
+                    "messages": [
+                        AIMessage(
+                            content=self._load_prompt(
+                                "error_max_steps_specific", locale
+                            ).strip()
+                        )
+                    ],
+                }
+
+            rewritten_query: str | None = state.get("rewritten_query")
+            if rewritten_query:
+                span.set_attribute("rewritten_query", rewritten_query[:100])
+
+            messages: list[AnyMessage] = await self._build_prompt(
+                "route", state, locale, query_override=rewritten_query
             )
-            return {
-                "messages": [
-                    AIMessage(
-                        content=self._load_prompt(
-                            "error_max_steps_specific", locale
-                        ).strip()
-                    )
-                ],
-            }
-
-        rewritten_query: str | None = state.get("rewritten_query")
-        if rewritten_query:
-            logger.debug(
-                "[route_query] Using rewritten query: %s...", rewritten_query[:100]
+            tools: list[BaseTool] = self._select_tools(
+                config, include_tags={"retrieve"}
             )
+            span.set_attribute("retrieve_tools_count", len(tools))
+            span.set_attribute("retrieve_tools", [tool.name for tool in tools])
 
-        messages: list[AnyMessage] = await self._build_prompt(
-            "route", state, locale, query_override=rewritten_query
-        )
-        tools: list[BaseTool] = self._select_tools(config, include_tags={"retrieve"})
-        logger.info("[route_query] Available retrieve tools: %s", len(tools))
-        logger.debug("[route_query] Tools: %s", [tool.name for tool in tools])
-
-        if tools and not self._retrieve_limit_reached(state):
-            logger.info("[route_query] Invoking LLM with %s retrieve tools", len(tools))
-            message: AnyMessage = await self._llm.bind_tools(tools).ainvoke(messages)
-        else:
-            if not tools:
-                logger.debug("[route_query] No retrieve tools available")
+            if tools and not self._retrieve_limit_reached(state):
+                message: AnyMessage = await self._llm.bind_tools(tools).ainvoke(
+                    messages
+                )
             else:
-                max_retrieve: int = state.get(
-                    "max_retrieve_calls", self.MAX_RETRIEVE_CALLS
-                )
-                logger.debug(
-                    "[route_query] Retrieve limit reached (%s/%s)",
-                    retrieve_calls,
-                    max_retrieve,
-                )
-            logger.info("[route_query] Invoking LLM without retrieve tools")
-            message = await self._llm.ainvoke(messages)
-        self._log_llm_response("route_query", message)
+                if not tools:
+                    span.set_attribute("skip_reason", "no_retrieve_tools")
+                else:
+                    span.set_attribute("skip_reason", "retrieve_limit_reached")
+                message = await self._llm.ainvoke(messages)
+            self._set_llm_response_attrs(span, message)
 
-        if isinstance(message, AIMessage) and message.tool_calls:
-            logger.info(
-                "[route_query] LLM suggested %s tool calls", len(message.tool_calls)
-            )
-        else:
-            logger.info("[route_query] LLM did not suggest any tool calls")
-            # Avoid carrying a speculative router free-text response into
-            # generate_answer where it can suppress subsequent tool calls.
-            message = AIMessage(content="")
+            if isinstance(message, AIMessage) and message.tool_calls:
+                span.set_attribute("suggested_tool_calls", len(message.tool_calls))
+            else:
+                # Avoid carrying a speculative router free-text response into
+                # generate_answer where it can suppress subsequent tool calls.
+                message = AIMessage(content="")
 
-        return {
-            "messages": [message],
-            "locale": locale,
-            "llm_calls": llm_calls + 1,
-        }
+            return {
+                "messages": [message],
+                "locale": locale,
+                "llm_calls": llm_calls + 1,
+            }
 
     def _should_retrieve(self, state: State) -> str:
         """Route to determine if document retrieval is needed based on the LLM response.
@@ -475,16 +436,13 @@ class ChatAgent:
             Next node name.
         """
         message: AnyMessage = state["messages"][-1]
-        if isinstance(message, AIMessage) and message.tool_calls:
-            logger.info(
-                "[should_retrieve] Routing to retrieve_documents (%s tool calls)",
-                len(message.tool_calls),
-            )
-            return "retrieve_documents"
-        logger.info(
-            "[should_retrieve] No retrieve tools called, routing to generate_answer"
-        )
-        return "generate_answer"
+        with tracer.start_as_current_span("chat_agent.should_retrieve") as span:
+            if isinstance(message, AIMessage) and message.tool_calls:
+                span.set_attribute("route", "retrieve_documents")
+                span.set_attribute("tool_call_count", len(message.tool_calls))
+                return "retrieve_documents"
+            span.set_attribute("route", "generate_answer")
+            return "generate_answer"
 
     async def _retrieve_documents(
         self, state: State, config: RunnableConfig | None
@@ -498,119 +456,94 @@ class ChatAgent:
         Returns:
             Updated state with ToolMessages from retrieval.
         """
-        logger.info("[retrieve_documents] Starting document retrieval")
-        result: list[ToolMessage] = []
-        retrieve_calls: int = 0
-        message: AnyMessage = state["messages"][-1]
-        locale: str = state.get("locale", "en-US")
-        current_retrieve_calls: int = state.get("retrieve_calls", 0)
-        max_retrieve: int = state.get("max_retrieve_calls", self.MAX_RETRIEVE_CALLS)
-        remaining_calls: int = max(0, max_retrieve - current_retrieve_calls)
-        logger.debug(
-            "[retrieve_documents] Retrieve calls - Current: %s, Remaining: %s",
-            current_retrieve_calls,
-            remaining_calls,
-        )
+        with tracer.start_as_current_span("chat_agent.retrieve_documents") as span:
+            result: list[ToolMessage] = []
+            retrieve_calls: int = 0
+            message: AnyMessage = state["messages"][-1]
+            locale: str = state.get("locale", "en-US")
+            current_retrieve_calls: int = state.get("retrieve_calls", 0)
+            max_retrieve: int = state.get("max_retrieve_calls", self.MAX_RETRIEVE_CALLS)
+            remaining_calls: int = max(0, max_retrieve - current_retrieve_calls)
+            span.set_attribute("retrieve_calls.current", current_retrieve_calls)
+            span.set_attribute("retrieve_calls.remaining", remaining_calls)
 
-        tools: list[BaseTool] = self._select_tools(config, include_tags={"retrieve"})
-        tools_by_name: dict[str, BaseTool] = {tool.name: tool for tool in tools}
-        logger.info(
-            "[retrieve_documents] Available retrieve tools: %s",
-            list(tools_by_name.keys()),
-        )
-
-        if isinstance(message, AIMessage):
-            logger.info(
-                "[retrieve_documents] Processing %s tool calls", len(message.tool_calls)
+            tools: list[BaseTool] = self._select_tools(
+                config, include_tags={"retrieve"}
             )
-            for idx, tool_call in enumerate(message.tool_calls):
-                logger.debug(
-                    "[retrieve_documents] Tool call %s/%s: %s",
-                    idx + 1,
-                    len(message.tool_calls),
-                    tool_call["name"],
-                )
+            tools_by_name: dict[str, BaseTool] = {tool.name: tool for tool in tools}
+            span.set_attribute("retrieve_tools", list(tools_by_name.keys()))
 
-                if remaining_calls <= 0:
-                    logger.warning(
-                        (
-                            "[retrieve_documents] Retrieve limit reached, "
-                            "skipping tool call %s"
-                        ),
-                        tool_call["name"],
-                    )
-                    result.append(
-                        ToolMessage(
-                            content=self._load_prompt(
-                                "error_retrieve_call_limit_reached", locale
-                            ).strip(),
-                            tool_call_id=tool_call["id"],
+            if isinstance(message, AIMessage):
+                span.set_attribute("tool_call_count", len(message.tool_calls))
+                for tool_call in message.tool_calls:
+                    if remaining_calls <= 0:
+                        span.add_event(
+                            "retrieve_limit_reached",
+                            {"tool_name": tool_call["name"]},
                         )
-                    )
-                    continue
-                tool_name: str = tool_call["name"]
-                tool: BaseTool | None = tools_by_name.get(tool_name)
-                if tool is None:
-                    logger.error("[retrieve_documents] Tool not found: %s", tool_name)
-                    result.append(
-                        ToolMessage(
-                            content=self._load_prompt("error_tool_not_found", locale)
-                            .strip()
-                            .format(name=tool_name),
-                            tool_call_id=tool_call["id"],
+                        result.append(
+                            ToolMessage(
+                                content=self._load_prompt(
+                                    "error_retrieve_call_limit_reached", locale
+                                ).strip(),
+                                tool_call_id=tool_call["id"],
+                            )
                         )
-                    )
-                    continue
-                try:
-                    logger.info(
-                        "[retrieve_documents] Executing tool: %s with args: %s",
-                        tool_name,
-                        tool_call["args"],
-                    )
-                    observation: str | list[str | dict] = await tool.ainvoke(
-                        tool_call["args"]
-                    )
-                    obs_preview: str = (
-                        str(observation)[:200] if observation else "<empty>"
-                    )
-                    logger.info(
-                        "[retrieve_documents] Tool %s completed. Result: %s...",
-                        tool_name,
-                        obs_preview,
-                    )
-                except Exception as e:
-                    logger.exception("[retrieve_documents] Tool %s failed", tool_name)
-                    result.append(
-                        ToolMessage(
-                            content=self._load_prompt("error_tool_failed", locale)
-                            .strip()
-                            .format(name=tool_name, error=str(e)),
-                            tool_call_id=tool_call["id"],
+                        continue
+                    tool_name: str = tool_call["name"]
+                    tool: BaseTool | None = tools_by_name.get(tool_name)
+                    if tool is None:
+                        logger.error("Tool not found: %s", tool_name)
+                        result.append(
+                            ToolMessage(
+                                content=self._load_prompt(
+                                    "error_tool_not_found", locale
+                                )
+                                .strip()
+                                .format(name=tool_name),
+                                tool_call_id=tool_call["id"],
+                            )
                         )
+                        continue
+                    try:
+                        observation: str | list[str | dict] = await tool.ainvoke(
+                            tool_call["args"]
+                        )
+                        span.add_event(
+                            "tool_completed",
+                            {
+                                "tool_name": tool_name,
+                                "result_preview": (
+                                    str(observation)[:200] if observation else "<empty>"
+                                ),
+                            },
+                        )
+                    except Exception as e:
+                        logger.exception("Retrieve tool %s failed", tool_name)
+                        result.append(
+                            ToolMessage(
+                                content=self._load_prompt("error_tool_failed", locale)
+                                .strip()
+                                .format(name=tool_name, error=str(e)),
+                                tool_call_id=tool_call["id"],
+                            )
+                        )
+                        continue
+                    result.append(
+                        ToolMessage(content=observation, tool_call_id=tool_call["id"])
                     )
-                    continue
-                result.append(
-                    ToolMessage(content=observation, tool_call_id=tool_call["id"])
-                )
-                retrieve_calls += 1
-                remaining_calls -= 1
-        else:
-            logger.warning(
-                "[retrieve_documents] Last message is not AIMessage, skipping retrieval"
+                    retrieve_calls += 1
+                    remaining_calls -= 1
+
+            span.set_attribute("retrieve_calls.completed", retrieve_calls)
+            span.set_attribute(
+                "retrieve_calls.total",
+                current_retrieve_calls + retrieve_calls,
             )
-
-        logger.info(
-            "[retrieve_documents] Completed %s successful retrieve calls",
-            retrieve_calls,
-        )
-        logger.info(
-            "[retrieve_documents] Completed node with total_retrieve_calls=%s",
-            current_retrieve_calls + retrieve_calls,
-        )
-        return {
-            "messages": result,
-            "retrieve_calls": current_retrieve_calls + retrieve_calls,
-        }
+            return {
+                "messages": result,
+                "retrieve_calls": current_retrieve_calls + retrieve_calls,
+            }
 
     async def _grade_documents(self, state: State) -> dict:
         """Grade retrieved documents for relevance using a dedicated prompt.
@@ -624,48 +557,44 @@ class ChatAgent:
         Returns:
             Updated state with grade_result and incremented llm_calls.
         """
-        logger.info("[grade_documents] Starting document grading")
-        locale: str = state.get("locale", "en-US")
-        query: str = self._find_last_human_content(state["messages"])
-        logger.debug("[grade_documents] User query: %s...", query[:100])
+        with tracer.start_as_current_span("chat_agent.grade_documents") as span:
+            locale: str = state.get("locale", "en-US")
+            query: str = self._find_last_human_content(state["messages"])
+            span.set_attribute("query_preview", query[:100])
 
-        retrieved_parts: list[str] = []
-        for msg in reversed(state["messages"]):
-            if isinstance(msg, ToolMessage):
-                content: str | list[str | dict] = msg.content
-                retrieved_parts.append(
-                    content if isinstance(content, str) else str(content)
-                )
-            elif isinstance(msg, AIMessage):
-                break
-        logger.debug(
-            "[grade_documents] Found %s retrieved documents", len(retrieved_parts)
-        )
+            retrieved_parts: list[str] = []
+            for msg in reversed(state["messages"]):
+                if isinstance(msg, ToolMessage):
+                    content: str | list[str | dict] = msg.content
+                    retrieved_parts.append(
+                        content if isinstance(content, str) else str(content)
+                    )
+                elif isinstance(msg, AIMessage):
+                    break
+            span.set_attribute("retrieved_document_count", len(retrieved_parts))
 
-        retrieved: str = (
-            "\n\n".join(reversed(retrieved_parts))
-            or self._load_prompt("grade_no_documents", locale).strip()
-        )
-        grade_input: str = self._load_prompt("grade_input", locale).format(
-            question=query, documents=retrieved
-        )
+            retrieved: str = (
+                "\n\n".join(reversed(retrieved_parts))
+                or self._load_prompt("grade_no_documents", locale).strip()
+            )
+            grade_input: str = self._load_prompt("grade_input", locale).format(
+                question=query, documents=retrieved
+            )
 
-        messages: list[AnyMessage] = [
-            SystemMessage(content=self._load_prompt("grade", locale)),
-            HumanMessage(content=grade_input),
-        ]
-        logger.info("[grade_documents] Invoking LLM for document grading")
-        response: dict | BaseModel = await self._llm.with_structured_output(
-            GradeDocuments
-        ).ainvoke(messages)
-        logger.info("[grade_documents] LLM grading raw response: %s", response)
-        score: str = GradeDocuments.model_validate(response).binary_score
-        logger.info("[grade_documents] Grading result: %s", score)
+            messages: list[AnyMessage] = [
+                SystemMessage(content=self._load_prompt("grade", locale)),
+                HumanMessage(content=grade_input),
+            ]
+            response: dict | BaseModel = await self._llm.with_structured_output(
+                GradeDocuments
+            ).ainvoke(messages)
+            score: str = GradeDocuments.model_validate(response).binary_score
+            span.set_attribute("grade_result", score)
 
-        return {
-            "grade_result": score,
-            "llm_calls": state.get("llm_calls", 0) + 1,
-        }
+            return {
+                "grade_result": score,
+                "llm_calls": state.get("llm_calls", 0) + 1,
+            }
 
     def _after_grade(self, state: State) -> str:
         """Route after document grading.
@@ -680,32 +609,25 @@ class ChatAgent:
         Returns:
             Next node name.
         """
-        grade_result: str | None = state.get("grade_result")
-        logger.info("[after_grade] Grading result: %s", grade_result)
+        with tracer.start_as_current_span("chat_agent.after_grade") as span:
+            grade_result: str | None = state.get("grade_result")
+            span.set_attribute("grade_result", grade_result or "")
 
-        if grade_result == "yes":
-            logger.info(
-                "[after_grade] Documents are relevant, proceeding to generate_answer"
-            )
-            return "generate_answer"
+            if grade_result == "yes":
+                span.set_attribute("route", "generate_answer")
+                return "generate_answer"
 
-        llm_limited: bool = self._llm_limit_reached(state)
-        retrieve_limited: bool = self._retrieve_limit_reached(state)
-        logger.debug(
-            "[after_grade] Limits reached - LLM: %s, Retrieve: %s",
-            llm_limited,
-            retrieve_limited,
-        )
+            llm_limited: bool = self._llm_limit_reached(state)
+            retrieve_limited: bool = self._retrieve_limit_reached(state)
+            span.set_attribute("llm_limited", llm_limited)
+            span.set_attribute("retrieve_limited", retrieve_limited)
 
-        if llm_limited or retrieve_limited:
-            logger.info("[after_grade] Limits reached, proceeding to generate_answer")
-            return "generate_answer"
+            if llm_limited or retrieve_limited:
+                span.set_attribute("route", "generate_answer")
+                return "generate_answer"
 
-        logger.info(
-            "[after_grade] Documents not relevant and limits not reached, "
-            "rewriting question"
-        )
-        return "rewrite_question"
+            span.set_attribute("route", "rewrite_question")
+            return "rewrite_question"
 
     async def _rewrite_question(self, state: State) -> dict:
         """Rewrite the user's question for better retrieval.
@@ -721,57 +643,55 @@ class ChatAgent:
         Returns:
             Updated state with the rewritten query.
         """
-        logger.info("[rewrite_question] Starting question rewrite")
-        if self._llm_limit_reached(state):
-            logger.warning(
-                "[rewrite_question] LLM call limit reached, returning error message"
+        with tracer.start_as_current_span("chat_agent.rewrite_question") as span:
+            if self._llm_limit_reached(state):
+                span.set_attribute("limit_reached", "llm")
+                locale: str = state.get("locale", "en-US")
+                return {
+                    "messages": [
+                        AIMessage(
+                            content=self._load_prompt(
+                                "error_max_steps_specific", locale
+                            ).strip()
+                        )
+                    ],
+                }
+
+            locale = state.get("locale", "en-US")
+            query: str = self._find_last_human_content(state["messages"])
+            span.set_attribute("original_query", query[:100])
+            span.set_attribute(
+                "has_page_context", state.get("page_context") is not None
             )
-            locale: str = state.get("locale", "en-US")
+
+            page_context: str | None = state.get("page_context")
+            if page_context:
+                page: str = self._load_prompt("page", locale).format(
+                    context=page_context
+                )
+                user: str = self._load_prompt("user", locale).format(query=query)
+                content: str = f"{page}\n\n{user}"
+            else:
+                content = query
+
+            messages: list[AnyMessage] = [
+                SystemMessage(content=self._load_prompt("rewrite", locale)),
+                HumanMessage(content=content),
+            ]
+            rewritten: AnyMessage = await self._llm.ainvoke(messages)
+            self._set_llm_response_attrs(span, rewritten)
+            rewritten_text: str = (
+                rewritten.content
+                if isinstance(rewritten.content, str)
+                else str(rewritten.content)
+            )
+            span.set_attribute("rewritten_query", rewritten_text[:100])
+
             return {
-                "messages": [
-                    AIMessage(
-                        content=self._load_prompt(
-                            "error_max_steps_specific", locale
-                        ).strip()
-                    )
-                ],
+                "rewritten_query": rewritten_text,
+                "locale": locale,
+                "llm_calls": state.get("llm_calls", 0) + 1,
             }
-
-        locale = state.get("locale", "en-US")
-        query: str = self._find_last_human_content(state["messages"])
-        logger.debug("[rewrite_question] Original query: %s...", query[:100])
-
-        page_context: str | None = state.get("page_context")
-        if page_context:
-            logger.debug(
-                "[rewrite_question] Page context available: %s...", page_context[:100]
-            )
-            page: str = self._load_prompt("page", locale).format(context=page_context)
-            user: str = self._load_prompt("user", locale).format(query=query)
-            content: str = f"{page}\n\n{user}"
-        else:
-            logger.debug("[rewrite_question] No page context available")
-            content = query
-
-        messages: list[AnyMessage] = [
-            SystemMessage(content=self._load_prompt("rewrite", locale)),
-            HumanMessage(content=content),
-        ]
-        logger.info("[rewrite_question] Invoking LLM to rewrite question")
-        rewritten: AnyMessage = await self._llm.ainvoke(messages)
-        self._log_llm_response("rewrite_question", rewritten)
-        rewritten_text: str = (
-            rewritten.content
-            if isinstance(rewritten.content, str)
-            else str(rewritten.content)
-        )
-        logger.info("[rewrite_question] Rewritten query: %s...", rewritten_text[:100])
-
-        return {
-            "rewritten_query": rewritten_text,
-            "locale": locale,
-            "llm_calls": state.get("llm_calls", 0) + 1,
-        }
 
     async def _generate_answer(
         self, state: State, config: RunnableConfig | None
@@ -789,100 +709,78 @@ class ChatAgent:
         Returns:
             Updated state with new message and incremented LLM call count.
         """
-        logger.info("[generate_answer] Starting answer generation")
-        locale: str = state.get("locale", "en-US")
-        llm_calls: int = state.get("llm_calls", 0)
-        tool_calls: int = state.get("tool_calls", 0)
-        logger.debug(
-            "[generate_answer] Call counts - LLM: %s, Tool: %s", llm_calls, tool_calls
-        )
+        with tracer.start_as_current_span("chat_agent.generate_answer") as span:
+            locale: str = state.get("locale", "en-US")
+            llm_calls: int = state.get("llm_calls", 0)
+            tool_calls: int = state.get("tool_calls", 0)
+            span.set_attribute("llm_calls", llm_calls)
+            span.set_attribute("tool_calls", tool_calls)
 
-        if self._llm_limit_reached(state):
-            logger.warning(
-                "[generate_answer] LLM call limit reached (%s/%s)",
-                llm_calls,
-                state.get("max_llm_calls", self.MAX_LLM_CALLS),
-            )
-            return {
-                "messages": [
-                    AIMessage(
-                        content=self._load_prompt(
-                            "error_max_steps_best_effort", locale
-                        ).strip()
-                    )
-                ],
-            }
-
-        messages: list[AnyMessage] = await self._build_prompt("chat", state, locale)
-        last_message: AnyMessage = state["messages"][-1]
-
-        disable_tools: bool = state.get(
-            "disable_tools"
-        ) is True or self._tool_limit_reached(state)
-        if isinstance(last_message, ToolMessage):
-            disable_tools = True
-
-        try:
-            if disable_tools:
-                logger.info(
-                    "[generate_answer] Tools are disabled or limit reached, "
-                    "invoking LLM without tools"
-                )
-                message: AIMessage = await self._llm.ainvoke(messages)
-            else:
-                tools: list[BaseTool] = self._select_tools(
-                    config, exclude_tags={"retrieve"}
-                )
-                logger.info(
-                    "[generate_answer] Available non-retrieve tools: %s",
-                    [tool.name for tool in tools],
-                )
-                if tools:
-                    logger.info(
-                        "[generate_answer] Invoking LLM with %s tools", len(tools)
-                    )
-                    try:
-                        message = await self._llm.bind_tools(tools).ainvoke(messages)
-                    except Exception as e:
-                        if not self._is_rate_limit_error(e):
-                            raise
-                        logger.warning(
-                            "[generate_answer] Tool-bound LLM call rate-limited, "
-                            "falling back to no-tools generation: %s",
-                            e,
+            if self._llm_limit_reached(state):
+                span.set_attribute("limit_reached", "llm")
+                return {
+                    "messages": [
+                        AIMessage(
+                            content=self._load_prompt(
+                                "error_max_steps_best_effort", locale
+                            ).strip()
                         )
-                        message = await self._llm.ainvoke(messages)
+                    ],
+                }
+
+            messages: list[AnyMessage] = await self._build_prompt("chat", state, locale)
+            last_message: AnyMessage = state["messages"][-1]
+
+            disable_tools: bool = state.get(
+                "disable_tools"
+            ) is True or self._tool_limit_reached(state)
+            if isinstance(last_message, ToolMessage):
+                disable_tools = True
+            span.set_attribute("disable_tools", disable_tools)
+
+            try:
+                if disable_tools:
+                    message: AIMessage = await self._llm.ainvoke(messages)
                 else:
-                    logger.debug("[generate_answer] No non-retrieve tools available")
-                    message = await self._llm.ainvoke(messages)
-        except Exception as e:
-            if not self._is_rate_limit_error(e):
-                raise
-            logger.warning(
-                "[generate_answer] LLM rate-limited, returning best-effort "
-                "fallback message: %s",
-                e,
-            )
-            message = AIMessage(
-                content=self._load_prompt("error_max_steps_best_effort", locale).strip()
-            )
-        self._log_llm_response("generate_answer", message)
+                    tools: list[BaseTool] = self._select_tools(
+                        config, exclude_tags={"retrieve"}
+                    )
+                    span.set_attribute(
+                        "available_tools",
+                        [tool.name for tool in tools],
+                    )
+                    if tools:
+                        try:
+                            message = await self._llm.bind_tools(tools).ainvoke(
+                                messages
+                            )
+                        except Exception as e:
+                            if not self._is_rate_limit_error(e):
+                                raise
+                            span.add_event(
+                                "rate_limit_fallback",
+                                {"error": str(e)},
+                            )
+                            message = await self._llm.ainvoke(messages)
+                    else:
+                        message = await self._llm.ainvoke(messages)
+            except Exception as e:
+                if not self._is_rate_limit_error(e):
+                    raise
+                span.add_event("rate_limit_fallback", {"error": str(e)})
+                message = AIMessage(
+                    content=self._load_prompt(
+                        "error_max_steps_best_effort", locale
+                    ).strip()
+                )
+            self._set_llm_response_attrs(span, message)
 
-        if isinstance(message, AIMessage) and message.tool_calls:
-            logger.info(
-                "[generate_answer] LLM suggested %s tool calls", len(message.tool_calls)
-            )
-        else:
-            logger.info(
-                "[generate_answer] LLM generated final answer without tool calls"
-            )
-
-        return {
-            "messages": [message],
-            "locale": locale,
-            "llm_calls": llm_calls + 1,
-            "rewritten_query": None,
-        }
+            return {
+                "messages": [message],
+                "locale": locale,
+                "llm_calls": llm_calls + 1,
+                "rewritten_query": None,
+            }
 
     async def _tool_node(self, state: State, config: RunnableConfig | None) -> dict:
         """Execute non-retrieve tool calls.
@@ -894,108 +792,92 @@ class ChatAgent:
         Returns:
             Updated state with tool messages and incremented tool call count.
         """
-        logger.info("[tool_node] Starting tool execution")
-        result: list[ToolMessage] = []
-        tool_calls_count: int = 0
-        message: AnyMessage = state["messages"][-1]
-        locale: str = state.get("locale", "en-US")
-        current_tool_calls: int = state.get("tool_calls", 0)
-        max_tool_calls: int = state.get("max_tool_calls", self.MAX_TOOL_CALLS)
-        remaining_calls: int = max(0, max_tool_calls - current_tool_calls)
-        logger.debug(
-            "[tool_node] Tool calls - Current: %s, Remaining: %s",
-            current_tool_calls,
-            remaining_calls,
-        )
+        with tracer.start_as_current_span("chat_agent.tool_node") as span:
+            result: list[ToolMessage] = []
+            tool_calls_count: int = 0
+            message: AnyMessage = state["messages"][-1]
+            locale: str = state.get("locale", "en-US")
+            current_tool_calls: int = state.get("tool_calls", 0)
+            max_tool_calls: int = state.get("max_tool_calls", self.MAX_TOOL_CALLS)
+            remaining_calls: int = max(0, max_tool_calls - current_tool_calls)
+            span.set_attribute("tool_calls.current", current_tool_calls)
+            span.set_attribute("tool_calls.remaining", remaining_calls)
 
-        tools: list[BaseTool] = self._select_tools(config)
-        tools_by_name: dict[str, BaseTool] = {tool.name: tool for tool in tools}
-        logger.info("[tool_node] Available tools: %s", list(tools_by_name.keys()))
+            tools: list[BaseTool] = self._select_tools(config)
+            tools_by_name: dict[str, BaseTool] = {tool.name: tool for tool in tools}
+            span.set_attribute("available_tools", list(tools_by_name.keys()))
 
-        if isinstance(message, AIMessage):
-            logger.info("[tool_node] Processing %s tool calls", len(message.tool_calls))
-            for idx, tool_call in enumerate(message.tool_calls):
-                logger.debug(
-                    "[tool_node] Tool call %s/%s: %s",
-                    idx + 1,
-                    len(message.tool_calls),
-                    tool_call["name"],
-                )
+            if isinstance(message, AIMessage):
+                span.set_attribute("tool_call_count", len(message.tool_calls))
+                for tool_call in message.tool_calls:
+                    if remaining_calls <= 0:
+                        span.add_event(
+                            "tool_limit_reached",
+                            {"tool_name": tool_call["name"]},
+                        )
+                        result.append(
+                            ToolMessage(
+                                content=self._load_prompt(
+                                    "error_tool_call_limit_reached", locale
+                                ).strip(),
+                                tool_call_id=tool_call["id"],
+                            )
+                        )
+                        continue
+                    tool_name: str = tool_call["name"]
+                    tool: BaseTool | None = tools_by_name.get(tool_name)
+                    if tool is None:
+                        logger.error("Tool not found: %s", tool_name)
+                        result.append(
+                            ToolMessage(
+                                content=self._load_prompt(
+                                    "error_tool_not_found", locale
+                                )
+                                .strip()
+                                .format(name=tool_name),
+                                tool_call_id=tool_call["id"],
+                            )
+                        )
+                        continue
+                    try:
+                        observation: str | list[str | dict] = await tool.ainvoke(
+                            tool_call["args"]
+                        )
+                        span.add_event(
+                            "tool_completed",
+                            {
+                                "tool_name": tool_name,
+                                "result_preview": (
+                                    str(observation)[:200] if observation else "<empty>"
+                                ),
+                            },
+                        )
+                    except Exception as e:
+                        logger.exception("Tool %s failed", tool_name)
+                        result.append(
+                            ToolMessage(
+                                content=self._load_prompt("error_tool_failed", locale)
+                                .strip()
+                                .format(name=tool_name, error=str(e)),
+                                tool_call_id=tool_call["id"],
+                            )
+                        )
+                        continue
+                    result.append(
+                        ToolMessage(content=observation, tool_call_id=tool_call["id"])
+                    )
+                    tool_calls_count += 1
+                    remaining_calls -= 1
 
-                if remaining_calls <= 0:
-                    logger.warning(
-                        "[tool_node] Tool call limit reached, skipping tool call %s",
-                        tool_call["name"],
-                    )
-                    result.append(
-                        ToolMessage(
-                            content=self._load_prompt(
-                                "error_tool_call_limit_reached", locale
-                            ).strip(),
-                            tool_call_id=tool_call["id"],
-                        )
-                    )
-                    continue
-                tool_name: str = tool_call["name"]
-                tool: BaseTool | None = tools_by_name.get(tool_name)
-                if tool is None:
-                    logger.error("[tool_node] Tool not found: %s", tool_name)
-                    result.append(
-                        ToolMessage(
-                            content=self._load_prompt("error_tool_not_found", locale)
-                            .strip()
-                            .format(name=tool_name),
-                            tool_call_id=tool_call["id"],
-                        )
-                    )
-                    continue
-                try:
-                    logger.info(
-                        "[tool_node] Executing tool: %s with args: %s",
-                        tool_name,
-                        tool_call["args"],
-                    )
-                    observation: str | list[str | dict] = await tool.ainvoke(
-                        tool_call["args"]
-                    )
-                    obs_preview: str = (
-                        str(observation)[:200] if observation else "<empty>"
-                    )
-                    logger.info(
-                        "[tool_node] Tool %s completed. Result: %s...",
-                        tool_name,
-                        obs_preview,
-                    )
-                except Exception as e:
-                    logger.exception("[tool_node] Tool %s failed", tool_name)
-                    result.append(
-                        ToolMessage(
-                            content=self._load_prompt("error_tool_failed", locale)
-                            .strip()
-                            .format(name=tool_name, error=str(e)),
-                            tool_call_id=tool_call["id"],
-                        )
-                    )
-                    continue
-                result.append(
-                    ToolMessage(content=observation, tool_call_id=tool_call["id"])
-                )
-                tool_calls_count += 1
-                remaining_calls -= 1
-        else:
-            logger.warning(
-                "[tool_node] Last message is not AIMessage, skipping tool execution"
+            span.set_attribute("tool_calls.completed", tool_calls_count)
+            span.set_attribute(
+                "tool_calls.total",
+                current_tool_calls + tool_calls_count,
             )
-
-        logger.info("[tool_node] Completed %s successful tool calls", tool_calls_count)
-        logger.info(
-            "[tool_node] Completed node with total_tool_calls=%s",
-            current_tool_calls + tool_calls_count,
-        )
-        return {
-            "messages": result,
-            "tool_calls": current_tool_calls + tool_calls_count,
-        }
+            return {
+                "messages": result,
+                "tool_calls": current_tool_calls + tool_calls_count,
+            }
 
     def _should_continue(self, state: State) -> str:
         """Decide if we should continue the loop or stop.
@@ -1007,14 +889,13 @@ class ChatAgent:
             "tool_node" if a tool call was made, otherwise END.
         """
         message: AnyMessage = state["messages"][-1]
-        if isinstance(message, AIMessage) and message.tool_calls:
-            logger.info(
-                "[should_continue] Tool calls detected (%s), continuing to tool_node",
-                len(message.tool_calls),
-            )
-            return "tool_node"
-        logger.info("[should_continue] No tool calls, ending conversation")
-        return END
+        with tracer.start_as_current_span("chat_agent.should_continue") as span:
+            if isinstance(message, AIMessage) and message.tool_calls:
+                span.set_attribute("route", "tool_node")
+                span.set_attribute("tool_call_count", len(message.tool_calls))
+                return "tool_node"
+            span.set_attribute("route", END)
+            return END
 
     def _create_agent(
         self,
@@ -1024,10 +905,8 @@ class ChatAgent:
         Returns:
             Compiled agent ready for use.
         """
-        logger.info("[_create_agent] Building state graph")
         builder: StateGraph[State, None, State, State] = StateGraph(State)
 
-        logger.debug("[_create_agent] Adding nodes to graph")
         builder.add_node("trim_messages", self._trim_messages)
         builder.add_node("route_query", self._route_query)
         builder.add_node("retrieve_documents", self._retrieve_documents)
@@ -1035,9 +914,7 @@ class ChatAgent:
         builder.add_node("rewrite_question", self._rewrite_question)
         builder.add_node("generate_answer", self._generate_answer)
         builder.add_node("tool_node", self._tool_node)
-        logger.debug("[_create_agent] 7 nodes added to graph")
 
-        logger.debug("[_create_agent] Adding edges to graph")
         builder.add_edge(START, "trim_messages")
         builder.add_edge("trim_messages", "route_query")
         builder.add_conditional_edges(
@@ -1058,13 +935,10 @@ class ChatAgent:
             ["tool_node", END],
         )
         builder.add_edge("tool_node", "generate_answer")
-        logger.debug("[_create_agent] Graph edges configured")
 
-        logger.info("[_create_agent] Compiling agent graph")
         agent: CompiledStateGraph[State, None, State, State] = builder.compile(
             checkpointer=self._checkpointer
         )
-        logger.info("[_create_agent] Agent graph compiled successfully")
         return agent
 
     async def astream_events(  # noqa: PLR0913
@@ -1094,70 +968,57 @@ class ChatAgent:
         Yields:
             Token content for each streaming event.
         """
-        logger.info(
-            "[astream_events] Starting event streaming for thread: %s", thread_id
-        )
-        logger.debug("[astream_events] Input message: %s...", message[:100])
-        logger.debug(
-            "[astream_events] Locale: %s, Page context: %s",
-            locale,
-            page_context is not None,
-        )
-        logger.debug(
-            "[astream_events] Tools: %s, Limits - LLM: %s, Tool: %s, Retrieve: %s",
-            [t.name for t in (tools or [])],
-            max_llm_calls,
-            max_tool_calls,
-            max_retrieve_calls,
-        )
+        with tracer.start_as_current_span("chat_agent.astream_events") as span:
+            span.set_attribute("thread_id", thread_id)
+            span.set_attribute("locale", locale)
+            span.set_attribute("has_page_context", page_context is not None)
+            span.set_attribute("tools", [t.name for t in (tools or [])])
+            span.set_attribute("max_llm_calls", max_llm_calls)
+            span.set_attribute("max_tool_calls", max_tool_calls)
+            span.set_attribute("max_retrieve_calls", max_retrieve_calls)
 
-        config = RunnableConfig(
-            configurable={
-                "thread_id": thread_id,
-                "allowed_tools": tools,
-            }
-        )
-        messages: list[AnyMessage] = [HumanMessage(content=message)]
+            config = RunnableConfig(
+                configurable={
+                    "thread_id": thread_id,
+                    "allowed_tools": tools,
+                }
+            )
+            messages: list[AnyMessage] = [HumanMessage(content=message)]
 
-        token_count = 0
-        async for event in self._agent.astream_events(
-            {
-                "messages": messages,
-                "page_context": page_context,
-                "locale": locale,
-                "rewritten_query": None,
-                "max_llm_calls": max_llm_calls,
-                "max_tool_calls": max_tool_calls,
-                "max_retrieve_calls": max_retrieve_calls,
-            },
-            config,
-        ):
-            kind: str = event.get("event", "")
-            raw_metadata: object = event.get("metadata")
-            metadata: dict = raw_metadata if isinstance(raw_metadata, dict) else {}
-            node_name: str | None = metadata.get("langgraph_node")
+            token_count = 0
+            async for event in self._agent.astream_events(
+                {
+                    "messages": messages,
+                    "page_context": page_context,
+                    "locale": locale,
+                    "rewritten_query": None,
+                    "max_llm_calls": max_llm_calls,
+                    "max_tool_calls": max_tool_calls,
+                    "max_retrieve_calls": max_retrieve_calls,
+                },
+                config,
+            ):
+                kind: str = event.get("event", "")
+                raw_metadata: object = event.get("metadata")
+                metadata: dict = raw_metadata if isinstance(raw_metadata, dict) else {}
+                node_name: str | None = metadata.get("langgraph_node")
 
-            if kind == "on_chat_model_stream" and node_name == "generate_answer":
-                chunk: AIMessageChunk | None = event.get("data", {}).get("chunk")
-                if chunk and chunk.content:
-                    content: str | list[str | dict] = chunk.content
-                    if isinstance(content, str):
-                        token_count += len(content)
-                        yield content
-                    else:
-                        text_parts: list[str] = [
-                            p if isinstance(p, str) else str(p) for p in content
-                        ]
-                        text: str = "".join(text_parts)
-                        token_count += len(text)
-                        yield text
+                if kind == "on_chat_model_stream" and node_name == "generate_answer":
+                    chunk: AIMessageChunk | None = event.get("data", {}).get("chunk")
+                    if chunk and chunk.content:
+                        content: str | list[str | dict] = chunk.content
+                        if isinstance(content, str):
+                            token_count += len(content)
+                            yield content
+                        else:
+                            text_parts: list[str] = [
+                                p if isinstance(p, str) else str(p) for p in content
+                            ]
+                            text: str = "".join(text_parts)
+                            token_count += len(text)
+                            yield text
 
-        logger.info(
-            "[astream_events] Event streaming completed for thread: %s, "
-            "total tokens: %s",
-            thread_id,
-            token_count,
-        )
+            span.set_attribute("total_tokens", token_count)
 
     async def aget_chat_history(self, thread_id: str) -> list[dict[str, str]]:
         """Retrieve the state history for a given thread.
@@ -1168,53 +1029,44 @@ class ChatAgent:
         Returns:
             List of message states in the thread's history.
         """
-        logger.info(
-            "[aget_chat_history] Retrieving chat history for thread: %s", thread_id
-        )
-        config: RunnableConfig = {"configurable": {"thread_id": thread_id}}
+        with tracer.start_as_current_span("chat_agent.get_chat_history") as span:
+            span.set_attribute("thread_id", thread_id)
+            config: RunnableConfig = {"configurable": {"thread_id": thread_id}}
 
-        logger.debug("[aget_chat_history] Fetching state history from checkpointer")
-        snaps: list[StateSnapshot] = [
-            snap async for snap in self._agent.aget_state_history(config)
-        ]
-        logger.info("[aget_chat_history] Retrieved %s state snapshots", len(snaps))
-        snaps.reverse()
+            snaps: list[StateSnapshot] = [
+                snap async for snap in self._agent.aget_state_history(config)
+            ]
+            span.set_attribute("snapshot_count", len(snaps))
+            snaps.reverse()
 
-        seen_ids: set[str] = set()
-        transcript: list[dict[str, str]] = []
+            seen_ids: set[str] = set()
+            transcript: list[dict[str, str]] = []
 
-        for snap in snaps:
-            for m in snap.values.get("messages", []):
-                if not isinstance(m, (HumanMessage, AIMessage)):
-                    continue
+            for snap in snaps:
+                for m in snap.values.get("messages", []):
+                    if not isinstance(m, (HumanMessage, AIMessage)):
+                        continue
 
-                mid: str | None = getattr(m, "id", None)
-                if mid and mid in seen_ids:
-                    logger.debug(
-                        "[aget_chat_history] Skipping duplicate message ID: %s", mid
-                    )
-                    continue
-                if mid:
-                    seen_ids.add(mid)
+                    mid: str | None = getattr(m, "id", None)
+                    if mid and mid in seen_ids:
+                        continue
+                    if mid:
+                        seen_ids.add(mid)
 
-                content: str | list[str | dict] = m.content
-                if isinstance(content, str):
-                    text: str = content
-                else:
-                    text_parts: list[str] = [
-                        p if isinstance(p, str) else str(p) for p in content
-                    ]
-                    text = "".join(text_parts)
-                text = text.strip()
-                if not text:
-                    logger.debug("[aget_chat_history] Skipping empty message")
-                    continue
+                    content: str | list[str | dict] = m.content
+                    if isinstance(content, str):
+                        text: str = content
+                    else:
+                        text_parts: list[str] = [
+                            p if isinstance(p, str) else str(p) for p in content
+                        ]
+                        text = "".join(text_parts)
+                    text = text.strip()
+                    if not text:
+                        continue
 
-                role: str = "human" if isinstance(m, HumanMessage) else "ai"
-                transcript.append({"role": role, "content": text})
+                    role: str = "human" if isinstance(m, HumanMessage) else "ai"
+                    transcript.append({"role": role, "content": text})
 
-        logger.info(
-            "[aget_chat_history] Chat history completed with %s messages",
-            len(transcript),
-        )
-        return transcript
+            span.set_attribute("message_count", len(transcript))
+            return transcript

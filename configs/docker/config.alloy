@@ -33,13 +33,13 @@ otelcol.processor.memory_limiter "default" {
 	}
 }
 
-// Traces -> Tempo
+// Traces -> Tempo + Langfuse
 otelcol.processor.batch "traces" {
 	timeout         = "1s"
 	send_batch_size = 1024
 
 	output {
-		traces = [otelcol.exporter.otlp.tempo.input]
+		traces = [otelcol.exporter.otlp.tempo.input, otelcol.exporter.otlphttp.langfuse.input]
 	}
 }
 
@@ -49,6 +49,19 @@ otelcol.exporter.otlp "tempo" {
 
 		tls {
 			insecure = true
+		}
+	}
+}
+
+// Langfuse OTLP exporter
+// Requires LANGFUSE_OTLP_ENDPOINT and LANGFUSE_OTLP_AUTH_HEADER env vars.
+// LANGFUSE_OTLP_AUTH_HEADER = "Basic base64(public_key:secret_key)"
+otelcol.exporter.otlphttp "langfuse" {
+	client {
+		endpoint = sys.env("LANGFUSE_OTLP_ENDPOINT")
+
+		headers = {
+			"Authorization" = sys.env("LANGFUSE_OTLP_AUTH_HEADER"),
 		}
 	}
 }
