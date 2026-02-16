@@ -92,11 +92,13 @@ class Settings(BaseSettings):
     log_file: str | None
     backend_host: str
     backend_port: int
+    metrics_port: int
 
     worker_log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
     worker_log_file: str | None
     batch_size: int
     max_concurrent_tasks: int
+    worker_metrics_port: int
 
     llm_api_key: SecretStr
     llm_server_base_url: str
@@ -106,6 +108,7 @@ class Settings(BaseSettings):
 
     mcp_host: str
     mcp_port: int
+    mcp_metrics_port: int
 
     monitoring_host: str
     monitoring_port: int

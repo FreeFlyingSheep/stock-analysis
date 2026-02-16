@@ -71,9 +71,10 @@ async def create_pgqueuer() -> PgQueuer:  # noqa: PLR0915
     Returns:
         Configured PgQueuer instance ready for job queueing and processing.
     """
+    settings: Settings = get_settings()
     connection: AsyncConnection = await get_connection()
     setup_telemetry("stock-analysis-worker")
-    start_metrics_server()
+    start_metrics_server(settings.worker_metrics_port)
 
     def handle_shutdown(
         _signum: int | None = None, _frame: FrameType | None = None
@@ -90,7 +91,6 @@ async def create_pgqueuer() -> PgQueuer:  # noqa: PLR0915
     signal.signal(signal.SIGINT, handle_shutdown)
     atexit.register(handle_shutdown)
 
-    settings: Settings = get_settings()
     engine: AsyncEngine = create_async_engine(
         settings.database_url_with_psycopg,
         echo=settings.debug,

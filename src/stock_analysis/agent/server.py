@@ -48,7 +48,7 @@ async def lifespan(_app: object) -> AsyncIterator[None]:
         None
     """
     setup_telemetry("stock-analysis-mcp")
-    start_metrics_server()
+    start_metrics_server(settings.mcp_metrics_port)
 
     def handle_shutdown(_signum: int, _frame: FrameType | None) -> None:
         """Handle shutdown signals.

@@ -84,7 +84,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
         app: FastAPI application instance.
     """
     setup_telemetry()
-    start_metrics_server()
+    start_metrics_server(settings.metrics_port)
 
     engine: AsyncEngine = create_async_engine(
         settings.database_url_with_psycopg,

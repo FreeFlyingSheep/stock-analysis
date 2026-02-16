@@ -105,6 +105,7 @@ services:
       DATABASE_PORT: "5432"
       BACKEND_HOST: 0.0.0.0
       BACKEND_PORT: "8000"
+      METRICS_PORT: "9464"
       MCP_HOST: mcp
       MCP_PORT: "8000"
       MONITORING_HOST: alloy
@@ -135,6 +136,7 @@ services:
       DATABASE_DB: ${DATABASE_DB}
       BATCH_SIZE: ${BATCH_SIZE}
       MAX_CONCURRENT_TASKS: ${MAX_CONCURRENT_TASKS}
+      WORKER_METRICS_PORT: "9464"
       MONITORING_HOST: alloy
       MONITORING_PORT: "4317"
       REDIS_HOST: redis
@@ -164,6 +166,7 @@ services:
       BACKEND_PORT: "8000"
       MCP_HOST: 0.0.0.0
       MCP_PORT: "8000"
+      MCP_METRICS_PORT: "9464"
       MONITORING_HOST: alloy
       MONITORING_PORT: "4317"
       OTEL_SERVICE_NAME: stock-analysis-mcp

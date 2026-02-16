@@ -116,7 +116,7 @@ def instrument_db_engine(engine: AsyncEngine) -> None:
     )
 
 
-def start_metrics_server(port: int = 9464) -> None:
+def start_metrics_server(port: int) -> None:
     """Start a lightweight HTTP server exposing /metrics for Prometheus.
 
     Args:
