@@ -2,6 +2,7 @@
     import { onDestroy } from "svelte";
     import { t } from "$lib/i18n";
     import { streamChatMessage, type StreamStatus } from "$lib/api";
+    import { renderMarkdown } from "$lib/markdown";
 
     type Message = {
         role: "user" | "assistant";
@@ -326,7 +327,9 @@
                             🤖
                         {/if}
                     </div>
-                    <div class="bubble">{message.content}</div>
+                    <div class="bubble markdown">
+                        {@html renderMarkdown(message.content)}
+                    </div>
                 </div>
             {/each}
 
@@ -581,6 +584,71 @@
         border: 1px solid var(--color-border);
         line-height: 1.5;
         word-break: break-word;
+    }
+
+    .markdown :global(p) {
+        margin: 0;
+    }
+
+    .markdown :global(p + p) {
+        margin-top: 0.6rem;
+    }
+
+    .markdown :global(h1),
+    .markdown :global(h2),
+    .markdown :global(h3),
+    .markdown :global(h4),
+    .markdown :global(h5),
+    .markdown :global(h6) {
+        margin: 0.25rem 0;
+        line-height: 1.3;
+    }
+
+    .markdown :global(ul),
+    .markdown :global(ol) {
+        margin: 0.4rem 0;
+        padding-left: 1.25rem;
+    }
+
+    .markdown :global(li + li) {
+        margin-top: 0.2rem;
+    }
+
+    .markdown :global(blockquote) {
+        margin: 0.45rem 0;
+        padding-left: 0.75rem;
+        border-left: 3px solid var(--color-border-strong);
+        color: var(--color-text-secondary);
+    }
+
+    .markdown :global(pre) {
+        margin: 0.45rem 0;
+        padding: 0.6rem 0.75rem;
+        background: rgba(15, 23, 42, 0.08);
+        border-radius: 8px;
+        overflow-x: auto;
+    }
+
+    .markdown :global(code) {
+        font-family:
+            "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono",
+            "Courier New", monospace;
+        font-size: 0.9em;
+        background: rgba(15, 23, 42, 0.08);
+        padding: 0.1rem 0.3rem;
+        border-radius: 4px;
+    }
+
+    .markdown :global(pre code) {
+        padding: 0;
+        background: transparent;
+        border-radius: 0;
+    }
+
+    .markdown :global(a) {
+        color: inherit;
+        text-decoration: underline;
+        text-underline-offset: 2px;
     }
 
     .message.user .bubble {

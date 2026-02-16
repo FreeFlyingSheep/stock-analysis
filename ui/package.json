@@ -26,6 +26,7 @@
     },
     "dependencies": {
         "@sveltejs/adapter-node": "^5.5.2",
-        "js-yaml": "^4.1.1"
+        "js-yaml": "^4.1.1",
+        "markdown-it": "^14.1.1"
     }
 }
