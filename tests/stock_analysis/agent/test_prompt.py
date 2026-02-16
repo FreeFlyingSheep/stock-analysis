@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from stock_analysis.agent.prompts import PromptManager
+from stock_analysis.agent.prompt import PromptManager
 
 
 @pytest.fixture

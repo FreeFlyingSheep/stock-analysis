@@ -2,11 +2,10 @@
 
 from functools import cached_property, lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal, Self
+from typing import TYPE_CHECKING, Literal
 
 from pydantic import (
     SecretStr,  # noqa: TC002
-    model_validator,
 )
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -48,10 +47,9 @@ class Settings(BaseSettings):
         worker_log_file: File path for the worker log file.
         batch_size: Batch size for processing data.
         max_concurrent_tasks: Maximum number of concurrent tasks.
-        use_llm: Flag to enable or disable the use of online LLM for LLM tasks.
         llm_api_key: API key for the online LLM service.
         llm_server_base_url: Base URL for the online LLM server.
-        llm_model: LLM model name.
+        llm_chat_model: LLM model name.
         llm_embedding_model: LLM embedding model name.
         llm_embedding_dimension: LLM embedding dimension.
         mcp_host: Host address for the MCP server.
@@ -100,39 +98,17 @@ class Settings(BaseSettings):
     batch_size: int
     max_concurrent_tasks: int
 
-    use_llm: bool
-    llm_api_key: SecretStr | None = None
-    llm_server_base_url: str | None = None
-    llm_model: str | None = None
-    llm_embedding_model: str | None = None
-    llm_embedding_dimension: int | None = None
+    llm_api_key: SecretStr
+    llm_server_base_url: str
+    llm_chat_model: str
+    llm_embedding_model: str
+    llm_embedding_dimension: int
 
     mcp_host: str
     mcp_port: int
 
     monitoring_host: str
     monitoring_port: int
-
-    @model_validator(mode="after")
-    def _check_llm_fields(self) -> Self:
-        if self.use_llm:
-            missing: list[str] = [
-                name
-                for name in (
-                    "llm_api_key",
-                    "llm_server_base_url",
-                    "llm_model",
-                    "llm_embedding_model",
-                    "llm_embedding_dimension",
-                    "mcp_host",
-                    "mcp_port",
-                )
-                if getattr(self, name) in (None, "")
-            ]
-            if missing:
-                msg: str = f"LLM is enabled, but missing fields: {', '.join(missing)}"
-                raise ValueError(msg)
-        return self
 
     @cached_property
     def database_url_with_psycopg(self) -> str:

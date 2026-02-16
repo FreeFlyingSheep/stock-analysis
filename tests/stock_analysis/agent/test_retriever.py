@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 import pytest_asyncio
 
-from stock_analysis.agent.model import Embeddings
+from stock_analysis.agent.llm import Embeddings
 from stock_analysis.agent.retriever import Retriever
 from stock_analysis.models.report import ReportChunk
 

@@ -12,7 +12,7 @@ from anyio import Path
 from minio.error import MinioException
 from sqlalchemy.dialects.postgresql import insert
 
-from stock_analysis.agent.model import Embeddings
+from stock_analysis.agent.llm import Embeddings
 from stock_analysis.logger import get_logger
 from stock_analysis.models.report import ReportChunk
 from stock_analysis.schemas.report import RawChunk, ReportChunkIn

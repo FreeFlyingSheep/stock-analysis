@@ -2,7 +2,7 @@
 
 from typing import TYPE_CHECKING
 
-from stock_analysis.agent.model import Embeddings
+from stock_analysis.agent.llm import Embeddings
 from stock_analysis.services.report import ReportService
 
 if TYPE_CHECKING:

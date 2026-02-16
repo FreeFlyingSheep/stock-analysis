@@ -8,7 +8,7 @@ from minio.commonconfig import ENABLED
 from minio.versioningconfig import VersioningConfig
 
 from stock_analysis.agent.ingest import Ingestor
-from stock_analysis.agent.model import Embeddings
+from stock_analysis.agent.llm import Embeddings
 from stock_analysis.services.bucket import MinioBucketService
 from stock_analysis.settings import get_settings
 

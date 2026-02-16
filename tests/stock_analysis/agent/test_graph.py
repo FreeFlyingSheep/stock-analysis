@@ -9,7 +9,8 @@ from langchain.messages import AIMessage, HumanMessage
 from langgraph.graph import END
 
 from stock_analysis.agent.graph import ChatAgent
-from stock_analysis.agent.model import LLM, Embeddings
+from stock_analysis.agent.llm import ChatModel, Embeddings
+from stock_analysis.agent.nodes import trim_messages
 
 if TYPE_CHECKING:
     from langchain.messages import AnyMessage
@@ -26,7 +27,7 @@ async def chat_agent(
     fake_chat: FakeListChatModel,
     fake_embeddings: FakeEmbeddings,
 ) -> ChatAgent:
-    llm = LLM(llm=fake_chat)
+    llm = ChatModel(chat=fake_chat)
     embeddings = Embeddings(embeddings=fake_embeddings)
     prompts_dir: Path = Path(__file__).parents[3] / "configs" / "prompts"
     return ChatAgent(
@@ -38,11 +39,11 @@ async def chat_agent(
 
 
 @pytest.mark.asyncio
-async def test_trim_messages(chat_agent: ChatAgent) -> None:
+async def test_trim_messages() -> None:
     length: int = 30 + 1
     messages: list[AnyMessage] = [HumanMessage(content=f"Test {i}") for i in range(40)]
     state: State = {"messages": messages}
-    result: dict | None = chat_agent._trim_messages(state)
+    result: dict | None = trim_messages(state)
     assert result is not None
     assert "messages" in result
     assert len(result["messages"]) == length
@@ -66,8 +67,8 @@ async def test_should_continue(chat_agent: ChatAgent) -> None:
 
 @pytest.mark.asyncio
 async def test_load_prompt(chat_agent: ChatAgent) -> None:
-    prompt1: str = chat_agent._load_prompt("chat", "zh-CN")
+    prompt1: str = chat_agent._prompt_manager.get_prompt("chat", "zh-CN")
     assert len(prompt1) > 0
 
-    prompt2: str = chat_agent._load_prompt("chat", "en-US")
+    prompt2: str = chat_agent._prompt_manager.get_prompt("chat", "en-US")
     assert prompt2 != prompt1

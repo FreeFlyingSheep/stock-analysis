@@ -18,47 +18,35 @@ if TYPE_CHECKING:
     from stock_analysis.settings import Settings
 
 
-class LLMError(Exception):
-    """Custom exception for LLM-related errors."""
-
-
-class LLM:
+class ChatModel:
     """Wrapper around the OpenAI language model."""
 
-    _llm: BaseChatModel | None
+    _chat: BaseChatModel
     """Instance of the OpenAI language model."""
     _rpm_limiter: AsyncLimiter
     """Rate limiter for RPM (requests per minute) - 1000 RPM for chat."""
     _tpm_limiter: AsyncLimiter
     """Rate limiter for TPM (tokens per minute) - 50000 TPM for chat."""
 
-    def __init__(self, llm: BaseChatModel | None = None) -> None:
+    def __init__(self, chat: BaseChatModel | None = None) -> None:
         """Initialize the LLM wrapper.
 
         Args:
-            llm: Optional instance of ChatOpenAI to use.
+            chat: Optional instance of ChatOpenAI to use.
         """
         self._rpm_limiter = AsyncLimiter(max_rate=1000, time_period=60)
         self._tpm_limiter = AsyncLimiter(max_rate=50000, time_period=60)
 
-        if llm is not None:
-            self._llm = llm
+        if chat is not None:
+            self._chat = chat
             return
 
         settings: Settings = get_settings()
-        if (
-            settings.use_llm
-            and settings.llm_model is not None
-            and settings.llm_api_key is not None
-            and settings.llm_server_base_url is not None
-        ):
-            self._llm = ChatOpenAI(
-                model=settings.llm_model,
-                api_key=settings.llm_api_key,
-                base_url=settings.llm_server_base_url,
-            )
-        else:
-            self._llm = None
+        self._chat = ChatOpenAI(
+            model=settings.llm_chat_model,
+            api_key=settings.llm_api_key,
+            base_url=settings.llm_server_base_url,
+        )
 
     def bind_tools(
         self, tools: list[BaseTool]
@@ -74,11 +62,7 @@ class LLM:
         Raises:
             LLMError: If the LLM is not configured.
         """
-        if self._llm is None:
-            msg: str = "LLM is not configured."
-            raise LLMError(msg)
-
-        return self._llm.bind_tools(tools)
+        return self._chat.bind_tools(tools)
 
     def with_structured_output(
         self, schema: dict | type[BaseModel]
@@ -91,11 +75,7 @@ class LLM:
         Returns:
             A Runnable that will return output conforming to the schema.
         """
-        if self._llm is None:
-            msg: str = "LLM is not configured."
-            raise LLMError(msg)
-
-        return self._llm.with_structured_output(schema)
+        return self._chat.with_structured_output(schema)
 
     def invoke(self, prompt: LanguageModelInput) -> AIMessage:
         """Invoke the language model with the given prompt.
@@ -109,11 +89,7 @@ class LLM:
         Raises:
             LLMError: If the LLM is not configured.
         """
-        if self._llm is None:
-            msg: str = "LLM is not configured."
-            raise LLMError(msg)
-
-        return self._llm.invoke(prompt)
+        return self._chat.invoke(prompt)
 
     async def ainvoke(self, prompt: LanguageModelInput) -> AIMessage:
         """Asynchronously invoke the language model with the given prompt.
@@ -127,18 +103,14 @@ class LLM:
         Raises:
             LLMError: If the LLM is not configured.
         """
-        if self._llm is None:
-            msg: str = "LLM is not configured."
-            raise LLMError(msg)
-
         async with self._rpm_limiter, self._tpm_limiter:
-            return await self._llm.ainvoke(prompt)
+            return await self._chat.ainvoke(prompt)
 
 
 class Embeddings:
     """Wrapper around the OpenAI embeddings model."""
 
-    _embeddings: BaseEmbeddings | None
+    _embeddings: BaseEmbeddings
     """Instance of the OpenAI embeddings model."""
     _rpm_limiter: AsyncLimiter
     """Rate limiter for RPM (requests per minute) - 2000 RPM for embeddings."""
@@ -159,21 +131,12 @@ class Embeddings:
             return
 
         settings: Settings = get_settings()
-        if (
-            settings.use_llm
-            and settings.llm_embedding_model is not None
-            and settings.llm_api_key is not None
-            and settings.llm_server_base_url is not None
-            and settings.llm_embedding_dimension is not None
-        ):
-            self._embeddings = OpenAIEmbeddings(
-                model=settings.llm_embedding_model,
-                dimensions=settings.llm_embedding_dimension,
-                api_key=settings.llm_api_key,
-                base_url=settings.llm_server_base_url,
-            )
-        else:
-            self._embeddings = None
+        self._embeddings = OpenAIEmbeddings(
+            model=settings.llm_embedding_model,
+            dimensions=settings.llm_embedding_dimension,
+            api_key=settings.llm_api_key,
+            base_url=settings.llm_server_base_url,
+        )
 
     def query(self, text: str) -> list[float]:
         """Get the embedding vector for the given text.
@@ -187,10 +150,6 @@ class Embeddings:
         Raises:
             LLMError: If the embeddings model is not configured.
         """
-        if self._embeddings is None:
-            msg: str = "LLM embeddings model is not configured."
-            raise LLMError(msg)
-
         return self._embeddings.embed_query(text)
 
     async def aquery(self, text: str) -> list[float]:
@@ -205,9 +164,5 @@ class Embeddings:
         Raises:
             LLMError: If the embeddings model is not configured.
         """
-        if self._embeddings is None:
-            msg: str = "LLM embeddings model is not configured."
-            raise LLMError(msg)
-
         async with self._rpm_limiter, self._tpm_limiter:
             return await self._embeddings.aembed_query(text)

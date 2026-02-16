@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from stock_analysis.agent.model import LLM, Embeddings
+from stock_analysis.agent.llm import ChatModel, Embeddings
 
 if TYPE_CHECKING:
     from langchain.messages import AIMessage
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 @pytest.mark.asyncio
 async def test_llm(fake_chat: FakeListChatModel) -> None:
-    llm = LLM(llm=fake_chat)
+    llm = ChatModel(chat=fake_chat)
     result: AIMessage = llm.invoke("Query 1")
     assert result.content == fake_chat.responses[0]
 
