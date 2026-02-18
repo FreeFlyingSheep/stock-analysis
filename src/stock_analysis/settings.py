@@ -34,6 +34,7 @@ class Settings(BaseSettings):
         minio_secure: Use secure connection for MinIO.
         redis_host: Redis host.
         redis_port: Redis port.
+        redis_password: Redis password.
         redis_prefix: Prefix for Redis keys.
         config_dir: Directory for CNInfo configuration files.
         rule_file_path: Path to the rule configuration file.
@@ -82,6 +83,7 @@ class Settings(BaseSettings):
 
     redis_host: str
     redis_port: int
+    redis_password: SecretStr
     redis_prefix: str
 
     config_dir: str

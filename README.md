@@ -172,8 +172,8 @@ If you want to keep existing data, dump the database first (`./scripts/dump_db.s
 3. Configure environment variables:
 
     ```bash
-    cp .env.example .env
-    # Edit .env with your database credentials and settings
+    ./scripts/generate_env.sh
+    # If you need to customize environment variables, edit the .env file
     export $(grep -v '^#' .env | xargs)
     ```
 
@@ -283,9 +283,8 @@ The configurations are set in `.env` and overridden in `compose.yaml`. If you ne
 3. Configure environment variables:
 
     ```bash
-    export ARCH=$(docker version --format '{{.Server.Arch}}')
-    cp .env.example .env
-    # Edit .env with your database credentials and settings
+    ./scripts/generate_env.sh
+    # If you need to customize environment variables, edit the .env file
     ```
 
 4. Run the Docker Compose setup:
@@ -302,7 +301,8 @@ The configurations are set in `.env` and overridden in `compose.yaml`. If you ne
     ```
 
     You can access the services at `http://127.0.0.1:8080`.
-    You can access the Grafana dashboard at `http://127.0.0.1:8080/grafana`.
+    You can access the Grafana dashboard at `http://127.0.0.1:8081`.
+    You can access the Langfuse dashboard at `http://127.0.0.1:8082`.
 
 5. Remove all local images after shutting down:
 

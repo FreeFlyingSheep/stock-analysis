@@ -15,7 +15,7 @@ logger: logging.Logger = logging.getLogger(__name__)
 
 
 def create_database(settings: Settings) -> None:
-    """Create the database if it does not exist. Enable the pgvector extension.
+    """Create the database if it does not exist.
 
     Args:
         settings: Application settings containing database connection details.

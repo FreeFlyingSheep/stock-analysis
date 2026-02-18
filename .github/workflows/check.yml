@@ -39,8 +39,8 @@ jobs:
       - name: Install dependencies
         run: pnpm --prefix ui install
 
-      - name: Copy env file
-        run: cp .env.example .env
+      - name: Generate env file
+        run: ./scripts/generate_env.sh
 
       - name: Build test postgres image
         run: docker build -t stock-analysis-postgres:0.1 -f configs/docker/postgres.Dockerfile .

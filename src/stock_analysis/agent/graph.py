@@ -8,12 +8,12 @@ from langchain.messages import (
     AnyMessage,  # noqa: TC002
     HumanMessage,
 )
-from langchain_core.messages.ai import AIMessageChunk
 from langchain_core.runnables.config import RunnableConfig
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 from opentelemetry import trace
 
+from stock_analysis.agent.history import build_chat_history
 from stock_analysis.agent.limit import (
     MAX_CHAT_CALLS,
     MAX_RETRIEVE_CALLS,
@@ -33,12 +33,12 @@ from stock_analysis.agent.nodes import (
 )
 from stock_analysis.agent.prompt import PromptManager
 from stock_analysis.agent.state import State
+from stock_analysis.agent.stream import astream_chat_response
 
 if TYPE_CHECKING:
     import os
     from collections.abc import AsyncGenerator
 
-    from langchain.messages import AIMessageChunk
     from langchain.tools import BaseTool
     from langchain_core.runnables.graph import Graph
     from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
@@ -286,40 +286,20 @@ class ChatAgent:
             )
             messages: list[AnyMessage] = [HumanMessage(content=message)]
 
-            token_count = 0
             async for event in self._agent.astream_events(
                 {
                     "messages": messages,
                     "page_context": page_context,
                     "locale": locale,
                     "rewritten_query": None,
-                    "MAX_CHAT_CALLS": MAX_CHAT_CALLS,
+                    "max_chat_calls": max_chat_calls,
                     "max_tool_calls": max_tool_calls,
                     "max_retrieve_calls": max_retrieve_calls,
                 },
                 config,
             ):
-                kind: str = event.get("event", "")
-                raw_metadata: object = event.get("metadata")
-                metadata: dict = raw_metadata if isinstance(raw_metadata, dict) else {}
-                node_name: str | None = metadata.get("langgraph_node")
-
-                if kind == "on_chat_model_stream" and node_name == "generate_answer":
-                    chunk: AIMessageChunk | None = event.get("data", {}).get("chunk")
-                    if chunk and chunk.content:
-                        content: str | list[str | dict] = chunk.content
-                        if isinstance(content, str):
-                            token_count += len(content)
-                            yield content
-                        else:
-                            text_parts: list[str] = [
-                                p if isinstance(p, str) else str(p) for p in content
-                            ]
-                            text: str = "".join(text_parts)
-                            token_count += len(text)
-                            yield text
-
-            span.set_attribute("total_tokens", token_count)
+                async for content in astream_chat_response(event):
+                    yield content
 
     async def aget_chat_history(self, thread_id: str) -> list[dict[str, str]]:
         """Retrieve the state history for a given thread.
@@ -339,35 +319,4 @@ class ChatAgent:
             ]
             span.set_attribute("snapshot_count", len(snaps))
             snaps.reverse()
-
-            seen_ids: set[str] = set()
-            transcript: list[dict[str, str]] = []
-
-            for snap in snaps:
-                for m in snap.values.get("messages", []):
-                    if not isinstance(m, (HumanMessage, AIMessage)):
-                        continue
-
-                    mid: str | None = getattr(m, "id", None)
-                    if mid and mid in seen_ids:
-                        continue
-                    if mid:
-                        seen_ids.add(mid)
-
-                    content: str | list[str | dict] = m.content
-                    if isinstance(content, str):
-                        text: str = content
-                    else:
-                        text_parts: list[str] = [
-                            p if isinstance(p, str) else str(p) for p in content
-                        ]
-                        text = "".join(text_parts)
-                    text = text.strip()
-                    if not text:
-                        continue
-
-                    role: str = "human" if isinstance(m, HumanMessage) else "ai"
-                    transcript.append({"role": role, "content": text})
-
-            span.set_attribute("message_count", len(transcript))
-            return transcript
+            return await build_chat_history(snaps)

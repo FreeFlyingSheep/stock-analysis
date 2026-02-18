@@ -24,9 +24,9 @@ def test_read_settings() -> None:
 
     try:
         settings: Settings = get_settings(".env.example")  # type: ignore[call-arg]
-        assert (
-            settings.database_url_with_psycopg
-            == "postgresql+psycopg://postgres:password@127.0.0.1:5432/stock_analysis"
+        assert settings.database_url_with_psycopg == (
+            "postgresql+psycopg://postgres:"
+            "CHANGEME_database_password@127.0.0.1:5432/stock_analysis"
         )
         assert settings.debug is False
         assert settings.log_level == "INFO"

@@ -18,6 +18,8 @@ prompts:
       ## Hard Rules
 
       - Do not provide final analysis, conclusions, recommendations, or disclaimers.
+      - For greetings, chitchat, or questions unrelated to stock analysis, respond directly without calling any tools.
+      - When you decide to call a tool, produce only the tool call with no explanatory text.
       - Prefer tool calls when retrieval could improve factual grounding.
       - If no retrieve tool is needed, return a very short neutral response only.
       - Keep responses concise.
@@ -35,6 +37,8 @@ prompts:
       ## 硬性规则
 
       - 不输出最终分析、结论、建议或免责说明。
+      - 对问候、闲聊或与股票分析无关的问题，直接回复，不调用任何工具。
+      - 决定调用工具时，只发起工具调用，不要用文字描述调用动作。
       - 只要检索能提升事实依据，就优先发起工具调用。
       - 若无需调用 retrieve 工具，只返回极短、中性的内容。
       - 保持简洁。
@@ -58,6 +62,8 @@ prompts:
       - Never guarantee returns or certainty.
       - Never fabricate prices, filings, financial values, news, dates, events, or conclusions.
       - If evidence is missing, state uncertainty explicitly and list what should be verified.
+      - For greetings, chitchat, or questions unrelated to stock analysis, respond naturally without performing analysis or referencing page context.
+      - When calling tools, produce only the tool call with no explanatory text.
 
       ## Input Format
 
@@ -129,6 +135,8 @@ prompts:
       - 不承诺收益，不给出确定性结论。
       - 不编造价格、公告、财务数值、新闻、日期、事件或结论。
       - 证据不足时,必须明确不确定性,并给出待验证项。
+      - 对问候、闲聊或与股票分析无关的问题，自然回复，不执行分析，不引用页面内容。
+      - 调用工具时，只发起工具调用，不要附加解释性文字。
 
       ## 输入格式
 

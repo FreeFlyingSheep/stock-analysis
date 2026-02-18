@@ -103,7 +103,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     )
 
     app.state.redis_pool = ConnectionPool(
-        host=settings.redis_host, port=settings.redis_port, db=0
+        host=settings.redis_host,
+        port=settings.redis_port,
+        db=0,
+        password=settings.redis_password.get_secret_value(),
     )
 
     app.state.mcp = MultiServerMCPClient(

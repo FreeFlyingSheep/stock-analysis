@@ -172,8 +172,8 @@
 3. 配置环境变量：
 
     ```bash
-    cp .env.example .env
-    # 使用您的数据库凭证和设置编辑 .env
+    ./scripts/generate_env.sh
+    # 如果需要自定义环境变量，请编辑 .env 文件
     export $(grep -v '^#' .env | xargs)
     ```
 
@@ -283,9 +283,8 @@
 3. 配置环境变量：
 
     ```bash
-    export ARCH=$(docker version --format '{{.Server.Arch}}')
-    cp .env.example .env
-    # 使用您的数据库凭证和设置编辑 .env
+    ./scripts/generate_env.sh
+    # 如果需要自定义环境变量，请编辑 .env 文件
     ```
 
 4. 运行 Docker Compose 设置：
@@ -302,7 +301,8 @@
     ```
 
     您可以在 `http://127.0.0.1:8080` 访问服务。
-    您可以在 `http://127.0.0.1:8080/grafana` 访问 Grafana 仪表板。
+    您可以在 `http://127.0.0.1:8081` 访问 Grafana 仪表板。
+    您可以在 `http://127.0.0.1:8082` 访问 Langfuse 控制台。
 
 5. 关闭后删除所有本地镜像：
 

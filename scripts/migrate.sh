@@ -14,3 +14,4 @@ set -euo pipefail
 
 bash ./scripts/init_db.sh
 python scripts/import_reports.py
+python scripts/init_langfuse.py

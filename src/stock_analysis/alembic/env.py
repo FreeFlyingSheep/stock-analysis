@@ -80,7 +80,7 @@ def run_migrations_offline() -> None:
     """Run migrations in offline mode.
 
     Configures the context with a URL only so no Engine or DBAPI is required.
-    Calls to ``context.execute()`` emit SQL to the script output.
+    Calls to context.execute() emit SQL to the script output.
     """
     url: str | None = config.get_main_option("sqlalchemy.url")
     context.configure(
