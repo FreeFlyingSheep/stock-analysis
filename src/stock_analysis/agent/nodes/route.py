@@ -11,7 +11,6 @@ from opentelemetry import trace
 
 from stock_analysis.agent.helper import (
     build_prompt,
-    load_prompt,
     select_tools,
     set_llm_response_attrs,
 )
@@ -33,11 +32,13 @@ async def route_query(
     prompt_manager: PromptManager,
     chat: ChatModel,
 ) -> dict:
-    """Decide whether to retrieve documents or respond directly.
+    """Decide whether to retrieve documents.
 
-    Uses the chat prompt with only retrieve-tagged tools bound.
-    When the retrieve-call limit has already been reached the LLM is
-    invoked without tools so it answers directly.
+    Uses the route prompt with only retrieve-tagged tools bound.
+    This node should only emit an AIMessage when retrieval is needed
+    (i.e. when the model returns retrieve tool calls); otherwise it
+    leaves message state unchanged and lets ``generate_answer`` produce
+    the user-visible response.
 
     Args:
         state: Current state containing messages and context.
@@ -46,7 +47,7 @@ async def route_query(
         chat: ChatModel instance for invoking the LLM.
 
     Returns:
-        Updated state with the LLM response.
+        Updated state with optional route message and counters.
     """
     with tracer.start_as_current_span("chat_agent.route_query") as span:
         locale: str = state.get("locale", "en-US")
@@ -58,14 +59,18 @@ async def route_query(
         if llm_limit_reached(state):
             span.set_attribute("limit_reached", "llm")
             return {
-                "messages": [
-                    AIMessage(
-                        content=load_prompt(
-                            prompt_manager, "error_max_steps_specific", locale
-                        ).strip()
-                    )
-                ],
+                "locale": locale,
             }
+
+        tools: list[BaseTool] = select_tools(config, include_tags={"retrieve"})
+        span.set_attribute("retrieve_tools_count", len(tools))
+        span.set_attribute("retrieve_tools", [tool.name for tool in tools])
+        if not tools:
+            span.set_attribute("skip_reason", "no_retrieve_tools")
+            return {"locale": locale}
+        if retrieve_limit_reached(state):
+            span.set_attribute("skip_reason", "retrieve_limit_reached")
+            return {"locale": locale}
 
         rewritten_query: str | None = state.get("rewritten_query")
         if rewritten_query:
@@ -74,25 +79,18 @@ async def route_query(
         messages: list[AnyMessage] = await build_prompt(
             prompt_manager, "route", state, locale, query_override=rewritten_query
         )
-        tools: list[BaseTool] = select_tools(config, include_tags={"retrieve"})
-        span.set_attribute("retrieve_tools_count", len(tools))
-        span.set_attribute("retrieve_tools", [tool.name for tool in tools])
-
-        if tools and not retrieve_limit_reached(state):
-            message: AnyMessage = await chat.bind_tools(tools).ainvoke(messages)
-        else:
-            if not tools:
-                span.set_attribute("skip_reason", "no_retrieve_tools")
-            else:
-                span.set_attribute("skip_reason", "retrieve_limit_reached")
-            message = await chat.ainvoke(messages)
+        message: AnyMessage = await chat.bind_tools(tools).ainvoke(messages)
         set_llm_response_attrs(span, message)
 
         if isinstance(message, AIMessage) and message.tool_calls:
             span.set_attribute("suggested_tool_calls", len(message.tool_calls))
+            return {
+                "messages": [message],
+                "locale": locale,
+                "chat_calls": chat_calls + 1,
+            }
 
         return {
-            "messages": [message],
             "locale": locale,
             "chat_calls": chat_calls + 1,
         }

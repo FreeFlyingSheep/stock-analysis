@@ -51,11 +51,10 @@
     let isEditingTitle = $state(false);
     let draftTitle = $state("");
 
-    let messageCounter = 0;
-
     function generateMessageId(): string {
-        messageCounter++;
-        return `msg_${internalThreadId}_${messageCounter}`;
+        return `msg_${internalThreadId}_${Date.now()}_${Math.random()
+            .toString(36)
+            .slice(2, 9)}`;
     }
 
     const applyMessages = (next: Message[]) => {
@@ -82,7 +81,6 @@
                 const ensuredId = await onEnsureThread();
                 if (ensuredId && ensuredId !== internalThreadId) {
                     internalThreadId = ensuredId;
-                    messageCounter = 0;
                 }
             } catch (err) {
                 error = err instanceof Error ? err.message : String(err);
@@ -193,7 +191,6 @@
     const switchThread = (nextThreadId: string, seedMessages: Message[]) => {
         stopStream();
         internalThreadId = nextThreadId;
-        messageCounter = 0;
         messages = seedMessages;
         streamStatus = "stopped";
         error = null;
