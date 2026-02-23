@@ -50,12 +50,19 @@ async def _get_data(
     yfinance_response: list[
         YahooFinanceAPIResponse
     ] = await stock_service.get_yahoo_finance_api_responses_by_stock_id(stock_id)
-    cninfo_data: dict[str, Any] = {
-        response.endpoint: response.raw_json for response in cninfo_response
-    }
-    if len(yfinance_response) > 1:
-        msg: str = (
-            f"Multiple Yahoo Finance API responses found for stock ID {stock_id}."
+    cninfo_data: dict[str, Any] = {}
+    for response in cninfo_response:
+        raw_json: dict[str, Any] = response.raw_json
+        if "data" not in raw_json:
+            msg: str = (
+                f"CNInfo response for endpoint {response.endpoint} "
+                "does not contain 'data'."
+            )
+            raise AnalyzerError(msg)
+        cninfo_data[response.endpoint] = raw_json["data"]
+    if len(yfinance_response) != 1:
+        msg = (
+            f"Multiple or no Yahoo Finance API responses found for stock ID {stock_id}."
         )
         raise AnalyzerError(msg)
     yfinance_data: dict[str, Any] = {"history": yfinance_response[0].raw_json}
@@ -111,7 +118,7 @@ async def _analyze_stock_data(
         record_ids: list[int] = await analyzer.analyze(stock.id)
         await db.commit()
         logger.info(
-            "Analysis completed for stock code: %s, record IDs: %d",
+            "Analysis completed for stock code: %s, record IDs: %s",
             payload.stock_code,
             record_ids,
         )

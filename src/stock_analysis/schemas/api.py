@@ -178,7 +178,7 @@ class YahooFinanceAPIResponseIn(BaseSchema):
 
     stock_id: int
     params: dict[str, int | float | str]
-    raw_json: str
+    raw_json: dict[str, Any]
 
 
 class YahooFinanceAPIResponseOut(YahooFinanceAPIResponseIn):

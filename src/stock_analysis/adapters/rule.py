@@ -80,9 +80,12 @@ def _get_dict_value(data: Any, key: str) -> Any:  # noqa: ANN401
     if not isinstance(data, dict):
         msg: str = f"Expected dict when accessing '{key}'"
         raise RuleError(msg)
+    if key not in data:
+        msg = f"Key '{key}' not found in data"
+        raise RuleError(msg)
     value: Any | None = data.get(key)
     if value is None:
-        msg = f"Key '{key}' not found in data"
+        msg = f"Key '{key}' is null in data"
         raise RuleError(msg)
     return value
 

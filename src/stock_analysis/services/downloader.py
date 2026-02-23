@@ -1,6 +1,7 @@
 """Data downloader service."""
 
-from typing import TYPE_CHECKING
+import json
+from typing import TYPE_CHECKING, Any
 
 from pydantic import ValidationError
 
@@ -128,8 +129,9 @@ class YahooFinanceDownloader:
         Raises:
             DownloaderError: If the download or storage validation fails.
         """
-        raw_json: str = await self._adapter.get_stock_history(symbol)
+        history: str = await self._adapter.get_stock_history(symbol)
         try:
+            raw_json: dict[str, Any] = {"records": json.loads(history)}
             raw_record = YahooFinanceAPIResponseIn(
                 stock_id=stock_id,
                 params={
@@ -139,8 +141,11 @@ class YahooFinanceDownloader:
                 },
                 raw_json=raw_json,
             )
+        except json.JSONDecodeError as e:
+            msg: str = f"JSON decode error for Yahoo Finance API with symbol {symbol}"
+            raise DownloaderError(msg) from e
         except ValidationError as e:
-            msg: str = f"Validation error for Yahoo Finance API with symbol {symbol}"
+            msg = f"Validation error for Yahoo Finance API with symbol {symbol}"
             raise DownloaderError(msg) from e
         else:
             record = YahooFinanceAPIResponse(**raw_record.model_dump())
