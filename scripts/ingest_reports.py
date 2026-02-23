@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 
     from stock_analysis.settings import Settings
 
+
 logger: logging.Logger = logging.getLogger(__name__)
 
 

@@ -39,6 +39,8 @@ class _Providers:
     meter: MeterProvider | None = None
     logger: LoggerProvider | None = None
     log_handler: LoggingHandler | None = None
+    instrumented: bool = False
+    shutdown_complete: bool = False
 
 
 _providers = _Providers()
@@ -59,6 +61,7 @@ def setup_telemetry(service_name: str = "stock-analysis-api") -> None:
         service_name: Logical service name used in telemetry data.
     """
     settings: Settings = get_settings()
+    _providers.shutdown_complete = False
     otlp_endpoint: str = f"http://{settings.monitoring_host}:{settings.monitoring_port}"
     resource: Resource = _build_resource(service_name)
 
@@ -85,12 +88,14 @@ def setup_telemetry(service_name: str = "stock-analysis-api") -> None:
         )
         logging.getLogger().addHandler(_providers.log_handler)
 
-    LoggingInstrumentor().instrument(set_logging_format=True)
-    HTTPXClientInstrumentor().instrument()
-    RequestsInstrumentor().instrument()
-    RedisInstrumentor().instrument()
-    PsycopgInstrumentor().instrument()
-    LangchainInstrumentor().instrument()
+    if not _providers.instrumented:
+        LoggingInstrumentor().instrument(set_logging_format=True)
+        HTTPXClientInstrumentor().instrument()
+        RequestsInstrumentor().instrument()
+        RedisInstrumentor().instrument()
+        PsycopgInstrumentor().instrument()
+        LangchainInstrumentor().instrument()
+        _providers.instrumented = True
 
 
 def instrument_app(app: FastAPI) -> None:
@@ -127,20 +132,29 @@ def start_metrics_server(port: int) -> None:
 
 def shutdown_telemetry() -> None:
     """Flush and shut down all OTel providers gracefully."""
+    if _providers.shutdown_complete:
+        return
+    _providers.shutdown_complete = True
+
     if _providers.log_handler is not None:
         logging.getLogger().removeHandler(_providers.log_handler)
         _providers.log_handler = None
 
     if _providers.tracer is not None:
         _providers.tracer.shutdown()
+        _providers.tracer = None
     if _providers.meter is not None:
         _providers.meter.shutdown()
+        _providers.meter = None
     if _providers.logger is not None:
         _providers.logger.shutdown()
+        _providers.logger = None
 
-    LoggingInstrumentor().uninstrument()
-    HTTPXClientInstrumentor().uninstrument()
-    RequestsInstrumentor().uninstrument()
-    RedisInstrumentor().uninstrument()
-    PsycopgInstrumentor().uninstrument()
-    LangchainInstrumentor().uninstrument()
+    if _providers.instrumented:
+        LoggingInstrumentor().uninstrument()
+        HTTPXClientInstrumentor().uninstrument()
+        RequestsInstrumentor().uninstrument()
+        RedisInstrumentor().uninstrument()
+        PsycopgInstrumentor().uninstrument()
+        LangchainInstrumentor().uninstrument()
+        _providers.instrumented = False

@@ -15,20 +15,21 @@ if TYPE_CHECKING:
 
     from stock_analysis.settings import Settings
 
+
 logger: logging.Logger = logging.getLogger(__name__)
 
 
 async def main() -> None:
-    """Update stock data by enqueueing update jobs."""
+    """Update stock data by enqueueing analyze jobs."""
     settings: Settings = get_settings()
     logging.basicConfig(level=settings.log_level)
-    logger.info("Enqueuing update_stock_data job...")
+    logger.info("Enqueuing analyze_all_stock_data job...")
 
     conn: AsyncConnection[TupleRow] = await get_connection()
     pgq: PgQueuer = create_pgqueuer_with_connection(conn)
 
     queries: Queries = pgq.qm.queries
-    await queries.enqueue("analyze_all_stocks", None, priority=10)
+    await queries.enqueue("analyze_all_stock_data", None, priority=10)
 
     await asyncio.sleep(5)
     await conn.close()
