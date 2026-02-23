@@ -1,7 +1,7 @@
 """Job to analyze stock data using scoring rules."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from dateutil.relativedelta import relativedelta
 from pydantic import ValidationError
@@ -18,11 +18,48 @@ if TYPE_CHECKING:
 
     from stock_analysis.adapters.rule import RuleAdapter
     from stock_analysis.models.analysis import Analysis
+    from stock_analysis.models.cninfo import CNInfoAPIResponse
+    from stock_analysis.models.yahoo import YahooFinanceAPIResponse
     from stock_analysis.services.stock import Stock
 
 
 class AnalyzerError(Exception):
     """Error raised during stock analysis job processing."""
+
+
+async def _get_data(
+    db: AsyncSession,
+    stock_id: int,
+) -> dict[str, Any]:
+    """Fetch stock data for analysis.
+
+    Args:
+        db: Database session for querying stock data.
+        stock_id: ID of the stock to fetch data for.
+
+    Returns:
+        A dictionary containing stock data needed for analysis.
+
+    Raises:
+        AnalyzerError: If data fetching fails or multiple responses found.
+    """
+    stock_service = StockService(db)
+    cninfo_response: list[
+        CNInfoAPIResponse
+    ] = await stock_service.get_cninfo_api_responses_by_stock_id(stock_id)
+    yfinance_response: list[
+        YahooFinanceAPIResponse
+    ] = await stock_service.get_yahoo_finance_api_responses_by_stock_id(stock_id)
+    cninfo_data: dict[str, Any] = {
+        response.endpoint: response.raw_json for response in cninfo_response
+    }
+    if len(yfinance_response) > 1:
+        msg: str = (
+            f"Multiple Yahoo Finance API responses found for stock ID {stock_id}."
+        )
+        raise AnalyzerError(msg)
+    yfinance_data: dict[str, Any] = {"history": yfinance_response[0].raw_json}
+    return {**cninfo_data, **yfinance_data}
 
 
 async def _analyze_stock_data(
@@ -69,6 +106,7 @@ async def _analyze_stock_data(
     logger.info("Analyzing stock data for stock code: %s", payload.stock_code)
 
     try:
+        adapter.set_data(await _get_data(db, stock.id))
         analyzer = Analyzer(db, adapter)
         record_ids: list[int] = await analyzer.analyze(stock.id)
         await db.commit()

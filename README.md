@@ -134,15 +134,6 @@ This project is developed with the assistance of AI tools:
 - **Code Quality Standards**: Enforced through ruff linting, mypy type checking
 - **Automated Testing**: pytest with testcontainers for isolated integration testing
 
-## Features Roadmap
-
-These features are under consideration for future development:
-
-- Use LLM to score stocks
-- Evaluate agent
-- Avoid duplicate jobs in PgQueuer
-- Refine frontend UI/UX design
-
 ## Setup
 
 **Warning: all the setup methods below will drop and recreate the database, erasing any existing data.**
