@@ -9,7 +9,6 @@
 !.env.example
 
 # Data files
-data/data.sql
 data/minio/
 
 # Log files
