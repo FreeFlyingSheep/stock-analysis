@@ -9,6 +9,21 @@ if TYPE_CHECKING:
     from langchain_core.runnables.schema import StreamEvent
 
 
+def convert_content_to_str(content: str | list[str | dict]) -> str:
+    """Convert content to a single string.
+
+    Args:
+        content: The content to convert.
+
+    Returns:
+        A single string representation of the content.
+    """
+    if isinstance(content, str):
+        return content
+    text_parts: list[str] = [p if isinstance(p, str) else str(p) for p in content]
+    return "".join(text_parts)
+
+
 async def astream_chat_response(event: StreamEvent) -> AsyncGenerator[str]:
     """Process a stream event and yield the content of AI message chunks.
 
@@ -26,12 +41,4 @@ async def astream_chat_response(event: StreamEvent) -> AsyncGenerator[str]:
     if kind == "on_chat_model_stream" and node_name == "generate_answer":
         chunk: AIMessageChunk | None = event.get("data", {}).get("chunk")
         if chunk and chunk.content:
-            content: str | list[str | dict] = chunk.content
-            if isinstance(content, str):
-                yield content
-            else:
-                text_parts: list[str] = [
-                    p if isinstance(p, str) else str(p) for p in content
-                ]
-                text: str = "".join(text_parts)
-                yield text
+            yield convert_content_to_str(chunk.content)

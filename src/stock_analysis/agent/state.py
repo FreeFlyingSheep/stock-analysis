@@ -21,7 +21,7 @@ class State(MessagesState):
     """
 
     locale: NotRequired[str]
-    page_context: NotRequired[str]
+    page_context: NotRequired[str | None]
     chat_calls: NotRequired[int]
     tool_calls: NotRequired[int]
     retrieve_calls: NotRequired[int]

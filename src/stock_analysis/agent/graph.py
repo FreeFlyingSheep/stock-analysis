@@ -33,7 +33,7 @@ from stock_analysis.agent.nodes import (
 )
 from stock_analysis.agent.prompt import PromptManager
 from stock_analysis.agent.state import State
-from stock_analysis.agent.stream import astream_chat_response
+from stock_analysis.agent.stream import astream_chat_response, convert_content_to_str
 
 if TYPE_CHECKING:
     import os
@@ -242,6 +242,68 @@ class ChatAgent:
         )
         return agent
 
+    def invoke(  # noqa: PLR0913
+        self,
+        thread_id: str,
+        message: str,
+        locale: str,
+        page_context: str | None = None,
+        tools: list[BaseTool] | None = None,
+        *,
+        max_chat_calls: int = MAX_CHAT_CALLS,
+        max_tool_calls: int = MAX_TOOL_CALLS,
+        max_retrieve_calls: int = MAX_RETRIEVE_CALLS,
+        callbacks: list | None = None,
+    ) -> str:
+        """Invoke the chat agent, which is used for evaluation.
+
+        Args:
+            thread_id: Identifier for the chat thread.
+            message: User's input message.
+            locale: Locale for the conversation.
+            page_context: Optional context related to the chat.
+            tools: List of available tools.
+            max_chat_calls: Maximum number of LLM invocations allowed.
+            max_tool_calls: Maximum number of non-retrieve tool invocations.
+            max_retrieve_calls: Maximum number of retrieval invocations.
+            callbacks: Optional list of callback handlers for evaluation.
+
+        Returns:
+            Final response from the agent after processing the input.
+        """
+        with tracer.start_as_current_span("chat_agent.invoke") as span:
+            span.set_attribute("thread_id", thread_id)
+            span.set_attribute("locale", locale)
+            span.set_attribute("has_page_context", page_context is not None)
+            span.set_attribute("tools", [t.name for t in (tools or [])])
+            span.set_attribute("max_chat_calls", max_chat_calls)
+            span.set_attribute("max_tool_calls", max_tool_calls)
+            span.set_attribute("max_retrieve_calls", max_retrieve_calls)
+
+            config = RunnableConfig(
+                configurable={
+                    "thread_id": thread_id,
+                    "allowed_tools": tools,
+                    "callbacks": callbacks,
+                }
+            )
+            messages: list[AnyMessage] = [HumanMessage(content=message)]
+            response: dict = self._agent.invoke(
+                State(
+                    {
+                        "messages": messages,
+                        "page_context": page_context,
+                        "locale": locale,
+                        "rewritten_query": None,
+                        "max_chat_calls": max_chat_calls,
+                        "max_tool_calls": max_tool_calls,
+                        "max_retrieve_calls": max_retrieve_calls,
+                    }
+                ),
+                config,
+            )
+            return convert_content_to_str(response["messages"][-1].content)
+
     async def astream_events(  # noqa: PLR0913
         self,
         thread_id: str,
@@ -287,15 +349,17 @@ class ChatAgent:
             messages: list[AnyMessage] = [HumanMessage(content=message)]
 
             async for event in self._agent.astream_events(
-                {
-                    "messages": messages,
-                    "page_context": page_context,
-                    "locale": locale,
-                    "rewritten_query": None,
-                    "max_chat_calls": max_chat_calls,
-                    "max_tool_calls": max_tool_calls,
-                    "max_retrieve_calls": max_retrieve_calls,
-                },
+                State(
+                    {
+                        "messages": messages,
+                        "page_context": page_context,
+                        "locale": locale,
+                        "rewritten_query": None,
+                        "max_chat_calls": max_chat_calls,
+                        "max_tool_calls": max_tool_calls,
+                        "max_retrieve_calls": max_retrieve_calls,
+                    }
+                ),
                 config,
             ):
                 async for content in astream_chat_response(event):

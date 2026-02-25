@@ -94,6 +94,7 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "deepeval>=3.8.6",
     "djlint>=1.36.4",
     "langchain-qwq[typing]>=0.3.4",
     "mypy>=1.19.1",
@@ -147,7 +148,7 @@ strict = true
 [tool.ruff.lint.per-file-ignores]
 "scripts/*" = ["INP001"]
 "src/stock_analysis/alembic/versions/*" = ["INP001"]
-"tests/*" = ["D100", "D101", "D102", "D103", "D107", "INP001", "S101", "SLF001"]
+"tests/*" = ["D100", "D101", "D102", "D103", "D104", "D107", "INP001", "S101", "SLF001"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
