@@ -94,7 +94,7 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
-    "deepeval>=3.8.6",
+    "deepeval>=3.8.8",
     "djlint>=1.36.4",
     "langchain-qwq[typing]>=0.3.4",
     "mypy>=1.19.1",

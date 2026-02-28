@@ -1,0 +1,32 @@
+[
+    {
+        "input": "基于资产负债结构，评估万科A（000002）的财务健康度并给出结论。",
+        "expected_output": "万科A（000002）整体财务健康度较高。其资产质量较好、负债水平可控、股东权益稳步增长，具备较强的抗风险能力与财务韧性。",
+        "name": "agent_financial_health_assessment",
+        "actual_output": ""
+    },
+    {
+        "input": "分析万科A（000002）近三年的盈利能力变化，并指出优势。",
+        "expected_output": "万科A（000002）近三年盈利能力整体呈现波动中修复的特征。其优势主要体现在规模基础较大、业务覆盖面广，以及在行业调整期具备一定的运营韧性。",
+        "name": "agent_profitability_comparison",
+        "actual_output": ""
+    },
+    {
+        "input": "结合现金流和利润表现，判断万科A（000002）的盈利质量。",
+        "expected_output": "万科A（000002）盈利质量整体较好。若经营性现金流与净利润长期匹配且波动可控，说明利润兑现能力较强；若差异扩大，则需关注拨备、资产质量或一次性项目影响。",
+        "name": "agent_earnings_quality_judgement",
+        "actual_output": ""
+    },
+    {
+        "input": "评估万科A（000002）分红的可持续性，并给出风险提示。",
+        "expected_output": "万科A（000002）的分红可持续性总体取决于盈利稳定性、资本充足水平与现金流覆盖能力。若盈利增长与资本水平保持稳健，分红延续性较好；主要风险在于投资波动、承保利润压力及监管资本要求变化。",
+        "name": "agent_dividend_sustainability_assessment",
+        "actual_output": ""
+    },
+    {
+        "input": "请给出一份万科A（000002）的综合财务健康结论，覆盖盈利能力、偿债能力和现金流。",
+        "expected_output": "万科A（000002）的综合财务健康评估应同时看盈利能力、偿债能力和现金流。若净息差与利润保持稳定、资本与拨备充足、经营现金流持续改善，则整体健康度偏稳健；需持续关注资产质量与宏观周期对盈利的影响。",
+        "name": "agent_holistic_financial_summary",
+        "actual_output": ""
+    }
+]

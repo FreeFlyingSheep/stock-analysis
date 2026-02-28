@@ -9,6 +9,7 @@
 !.env.example
 
 # Data files
+data/.deepeval/
 data/minio/
 
 # Log files

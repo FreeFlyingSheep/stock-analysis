@@ -1,4 +1,5 @@
 import json
+import os
 from collections.abc import AsyncGenerator  # noqa: TC003
 from datetime import UTC, datetime
 from pathlib import Path
@@ -60,8 +61,12 @@ def anyio_backend() -> str:
 
 @pytest_asyncio.fixture(scope="session")
 async def postgres_container() -> AsyncGenerator[PostgresContainer]:
+    postgres_image: str = os.getenv(
+        "TEST_POSTGRES_IMAGE", "stock-analysis-postgres:test"
+    )
     with PostgresContainer(
-        "stock-analysis-postgres:0.1", driver="psycopg"
+        postgres_image,
+        driver="psycopg",
     ) as container:
         connection_url: str = container.get_connection_url()
         engine: AsyncEngine = create_async_engine(connection_url)

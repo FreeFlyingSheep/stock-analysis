@@ -43,7 +43,7 @@ jobs:
         run: ./scripts/generate_env.sh
 
       - name: Build test postgres image
-        run: docker build -t stock-analysis-postgres:0.1 -f configs/docker/postgres.Dockerfile .
+        run: docker build -t stock-analysis-postgres:test -f configs/docker/postgres.Dockerfile .
 
       - name: Run check script
         run: ./scripts/check.sh

@@ -1,5 +1,6 @@
 """Helper functions for the agent implementation."""
 
+import json
 from typing import TYPE_CHECKING
 
 from langchain.messages import (
@@ -102,6 +103,25 @@ def content_preview(content: str | list[str | dict], max_len: int = 240) -> str:
         text = "".join(part if isinstance(part, str) else str(part) for part in content)
     normalized: str = " ".join(text.split())
     return normalized[:max_len]
+
+
+def truncate_tool_content(
+    content: str | list[str | dict],
+    *,
+    max_chars: int = 12000,
+) -> str:
+    """Normalize and truncate tool output before adding it to chat state."""
+    if isinstance(content, str):
+        text: str = content
+    else:
+        try:
+            text = json.dumps(content, ensure_ascii=False)
+        except TypeError, ValueError:
+            text = str(content)
+
+    if len(text) <= max_chars:
+        return text
+    return f"{text[:max_chars]}\n\n[truncated tool output]"
 
 
 def set_llm_response_attrs(span: trace.Span, message: AnyMessage) -> None:

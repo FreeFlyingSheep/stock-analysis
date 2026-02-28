@@ -67,6 +67,7 @@
 
 - **uv** Python 依赖管理
 - **pytest** 测试
+- **DeepEval** 用于 LLM / Agent / RAG 的离线评测与回归测试
 - **testcontainers** 依赖容器测试
 - **ruff** 代码格式与静态检查
 - **mypy** 类型检查
@@ -133,6 +134,7 @@
 - **文档规范**：Google 风格 docstring
 - **质量标准**：ruff + mypy
 - **自动化测试**：pytest + testcontainers 隔离测试
+- **LLM 评测回归**：覆盖 RAG、Chatbot、MCP、Agent E2E 与 Arena 对比的离线评测套件（基于 DeepEval）
 
 ## 安装与运行
 
@@ -249,13 +251,19 @@
     然后构建 postgres 容器镜像：
 
     ```bash
-    docker build -t stock-analysis-postgres:0.1 -f configs/docker/postgres.Dockerfile .
+    docker build -t stock-analysis-postgres:test -f configs/docker/postgres.Dockerfile .
     ```
 
 12. 最后，运行检查脚本：
 
     ```bash
     ./scripts/check.sh
+    ```
+
+    运行离线评测：
+
+    ```bash
+    ./scripts/check_eval.sh
     ```
 
 ### Docker Compose
@@ -291,6 +299,18 @@
     docker compose up -d --build --force-recreate
     ```
 
+    如需在专用一次性容器中运行离线评测（`eval` profile）：
+
+    ```bash
+    docker compose --profile eval run --rm eval
+    ```
+
+    如需同时触发镜像构建，可使用：
+
+    ```bash
+    docker compose --profile eval up --build eval
+    ```
+
     您可以在 `http://127.0.0.1:8080` 访问服务。
     您可以在 `http://127.0.0.1:8081` 访问 Grafana 仪表板。
     您可以在 `http://127.0.0.1:8082` 访问 Langfuse 控制台。
@@ -306,8 +326,6 @@
     ```bash
     docker compose down -v --rmi local
     ```
-
-如果已导出数据库，可以通过运行 `docker exec -i stock-analysis-postgres-1 psql -U postgres -d stock_analysis < data/data.sql` 来恢复它，忽略关于现有对象的错误消息。
 
 ### Kubernetes
 

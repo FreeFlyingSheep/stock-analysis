@@ -57,6 +57,11 @@ class Settings(BaseSettings):
         mcp_port: Port for the MCP server.
         monitoring_host: Host address for the monitoring server.
         monitoring_port: Port for the monitoring server.
+        dataset_dir: Directory for evaluation datasets.
+        deepeval_llm_api_key: API key for the DeepEval LLM service.
+        deepeval_llm_server_base_url: Base URL for the DeepEval LLM server.
+        deepeval_llm_chat_model: DeepEval LLM model name.
+        deepeval_llm_embedding_model: DeepEval LLM embedding model name.
     """
 
     model_config = SettingsConfigDict(
@@ -114,6 +119,12 @@ class Settings(BaseSettings):
 
     monitoring_host: str
     monitoring_port: int
+
+    dataset_dir: str
+    deepeval_llm_api_key: SecretStr
+    deepeval_llm_server_base_url: str
+    deepeval_llm_chat_model: str
+    deepeval_llm_embedding_model: str
 
     @cached_property
     def database_url_with_psycopg(self) -> str:

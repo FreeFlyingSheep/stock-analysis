@@ -242,7 +242,7 @@ class ChatAgent:
         )
         return agent
 
-    def invoke(  # noqa: PLR0913
+    async def ainvoke(  # noqa: PLR0913
         self,
         thread_id: str,
         message: str,
@@ -253,9 +253,8 @@ class ChatAgent:
         max_chat_calls: int = MAX_CHAT_CALLS,
         max_tool_calls: int = MAX_TOOL_CALLS,
         max_retrieve_calls: int = MAX_RETRIEVE_CALLS,
-        callbacks: list | None = None,
     ) -> str:
-        """Invoke the chat agent, which is used for evaluation.
+        """Asynchronously invoke the chat agent.
 
         Args:
             thread_id: Identifier for the chat thread.
@@ -266,7 +265,6 @@ class ChatAgent:
             max_chat_calls: Maximum number of LLM invocations allowed.
             max_tool_calls: Maximum number of non-retrieve tool invocations.
             max_retrieve_calls: Maximum number of retrieval invocations.
-            callbacks: Optional list of callback handlers for evaluation.
 
         Returns:
             Final response from the agent after processing the input.
@@ -284,11 +282,10 @@ class ChatAgent:
                 configurable={
                     "thread_id": thread_id,
                     "allowed_tools": tools,
-                    "callbacks": callbacks,
                 }
             )
             messages: list[AnyMessage] = [HumanMessage(content=message)]
-            response: dict = self._agent.invoke(
+            response: dict = await self._agent.ainvoke(
                 State(
                     {
                         "messages": messages,

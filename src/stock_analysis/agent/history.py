@@ -1,4 +1,4 @@
-"""Helpers for building chat history transcripts from graph snapshots."""
+"""Helpers for building chat transcripts and retrieval context from snapshots."""
 
 from typing import TYPE_CHECKING
 

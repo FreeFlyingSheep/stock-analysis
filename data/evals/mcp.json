@@ -1,0 +1,122 @@
+[
+    {
+        "input": "请帮我获取万科A（000002）的资产负债表。",
+        "expected_output": "以下是万科A（000002）的资产负债表核心数据，包括总资产、总负债与股东权益。",
+        "tools_called": [
+            {
+                "name": "get_financial_report",
+                "inputParameters": {
+                    "query": "资产负债表",
+                    "stock_code": "000002"
+                }
+            }
+        ],
+        "expected_tools": [
+            {
+                "name": "get_financial_report",
+                "inputParameters": {
+                    "query": "资产负债表",
+                    "stock_code": "000002"
+                }
+            }
+        ],
+        "name": "mcp_balance_sheet_retrieval",
+        "actual_output": ""
+    },
+    {
+        "input": "查询万科A（000002）的利润表数据。",
+        "expected_output": "以下是万科A（000002）的利润表核心数据，包括营业收入、营业利润与净利润。",
+        "tools_called": [
+            {
+                "name": "get_financial_report",
+                "inputParameters": {
+                    "query": "利润表",
+                    "stock_code": "000002"
+                }
+            }
+        ],
+        "expected_tools": [
+            {
+                "name": "get_financial_report",
+                "inputParameters": {
+                    "query": "利润表",
+                    "stock_code": "000002"
+                }
+            }
+        ],
+        "name": "mcp_income_statement_retrieval",
+        "actual_output": ""
+    },
+    {
+        "input": "拉取万科A（000002）的现金流量表。",
+        "expected_output": "以下是万科A（000002）的现金流量表核心数据，包括经营、投资和筹资活动现金流。",
+        "tools_called": [
+            {
+                "name": "get_financial_report",
+                "inputParameters": {
+                    "query": "现金流量表",
+                    "stock_code": "000002"
+                }
+            }
+        ],
+        "expected_tools": [
+            {
+                "name": "get_financial_report",
+                "inputParameters": {
+                    "query": "现金流量表",
+                    "stock_code": "000002"
+                }
+            }
+        ],
+        "name": "mcp_cash_flow_retrieval",
+        "actual_output": ""
+    },
+    {
+        "input": "帮我查万科A（000002）的主要财务指标。",
+        "expected_output": "以下是万科A（000002）的主要财务指标，包括营收增速、净利率、ROE 和 EPS。",
+        "tools_called": [
+            {
+                "name": "get_financial_report",
+                "inputParameters": {
+                    "query": "主要财务指标",
+                    "stock_code": "000002"
+                }
+            }
+        ],
+        "expected_tools": [
+            {
+                "name": "get_financial_report",
+                "inputParameters": {
+                    "query": "主要财务指标",
+                    "stock_code": "000002"
+                }
+            }
+        ],
+        "name": "mcp_financial_indicator_retrieval",
+        "actual_output": ""
+    },
+    {
+        "input": "获取万科A（000002）的分红历史数据。",
+        "expected_output": "以下是万科A（000002）的分红历史核心数据，包括分红金额、频率与分红率变化。",
+        "tools_called": [
+            {
+                "name": "get_financial_report",
+                "inputParameters": {
+                    "query": "分红历史",
+                    "stock_code": "000002"
+                }
+            }
+        ],
+        "expected_tools": [
+            {
+                "name": "get_financial_report",
+                "inputParameters": {
+                    "query": "分红历史",
+                    "stock_code": "000002"
+                }
+            }
+        ],
+        "name": "mcp_dividend_history_retrieval",
+        "actual_output": ""
+    }
+]

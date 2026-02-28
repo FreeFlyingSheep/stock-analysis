@@ -8,14 +8,10 @@ from fastapi import (
     HTTPException,
     Request,  # noqa: TC002
 )
-from sqlalchemy.ext.asyncio import (
-    AsyncSession,  # noqa: TC002
-)
+from sqlalchemy.ext.asyncio import AsyncSession  # noqa: TC002
 
 if TYPE_CHECKING:
-    from sqlalchemy.ext.asyncio import (
-        async_sessionmaker,
-    )
+    from sqlalchemy.ext.asyncio import async_sessionmaker
 
 
 async def get_db(request: Request) -> AsyncGenerator[AsyncSession]:

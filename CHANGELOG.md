@@ -24,5 +24,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Server-sent events (SSE) for real-time updates
 - RAG capabilities: text extraction, chunking, embedding, and vector storage for PDF reports
 - Telemetry with OpenTelemetry (OTel): tracing, metrics, and logging
+- Evaluation with DeepEval: RAG, chatbot, MCP, agent E2E, and arena-style LLM comparisons
 
 [Unreleased]: https://github.com/FreeFlyingSheep/stock-analysis

@@ -67,6 +67,7 @@ This project is developed with the assistance of AI tools:
 
 - **uv** for fast Python package and project management
 - **pytest** for comprehensive unit and integration testing
+- **DeepEval** for LLM/agent/RAG offline evaluation and regression testing
 - **testcontainers** for containerized dependency testing
 - **ruff** for fast Python linting and code formatting
 - **mypy** for static type checking
@@ -133,6 +134,7 @@ This project is developed with the assistance of AI tools:
 - **Comprehensive Documentation**: Google-style docstrings throughout all modules
 - **Code Quality Standards**: Enforced through ruff linting, mypy type checking
 - **Automated Testing**: pytest with testcontainers for isolated integration testing
+- **LLM Evaluation Regression Tests**: Offline eval suites for RAG, chatbot, MCP, agent E2E, and arena-style LLM comparisons (DeepEval-powered)
 
 ## Setup
 
@@ -249,13 +251,19 @@ If you want to keep existing data, dump the database first (`./scripts/dump_db.s
     Then build the postgres container image:
 
     ```bash
-    docker build -t stock-analysis-postgres:0.1 -f configs/docker/postgres.Dockerfile .
+    docker build -t stock-analysis-postgres:test -f configs/docker/postgres.Dockerfile .
     ```
 
 12. Finally, run the check script:
 
     ```bash
     ./scripts/check.sh
+    ```
+
+    To run the offline evals:
+
+    ```bash
+    ./scripts/check_eval.sh
     ```
 
 ### Docker Compose Setup
@@ -291,6 +299,19 @@ The configurations are set in `.env` and overridden in `compose.yaml`. If you ne
     docker compose up -d --build --force-recreate
     ```
 
+    To run offline evals in a dedicated one-shot container (enabled by the
+    `eval` profile):
+
+    ```bash
+    docker compose --profile eval run --rm eval
+    ```
+
+    If you also want Compose to build images first:
+
+    ```bash
+    docker compose --profile eval up --build eval
+    ```
+
     You can access the services at `http://127.0.0.1:8080`.
     You can access the Grafana dashboard at `http://127.0.0.1:8081`.
     You can access the Langfuse dashboard at `http://127.0.0.1:8082`.
@@ -306,8 +327,6 @@ The configurations are set in `.env` and overridden in `compose.yaml`. If you ne
     ```bash
     docker compose down -v --rmi local
     ```
-
-If you have dumped the database, you can restore it by running `docker exec -i stock-analysis-postgres-1 psql -U postgres -d stock_analysis < data/data.sql`, ignoring the error messages about existing objects.
 
 ### Kubernetes Setup
 

@@ -24,6 +24,7 @@ services:
       start_period: 10s
 
   postgres:
+    image: stock-analysis-postgres
     build:
       context: .
       dockerfile: configs/docker/postgres.Dockerfile
@@ -89,6 +90,7 @@ services:
       start_period: 10s
 
   migrate:
+    image: stock-analysis-migrate
     build:
       context: .
       dockerfile: configs/docker/migrate.Dockerfile
@@ -114,6 +116,7 @@ services:
     restart: "no"
 
   api:
+    image: stock-analysis-api
     build:
       context: .
       dockerfile: configs/docker/api.Dockerfile
@@ -142,6 +145,7 @@ services:
       start_period: 10s
 
   worker:
+    image: stock-analysis-worker
     build:
       context: .
       dockerfile: configs/docker/worker.Dockerfile
@@ -175,6 +179,7 @@ services:
       start_period: 10s
 
   mcp:
+    image: stock-analysis-mcp
     build:
       context: .
       dockerfile: configs/docker/mcp.Dockerfile
@@ -212,6 +217,7 @@ services:
       start_period: 10s
 
   web:
+    image: stock-analysis-web
     build:
       context: .
       dockerfile: configs/docker/web.Dockerfile
@@ -226,6 +232,37 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+
+  eval:
+    profiles: ["eval"]
+    image: stock-analysis-eval
+    build:
+      context: .
+      dockerfile: configs/docker/eval.Dockerfile
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_PORT: "5432"
+      DATABASE_USER: ${DATABASE_USER}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      DATABASE_DB: ${DATABASE_DB}
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      MCP_HOST: mcp
+      MCP_PORT: "8000"
+      MONITORING_HOST: alloy
+      MONITORING_PORT: "4317"
+      DEEPEVAL_TELEMETRY_OPT_OUT: "YES"
+      DEEPEVAL_CACHE_FOLDER: /app/.deepeval
+      TEST_POSTGRES_IMAGE: stock-analysis-postgres
+      DOCKER_HOST: unix:///var/run/docker.sock
+    depends_on:
+      api:
+        condition: service_healthy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - deepeval_cache:/app/.deepeval
+    restart: "no"
 
   grafana:
     image: grafana/grafana:12.4.0-22081664032
@@ -502,3 +539,4 @@ volumes:
   tempo_data:
   clickhouse_data:
   clickhouse_logs:
+  deepeval_cache:

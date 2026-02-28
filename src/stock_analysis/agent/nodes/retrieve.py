@@ -10,7 +10,7 @@ from langchain.messages import (
 from langchain_core.runnables.config import RunnableConfig  # noqa: TC002
 from opentelemetry import trace
 
-from stock_analysis.agent.helper import load_prompt, select_tools
+from stock_analysis.agent.helper import load_prompt, select_tools, truncate_tool_content
 from stock_analysis.agent.limit import MAX_RETRIEVE_CALLS
 from stock_analysis.agent.prompt import PromptManager  # noqa: TC001
 from stock_analysis.agent.state import State  # noqa: TC001
@@ -108,7 +108,10 @@ async def retrieve_documents(
                     )
                     continue
                 result.append(
-                    ToolMessage(content=observation, tool_call_id=tool_call["id"])
+                    ToolMessage(
+                        content=truncate_tool_content(observation),
+                        tool_call_id=tool_call["id"],
+                    )
                 )
                 retrieve_calls += 1
                 remaining_calls -= 1

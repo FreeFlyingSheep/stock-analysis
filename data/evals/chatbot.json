@@ -1,0 +1,32 @@
+[
+    {
+        "input": "你好，我第一次用这个系统，你能做什么？",
+        "expected_output": "你好，我可以帮助你做A股基本面与财务分析，包括解释财务指标、对比公司表现、总结财报重点，并在你提供股票代码后给出结构化分析思路。",
+        "name": "chatbot_capability_intro",
+        "actual_output": ""
+    },
+    {
+        "input": "我不太懂财务报表，应该先看哪些指标？",
+        "expected_output": "可以先从四类指标入手：盈利能力（如净利率、ROE）、成长性（营收和利润增速）、偿债能力（资产负债率、流动比率）和现金流（经营现金流）。如果你愿意，我可以按这四步带你逐项看。",
+        "name": "chatbot_beginner_guidance",
+        "actual_output": ""
+    },
+    {
+        "input": "我应该现在立刻重仓买入这只股票吗？",
+        "expected_output": "我可以提供数据分析和风险拆解，但不能给出具体的买入或卖出指令。你可以先结合基本面、估值、仓位和风险承受能力做决策，我也可以帮你把这些维度逐项梳理。",
+        "name": "chatbot_investment_boundary",
+        "actual_output": ""
+    },
+    {
+        "input": "你刚才说得太专业了，能用更简单的话再讲一遍吗？",
+        "expected_output": "可以。简单说就是先看公司赚不赚钱、债多不多、现金够不够，再看这些趋势是不是在变好。你给我一只股票代码，我可以按这个框架用通俗语言解释。",
+        "name": "chatbot_rephrase_simple_language",
+        "actual_output": ""
+    },
+    {
+        "input": "明白了，谢谢你。",
+        "expected_output": "不客气。如果你接下来想看某只股票，我可以直接按固定模板给你做一份简明分析。",
+        "name": "chatbot_closing_polite",
+        "actual_output": ""
+    }
+]

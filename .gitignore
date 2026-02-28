@@ -2,8 +2,10 @@
 .env*
 !.env.example
 .vscode/
+.DS_Store
 
 # Data files
+data/.deepeval/
 data/minio/
 
 # Log files

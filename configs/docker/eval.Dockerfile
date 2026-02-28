@@ -1,0 +1,36 @@
+FROM python:3.14.2-slim-trixie AS build
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+WORKDIR /app
+
+ENV UV_NO_DEV=0
+
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    uv sync --locked --no-install-project --no-editable
+
+COPY . .
+
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --locked --no-editable
+
+FROM build AS runtime
+
+ENV PATH="/app/.venv/bin:$PATH"
+ENV NO_LOG_FILE=true
+
+COPY --from=build /app/.venv /app/.venv
+COPY --from=build /app/configs /app/configs
+COPY --from=build /app/data /app/data
+COPY --from=build /app/scripts /app/scripts
+COPY --from=build /app/src /app/src
+COPY --from=build /app/tests /app/tests
+COPY --from=build /app/pyproject.toml /app/pyproject.toml
+
+CMD ["python", "./scripts/eval.py"]
