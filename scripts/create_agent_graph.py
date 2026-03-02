@@ -20,7 +20,7 @@ async def main() -> None:
         settings.database_url
     ) as checkpointer:
         agent = ChatAgent(checkpointer=checkpointer, prompts_dir="configs/prompts")
-        output_path = Path("data/agent.png")
+        output_path = Path("docs/images/agent.png")
         await asyncio.to_thread(
             output_path.write_bytes, agent.get_graph().draw_mermaid_png()
         )

@@ -1,8 +1,10 @@
-# 股票分析（Stock Analysis）
+# 股票分析
 
 [English](README.md) | [中文](README.zh-CN.md)
 
 股票分析（Stock Analysis）是一个面向 A 股的基础面评分代理，支持从巨潮资讯与雅虎财经拉取数据，使用声明式规则进行评分和筛选，并通过 FastAPI 后端与 SvelteKit UI 提供查询与可视化。
+
+见[技术文档](docs/README.zh-CN.md)了解架构、实现细节和设计决策。
 
 ## 免责声明
 
@@ -263,7 +265,7 @@
     运行离线评测：
 
     ```bash
-    ./scripts/check_eval.sh
+    ./scripts/eval.sh
     ```
 
 ### Docker Compose

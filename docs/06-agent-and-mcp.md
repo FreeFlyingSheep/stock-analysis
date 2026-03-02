@@ -1,0 +1,62 @@
+# Agent Design + MCP
+
+[English](06-agent-and-mcp.md) | [中文](06-agent-and-mcp.zh-CN.md)
+
+## Technology Overview
+
+- **LangGraph**: models Q&A flow as a state graph.
+- **LangChain**: abstraction for LLM and tool calls.
+- **FastMCP**: maps OpenAPI capabilities into an MCP server.
+- **MultiServerMCPClient**: fetches and invokes MCP tools from the agent side.
+
+## Implementation Details
+
+### Agent Graph Orchestration
+
+Main nodes in `agent/graph.py`:
+
+- `trim_messages`
+- `route_query`
+- `retrieve_documents`
+- `grade_documents`
+- `rewrite_question`
+- `generate_answer`
+- `tool_node`
+
+Key logic:
+
+- Decide retrieval path based on whether LLM output contains tool calls.
+- Grade document relevance after retrieval; rewrite query and retry if needed.
+- Apply max-call limits for chat/tool/retrieve to prevent infinite loops.
+
+![Agent Graph](./images/agent.png)
+
+### Session State Persistence
+
+- Uses `AsyncPostgresSaver` to persist agent state and thread context.
+
+### MCP Server
+
+In `agent/server.py`:
+
+- Generates MCP capabilities from backend OpenAPI (excluding `chat/reports` tags)
+- Exposes custom tool `get_financial_report`
+- Exposes `/health`
+
+### MCP Client Integration
+
+- API startup injects `MultiServerMCPClient` into `app.state.mcp`.
+- Chat execution dynamically fetches `tools` and passes them to the Agent.
+
+## Current Potential Issues
+
+- Tool exposure mainly depends on route-tag exclusion; fine-grained tool permission model is missing.
+- Agent node error recovery needs more systematic error taxonomy.
+- Cost and latency governance for multi-tool scenarios still has room to improve.
+
+## Improvement Directions
+
+- Add tool-level allowlists and parameter-level security constraints (least privilege).
+- Add standardized node fallback patterns (retry, degrade, direct response).
+- Introduce tool budget policy (limit total calls/cost per session).
+- Use Langfuse data to optimize prompts and routing strategy.

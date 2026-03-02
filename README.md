@@ -4,6 +4,8 @@
 
 Stock Analysis is a comprehensive A-share fundamental scoring agent for Chinese stock analysis. It provides data crawling from multiple sources (CNInfo, Yahoo Finance), rule-based scoring, filtering, and a RESTful API for querying results.
 
+See [technical documentation](docs/README.md) for architecture, implementation details, and design decisions.
+
 ## Disclaimer
 
 **This tool is for reference and educational purposes only. The data and analysis provided are for informational purposes and should not be considered as financial advice.**
@@ -263,7 +265,7 @@ If you want to keep existing data, dump the database first (`./scripts/dump_db.s
     To run the offline evals:
 
     ```bash
-    ./scripts/check_eval.sh
+    ./scripts/eval.sh
     ```
 
 ### Docker Compose Setup
