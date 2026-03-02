@@ -9,7 +9,7 @@
 
 - 基于 FastAPI、SQLAlchemy Async 和 PgQueuer 构建 A 股分析平台，抓取与分析任务异步化。
 - 实现 YAML 规则引擎与 CNInfo/Yahoo 数据管道，具备重试、限流和缓存能力。
-- 落地 LangGraph + RAG + SSE 聊天链路，并提供 Docker/K8s 部署与 OTel/Prometheus/Grafana 可观测性。
+- 落地 LangGraph + RAG + SSE 聊天链路，结合 DeepEval 评估指标，并提供 Docker/K8s 部署与 OTel/Prometheus/Grafana 可观测性。
 
 ## 目录
 

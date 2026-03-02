@@ -9,7 +9,7 @@ This documentation was generated with assistance from GPT-5.3-Codex.
 
 - Built an A-share analysis platform with FastAPI, SQLAlchemy Async, and PgQueuer to support asynchronous crawling and analysis workflows.
 - Implemented a YAML-based rule engine and CNInfo/Yahoo data pipeline with retries, rate limiting, and caching.
-- Delivered LangGraph + RAG + SSE chat, with Docker/Kubernetes deployment and OTel/Prometheus/Grafana observability.
+- Delivered LangGraph + RAG + SSE chat with DeepEval metrics for quality assessment, Docker/Kubernetes deployment and OTel/Prometheus/Grafana observability.
 
 ## Table of Contents
 
