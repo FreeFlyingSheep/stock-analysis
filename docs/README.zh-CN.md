@@ -25,6 +25,6 @@
 
 ## 架构图
 
-Docker Compose 本地开发架构图：
+Docker Compose 本地开发架构图（由 `./scripts/create_compose_graph.sh` 生成）：
 
 ![架构图](./images/compose.svg)

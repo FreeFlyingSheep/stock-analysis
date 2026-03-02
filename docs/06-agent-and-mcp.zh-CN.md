@@ -29,6 +29,8 @@
 - 检索后先做文档相关性评分，不满足时可重写问题重试。
 - 对 chat/tool/retrieve 调用次数设上限，避免无限循环。
 
+Agent 图可视化（由 `uv run ./scripts/create_agent_graph.py` 生成）：
+
 ![Agent 图](./images/agent.png)
 
 ### 会话状态持久化
